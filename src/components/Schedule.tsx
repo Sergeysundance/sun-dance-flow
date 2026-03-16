@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
+import { Button } from "@/components/ui/button";
 import { scheduleClasses, getDirection, getTeacher, getRoom } from "@/data/mockData";
 
 const DAYS_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
