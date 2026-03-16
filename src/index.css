@@ -59,6 +59,18 @@
     --muted-foreground: 0 0% 40%;
     --border: 0 0% 90%;
   }
+
+  /* Admin theme */
+  .admin-theme {
+    --admin-bg: #f9fafb;
+    --admin-foreground: #111827;
+    --admin-muted: #6b7280;
+    --admin-border: #e5e7eb;
+    --admin-accent: #EAB308;
+    --admin-hover: #f3f4f6;
+    --admin-active: rgba(234, 179, 8, 0.1);
+    color: var(--admin-foreground);
+  }
 }
 
 @layer base {

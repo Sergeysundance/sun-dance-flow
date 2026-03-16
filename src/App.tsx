@@ -5,6 +5,19 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import AdminLayout from "./layouts/AdminLayout.tsx";
+import DashboardPage from "./pages/admin/DashboardPage.tsx";
+import ClientsPage from "./pages/admin/ClientsPage.tsx";
+import ClientDetailPage from "./pages/admin/ClientDetailPage.tsx";
+import TeachersPage from "./pages/admin/TeachersPage.tsx";
+import SchedulePage from "./pages/admin/SchedulePage.tsx";
+import SubscriptionTypesPage from "./pages/admin/SubscriptionTypesPage.tsx";
+import SubscriptionsPage from "./pages/admin/SubscriptionsPage.tsx";
+import RoomsPage from "./pages/admin/RoomsPage.tsx";
+import DirectionsPage from "./pages/admin/DirectionsPage.tsx";
+import TrialRequestsPage from "./pages/admin/TrialRequestsPage.tsx";
+import CheckInPage from "./pages/admin/CheckInPage.tsx";
+import SettingsPage from "./pages/admin/SettingsPage.tsx";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +29,20 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<DashboardPage />} />
+            <Route path="clients" element={<ClientsPage />} />
+            <Route path="clients/:id" element={<ClientDetailPage />} />
+            <Route path="teachers" element={<TeachersPage />} />
+            <Route path="schedule" element={<SchedulePage />} />
+            <Route path="subscription-types" element={<SubscriptionTypesPage />} />
+            <Route path="subscriptions" element={<SubscriptionsPage />} />
+            <Route path="rooms" element={<RoomsPage />} />
+            <Route path="directions" element={<DirectionsPage />} />
+            <Route path="trial-requests" element={<TrialRequestsPage />} />
+            <Route path="check-in" element={<CheckInPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
