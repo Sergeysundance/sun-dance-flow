@@ -112,7 +112,6 @@ const Schedule = () => {
                           Записаться
                         </Button>
                       </a>
-                      </span>
                     </div>
                   );
                 })}
