@@ -12,7 +12,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="font-display text-5xl font-black uppercase leading-none tracking-tight text-foreground sm:text-7xl lg:text-8xl xl:text-9xl"
+            className="font-display text-5xl font-black uppercase leading-none tracking-tight text-foreground sm:text-7xl lg:text-[5.5rem] xl:text-8xl"
           >
             ТАНЦУЙ
             <br />
