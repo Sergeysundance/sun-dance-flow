@@ -113,7 +113,7 @@ export default function SchedulePage() {
 
       {/* Class detail dialog */}
       <Dialog open={!!selectedClass} onOpenChange={() => setSelectedClass(null)}>
-        <DialogContent className="bg-white sm:max-w-lg">
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-lg">
           {selClass && (
             <>
               <DialogHeader>
