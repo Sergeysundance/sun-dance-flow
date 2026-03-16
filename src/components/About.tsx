@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import studioPhoto from "@/assets/studio-photo.png";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
