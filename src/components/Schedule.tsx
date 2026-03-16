@@ -85,25 +85,33 @@ const Schedule = () => {
                   return (
                     <div
                       key={c.id}
-                      className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border border-border bg-card/50 px-4 py-3"
+                      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 rounded-lg border border-border bg-card/50 px-4 py-3"
                     >
-                      <span className="font-body text-sm font-semibold text-foreground min-w-[100px]">
-                        {c.startTime}–{c.endTime}
-                      </span>
-                      <span className="flex items-center gap-2">
-                        <span
-                          className="inline-block h-2.5 w-2.5 rounded-full"
-                          style={{ backgroundColor: dir?.color }}
-                        />
-                        <span className="font-body text-sm font-semibold text-foreground">
-                          {dir?.name}
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <span className="font-body text-sm font-semibold text-foreground min-w-[100px]">
+                          {c.startTime}–{c.endTime}
                         </span>
-                      </span>
-                      <span className="font-body text-sm text-muted-foreground">
-                        {teacher?.firstName} {teacher?.lastName?.[0]}.
-                      </span>
-                      <span className="font-body text-xs text-muted-foreground">
-                        {room?.name}
+                        <span className="flex items-center gap-2">
+                          <span
+                            className="inline-block h-2.5 w-2.5 rounded-full"
+                            style={{ backgroundColor: dir?.color }}
+                          />
+                          <span className="font-body text-sm font-semibold text-foreground">
+                            {dir?.name}
+                          </span>
+                        </span>
+                        <span className="font-body text-sm text-muted-foreground">
+                          {teacher?.firstName} {teacher?.lastName?.[0]}.
+                        </span>
+                        <span className="font-body text-xs text-muted-foreground">
+                          {room?.name}
+                        </span>
+                      </div>
+                      <a href="#cta">
+                        <Button variant="sun" size="sm" className="text-xs px-4">
+                          Записаться
+                        </Button>
+                      </a>
                       </span>
                     </div>
                   );
