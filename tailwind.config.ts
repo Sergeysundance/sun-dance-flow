@@ -54,6 +54,13 @@ export default {
         surface: "hsl(var(--surface))",
         sun: "hsl(var(--sun))",
         "sun-glow": "hsl(var(--sun-glow))",
+        "admin-bg": "var(--admin-bg, #f9fafb)",
+        "admin-foreground": "var(--admin-foreground, #111827)",
+        "admin-muted": "var(--admin-muted, #6b7280)",
+        "admin-border": "var(--admin-border, #e5e7eb)",
+        "admin-accent": "var(--admin-accent, #EAB308)",
+        "admin-hover": "var(--admin-hover, #f3f4f6)",
+        "admin-active": "var(--admin-active, rgba(234,179,8,0.1))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
