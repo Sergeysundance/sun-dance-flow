@@ -70,6 +70,25 @@
     --admin-hover: #f3f4f6;
     --admin-active: rgba(234, 179, 8, 0.1);
     color: var(--admin-foreground);
+
+    /* Override shadcn CSS variables for light admin theme */
+    --background: 0 0% 100%;
+    --foreground: 220 13% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 13% 10%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 13% 10%;
+    --primary: 45 93% 47%;
+    --primary-foreground: 0 0% 0%;
+    --secondary: 220 14% 96%;
+    --secondary-foreground: 220 13% 10%;
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 13% 10%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 45 93% 47%;
   }
 }
 
