@@ -7,7 +7,7 @@ const Hero = () => {
     <section className="relative flex min-h-screen items-center overflow-hidden bg-background pt-16">
       <div className="container mx-auto grid grid-cols-1 items-center gap-8 px-4 lg:grid-cols-2">
         {/* Text */}
-        <div className="order-1 flex flex-col gap-6 lg:order-1">
+        <div className="order-1 flex min-w-0 flex-col gap-6 overflow-hidden lg:order-1">
           <motion.h1
             initial={{ opacity: 0, y: 40 }}
             animate={{ opacity: 1, y: 0 }}
