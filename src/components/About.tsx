@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import studioPhoto from "@/assets/studio-photo.png";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -17,8 +18,8 @@ const About = () => {
           viewport={{ once: true }}
           className="flex flex-col gap-6"
         >
-          <div className="flex aspect-[3/4] max-h-[500px] items-center justify-center rounded-lg bg-muted">
-            <span className="font-body text-sm text-muted-foreground">фото зала</span>
+          <div className="aspect-[3/4] max-h-[500px] overflow-hidden rounded-lg">
+            <img src={studioPhoto} alt="Танцевальный зал Sun Dance School" className="h-full w-full object-cover" />
           </div>
           <h2 className="font-display text-2xl font-black uppercase leading-tight text-foreground sm:text-3xl lg:text-4xl">
             ПРОСТРАНСТВО
