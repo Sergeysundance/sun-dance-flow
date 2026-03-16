@@ -155,7 +155,7 @@ export default function SchedulePage() {
 
       {/* New class dialog */}
       <Dialog open={newClassOpen} onOpenChange={setNewClassOpen}>
-        <DialogContent className="bg-white sm:max-w-md">
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-md">
           <DialogHeader><DialogTitle className="text-admin-foreground">Новое занятие</DialogTitle></DialogHeader>
           <div className="grid gap-3">
             <div><Label>Направление</Label><Select><SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger><SelectContent>{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent></Select></div>

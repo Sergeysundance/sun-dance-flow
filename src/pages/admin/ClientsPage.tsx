@@ -84,7 +84,7 @@ export default function ClientsPage() {
 
       {/* New client dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-white sm:max-w-md">
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-md">
           <DialogHeader><DialogTitle className="text-admin-foreground">Новый клиент</DialogTitle></DialogHeader>
           <div className="grid gap-3">
             <div className="grid grid-cols-2 gap-3">

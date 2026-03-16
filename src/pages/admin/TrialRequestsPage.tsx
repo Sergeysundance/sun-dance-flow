@@ -50,7 +50,7 @@ export default function TrialRequestsPage() {
                       {r.status !== 'declined' && r.status !== 'enrolled' && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button size="sm" variant="outline" className="text-xs border-admin-border text-red-600">Отклонить</Button></AlertDialogTrigger>
-                          <AlertDialogContent className="bg-white"><AlertDialogHeader><AlertDialogTitle>Отклонить заявку?</AlertDialogTitle><AlertDialogDescription>Заявка от {r.name} будет отклонена.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction onClick={() => toast.success("Заявка отклонена")} className="bg-red-600 text-white">Отклонить</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                          <AlertDialogContent className="bg-white text-admin-foreground"><AlertDialogHeader><AlertDialogTitle>Отклонить заявку?</AlertDialogTitle><AlertDialogDescription>Заявка от {r.name} будет отклонена.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction onClick={() => toast.success("Заявка отклонена")} className="bg-red-600 text-white">Отклонить</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                         </AlertDialog>
                       )}
                     </div>
