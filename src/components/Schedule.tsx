@@ -107,11 +107,11 @@ const Schedule = () => {
                           {room?.name}
                         </span>
                       </div>
-                      <a href="#cta">
-                        <Button variant="sun" size="sm" className="text-xs px-4">
-                          Записаться
-                        </Button>
-                      </a>
+                      <a href="#cta" className="ml-auto">
+                         <Button variant="sun" size="sm" className="text-xs px-4">
+                           Записаться
+                         </Button>
+                       </a>
                     </div>
                   );
                 })}
