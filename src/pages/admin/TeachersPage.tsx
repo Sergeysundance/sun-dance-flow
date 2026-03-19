@@ -10,16 +10,68 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { teachers, directions, getDirection } from "@/data/mockData";
+import { teachers, directions, getDirection, type Teacher } from "@/data/mockData";
 
 export default function TeachersPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [telegramId, setTelegramId] = useState("");
+  const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+
+  const isEditing = !!editTeacher;
+
+  const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setPhone("");
+    setEmail("");
+    setBio("");
+    setTelegramId("");
+    setSelectedDirections([]);
+  };
+
+  const openNew = () => {
+    setEditTeacher(null);
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEdit = (t: Teacher) => {
+    setEditTeacher(t);
+    setFirstName(t.firstName);
+    setLastName(t.lastName);
+    setPhone(t.phone);
+    setEmail(t.email);
+    setBio(t.bio);
+    setTelegramId(t.telegramId);
+    setSelectedDirections([...t.directionIds]);
+    setDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    setDialogOpen(false);
+    toast.success(isEditing ? "Преподаватель обновлён" : "Преподаватель сохранён");
+    resetForm();
+    setEditTeacher(null);
+  };
+
+  const toggleDirection = (dirId: string) => {
+    setSelectedDirections(prev =>
+      prev.includes(dirId) ? prev.filter(id => id !== dirId) : [...prev, dirId]
+    );
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div />
-        <Button onClick={() => setDialogOpen(true)} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый преподаватель</Button>
+        <Button onClick={openNew} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый преподаватель</Button>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
@@ -39,7 +91,7 @@ export default function TeachersPage() {
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem>Редактировать</DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => openEdit(t)}>Редактировать</DropdownMenuItem>
                     <DropdownMenuItem className="text-red-600">Деактивировать</DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -59,30 +111,31 @@ export default function TeachersPage() {
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md max-h-[85vh]">
-          <DialogHeader><DialogTitle className="text-admin-foreground">Новый преподаватель</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle className="text-admin-foreground">{isEditing ? "Редактировать преподавателя" : "Новый преподаватель"}</DialogTitle></DialogHeader>
           <div className="grid gap-3 max-h-[60vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Имя *</Label><Input className="bg-white border-admin-border" /></div>
-              <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" /></div>
+              <div><Label>Имя *</Label><Input className="bg-white border-admin-border" value={firstName} onChange={e => setFirstName(e.target.value)} /></div>
+              <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" value={lastName} onChange={e => setLastName(e.target.value)} /></div>
             </div>
-            <div><Label>Телефон</Label><Input className="bg-white border-admin-border" /></div>
-            <div><Label>Email</Label><Input type="email" className="bg-white border-admin-border" /></div>
-            <div><Label>Био</Label><Textarea className="bg-white border-admin-border" /></div>
+            <div><Label>Телефон</Label><Input className="bg-white border-admin-border" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+            <div><Label>Email</Label><Input type="email" className="bg-white border-admin-border" value={email} onChange={e => setEmail(e.target.value)} /></div>
+            <div><Label>Био</Label><Textarea className="bg-white border-admin-border" value={bio} onChange={e => setBio(e.target.value)} /></div>
             <div>
               <Label>Направления</Label>
               <div className="mt-1 space-y-2">
                 {directions.map(d => (
                   <div key={d.id} className="flex items-center gap-2">
-                    <Checkbox id={d.id} /><label htmlFor={d.id} className="text-sm text-admin-foreground">{d.name}</label>
+                    <Checkbox id={d.id} checked={selectedDirections.includes(d.id)} onCheckedChange={() => toggleDirection(d.id)} />
+                    <label htmlFor={d.id} className="text-sm text-admin-foreground">{d.name}</label>
                   </div>
                 ))}
               </div>
             </div>
-            <div><Label>Telegram ID</Label><Input className="bg-white border-admin-border" /></div>
+            <div><Label>Telegram ID</Label><Input className="bg-white border-admin-border" value={telegramId} onChange={e => setTelegramId(e.target.value)} /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-admin-border">Отмена</Button>
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => { setDialogOpen(false); toast.success("Преподаватель сохранён"); }}>Сохранить</Button>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave}>Сохранить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
