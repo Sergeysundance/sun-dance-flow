@@ -44,9 +44,11 @@ const Team = () => {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="flex flex-col gap-4"
             >
-              <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-card">
+              {"photo" in member && member.photo ? (
+                <img src={member.photo} alt={member.name} className="h-full w-full rounded-lg object-cover" />
+              ) : (
                 <span className="font-body text-sm text-muted-foreground">фото</span>
-              </div>
+              )}
               <div className="flex flex-wrap gap-2">
                 {member.tags.map((tag) => (
                   <span
