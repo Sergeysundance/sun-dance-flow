@@ -1,10 +1,12 @@
 import { motion } from "framer-motion";
+import teamAlexey from "@/assets/team-alexey.png";
 
 const team = [
   {
     name: "Алексей Солнцев",
     tags: ["Бачата", "Латина"],
     desc: "Основатель студии. Преподает бачату более 5 лет. Создает атмосферу, в которой хочется танцевать.",
+    photo: teamAlexey,
   },
   {
     name: "Марина Волкова",
