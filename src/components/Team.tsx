@@ -3,7 +3,7 @@ import teamAlexey from "@/assets/team-alexey.png";
 
 const team = [
   {
-    name: "Алексей Солнцев",
+    name: "Сергей Белов",
     tags: ["Бачата", "Латина"],
     desc: "Основатель студии. Преподает бачату более 5 лет. Создает атмосферу, в которой хочется танцевать.",
     photo: teamAlexey,
