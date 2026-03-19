@@ -1,19 +1,21 @@
 
 
-## Problem
+## Plan: Add Edit Teacher Dialog
 
-The "New Teacher" dialog has too much content for the viewport (502px height). The form fields for name/surname are hidden behind the dialog header, making it hard to see where to type.
+### What
+Wire the "Редактировать" dropdown menu item to open the same dialog form, pre-filled with the selected teacher's data, allowing edits.
 
-## Solution
+### Changes — `src/pages/admin/TeachersPage.tsx`
 
-Make the dialog body scrollable and cap its max height so all fields are accessible, with the form starting from the top visible area.
+1. Add state for the teacher being edited: `const [editTeacher, setEditTeacher] = useState<Teacher | null>(null)` and form field states (`firstName`, `lastName`, `phone`, `email`, `bio`, `telegramId`, `selectedDirections`).
 
-### Changes
+2. Compute `isEditing = !!editTeacher` and derive dialog title ("Новый преподаватель" vs "Редактировать преподавателя").
 
-**File: `src/pages/admin/TeachersPage.tsx`**
+3. On "Редактировать" click — set `editTeacher` to the teacher object, populate all form states from it, and open the dialog.
 
-- Add `max-h-[80vh] overflow-y-auto` to the `DialogContent` so it scrolls within the viewport
-- Alternatively, add scrolling to the inner form `div` with `max-h-[60vh] overflow-y-auto` to keep header and footer fixed
+4. On "Новый преподаватель" click — clear `editTeacher`, reset form fields to empty, and open the dialog.
 
-The simplest fix: change the `DialogContent` class to include `max-h-[85vh]` and wrap the form grid in a scrollable container with `max-h-[60vh] overflow-y-auto pr-1`.
+5. Reuse the same `Dialog` — bind each `Input`/`Textarea`/`Checkbox` to the form states via `value` + `onChange`.
+
+6. On save — show appropriate toast ("сохранён" vs "обновлён") and close.
 
