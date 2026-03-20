@@ -99,7 +99,7 @@ export default function ClientsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md">
           <DialogHeader><DialogTitle className="text-admin-foreground">Новый клиент</DialogTitle></DialogHeader>
-          <div className="grid gap-3">
+          <div className="max-h-[60vh] overflow-y-auto grid gap-3 pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Имя *</Label><Input className="bg-white border-admin-border" /></div>
               <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" /></div>
@@ -111,6 +111,21 @@ export default function ClientsPage() {
               <Select><SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
                 <SelectContent>{["Сайт","Instagram","VK","Telegram","Рекомендация","Другое"].map(s => <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Предпочтительные направления</Label>
+              <div className="mt-1.5 space-y-1.5 rounded-md border border-admin-border p-3">
+                {directions.filter(d => d.active).map(d => (
+                  <label key={d.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selectedDirections.includes(d.id)}
+                      onCheckedChange={() => toggleDirection(d.id)}
+                    />
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    {d.name}
+                  </label>
+                ))}
+              </div>
             </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" /></div>
           </div>
