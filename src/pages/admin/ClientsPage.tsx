@@ -28,6 +28,18 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+
+  const toggleDirection = (id: string) => {
+    setSelectedDirections(prev =>
+      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
+    );
+  };
+
+  const handleOpenDialog = () => {
+    setSelectedDirections([]);
+    setDialogOpen(true);
+  };
 
   const filtered = clients.filter(c => {
     const q = search.toLowerCase();
