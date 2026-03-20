@@ -12,7 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { directions } from "@/data/mockData";
 
-const presetColors = ['#EF4444', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4', '#10B981', '#3B82F6'];
+const presetColors = [
+  '#EF4444', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4', '#10B981', '#3B82F6',
+  '#F97316', '#14B8A6', '#A855F7', '#E11D48', '#0EA5E9', '#84CC16', '#D946EF',
+  '#FACC15', '#64748B', '#FB923C', '#2DD4BF', '#818CF8', '#F43F5E',
+];
 
 export default function DirectionsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
