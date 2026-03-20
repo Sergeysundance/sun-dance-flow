@@ -65,7 +65,7 @@ export default function ClientsPage() {
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted" />
             <Input placeholder="Поиск по имени или телефону" className="pl-9 w-64 bg-white border-admin-border" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый клиент</Button>
+          <Button onClick={handleOpenDialog} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый клиент</Button>
         </div>
       </div>
 
