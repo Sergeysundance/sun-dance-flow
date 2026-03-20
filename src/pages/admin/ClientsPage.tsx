@@ -4,6 +4,7 @@ import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -11,7 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import {
-  clients, subscriptions, getSubscriptionType, getClientActiveSubscription,
+  clients, subscriptions, directions, getSubscriptionType, getClientActiveSubscription,
   getSourceLabel, getSubscriptionStatusLabel,
 } from "@/data/mockData";
 
@@ -27,6 +28,18 @@ export default function ClientsPage() {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+
+  const toggleDirection = (id: string) => {
+    setSelectedDirections(prev =>
+      prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
+    );
+  };
+
+  const handleOpenDialog = () => {
+    setSelectedDirections([]);
+    setDialogOpen(true);
+  };
 
   const filtered = clients.filter(c => {
     const q = search.toLowerCase();
@@ -52,7 +65,7 @@ export default function ClientsPage() {
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted" />
             <Input placeholder="Поиск по имени или телефону" className="pl-9 w-64 bg-white border-admin-border" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <Button onClick={() => setDialogOpen(true)} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый клиент</Button>
+          <Button onClick={handleOpenDialog} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый клиент</Button>
         </div>
       </div>
 
@@ -86,7 +99,7 @@ export default function ClientsPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md">
           <DialogHeader><DialogTitle className="text-admin-foreground">Новый клиент</DialogTitle></DialogHeader>
-          <div className="grid gap-3">
+          <div className="max-h-[60vh] overflow-y-auto grid gap-3 pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Имя *</Label><Input className="bg-white border-admin-border" /></div>
               <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" /></div>
@@ -98,6 +111,21 @@ export default function ClientsPage() {
               <Select><SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
                 <SelectContent>{["Сайт","Instagram","VK","Telegram","Рекомендация","Другое"].map(s => <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>)}</SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Предпочтительные направления</Label>
+              <div className="mt-1.5 space-y-1.5 rounded-md border border-admin-border p-3">
+                {directions.filter(d => d.active).map(d => (
+                  <label key={d.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                    <Checkbox
+                      checked={selectedDirections.includes(d.id)}
+                      onCheckedChange={() => toggleDirection(d.id)}
+                    />
+                    <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                    {d.name}
+                  </label>
+                ))}
+              </div>
             </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" /></div>
           </div>
