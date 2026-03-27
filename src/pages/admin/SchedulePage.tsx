@@ -254,9 +254,9 @@ export default function SchedulePage() {
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
                 <Button
-                  variant="destructive"
+                  variant="outline"
                   onClick={cancelClass}
-                  className="gap-1"
+                  className="border-admin-border text-admin-foreground hover:bg-admin-hover gap-1"
                 >
                   <X className="h-4 w-4" />
                   {selClass.cancelled ? "Восстановить" : "Отменить занятие"}
