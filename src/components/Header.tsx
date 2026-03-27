@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
-import { Menu, X } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Menu, X, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import AuthDialog from "./AuthDialog";
 
 const navItems = [
   { label: "О НАС", href: "#about" },
@@ -11,8 +14,21 @@ const navItems = [
 ];
 
 const Header = () => {
+  const navigate = useNavigate();
   const [scrolled, setScrolled] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 50);
@@ -45,12 +61,21 @@ const Header = () => {
           ))}
         </nav>
 
-        <div className="hidden lg:block">
+        <div className="hidden lg:flex items-center gap-2">
           <a href="#cta">
             <Button variant="sun" size="sm">
               ПРОБНЫЙ УРОК
             </Button>
           </a>
+          {user ? (
+            <Button variant="sunInverse" size="sm" onClick={() => navigate("/dashboard")}>
+              <User className="h-4 w-4 mr-1" /> КАБИНЕТ
+            </Button>
+          ) : (
+            <Button variant="outline" size="sm" onClick={() => setAuthOpen(true)}>
+              ВОЙТИ
+            </Button>
+          )}
         </div>
 
         {/* Mobile burger */}
@@ -81,8 +106,19 @@ const Header = () => {
               ПРОБНЫЙ УРОК
             </Button>
           </a>
+          {user ? (
+            <Button variant="sunInverse" size="lg" onClick={() => { setMenuOpen(false); navigate("/dashboard"); }}>
+              <User className="h-4 w-4 mr-1" /> КАБИНЕТ
+            </Button>
+          ) : (
+            <Button variant="outline" size="lg" onClick={() => { setMenuOpen(false); setAuthOpen(true); }}>
+              ВОЙТИ
+            </Button>
+          )}
         </div>
       )}
+
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </header>
   );
 };

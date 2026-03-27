@@ -18,6 +18,7 @@ import DirectionsPage from "./pages/admin/DirectionsPage.tsx";
 import TrialRequestsPage from "./pages/admin/TrialRequestsPage.tsx";
 import CheckInPage from "./pages/admin/CheckInPage.tsx";
 import SettingsPage from "./pages/admin/SettingsPage.tsx";
+import StudentDashboard from "./pages/StudentDashboard.tsx";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
+          <Route path="/dashboard" element={<StudentDashboard />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<DashboardPage />} />
             <Route path="clients" element={<ClientsPage />} />
