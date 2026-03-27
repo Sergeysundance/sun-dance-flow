@@ -203,6 +203,48 @@ export type Database = {
           },
         ]
       }
+      subscription_deductions: {
+        Row: {
+          booking_id: string
+          created_at: string
+          deducted_at: string
+          hours_deducted: number
+          id: string
+          user_subscription_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          deducted_at?: string
+          hours_deducted?: number
+          id?: string
+          user_subscription_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          deducted_at?: string
+          hours_deducted?: number
+          id?: string
+          user_subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_deductions_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_deductions_user_subscription_id_fkey"
+            columns: ["user_subscription_id"]
+            isOneToOne: false
+            referencedRelation: "user_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_types: {
         Row: {
           active: boolean
@@ -283,6 +325,50 @@ export type Database = {
           telegram_id?: string
         }
         Relationships: []
+      }
+      user_subscriptions: {
+        Row: {
+          active: boolean
+          created_at: string
+          expires_at: string
+          hours_remaining: number
+          hours_total: number
+          id: string
+          purchased_at: string
+          subscription_type_id: string
+          user_id: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          expires_at: string
+          hours_remaining: number
+          hours_total: number
+          id?: string
+          purchased_at?: string
+          subscription_type_id: string
+          user_id: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          expires_at?: string
+          hours_remaining?: number
+          hours_total?: number
+          id?: string
+          purchased_at?: string
+          subscription_type_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_subscriptions_subscription_type_id_fkey"
+            columns: ["subscription_type_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_types"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
