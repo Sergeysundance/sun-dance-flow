@@ -49,7 +49,6 @@ export default function SchedulePage() {
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [rooms, setRooms] = useState<Room[]>([]);
 
-  // Edit form state
   const [editDirection, setEditDirection] = useState("");
   const [editTeacher, setEditTeacher] = useState("");
   const [editRoom, setEditRoom] = useState("");
@@ -58,7 +57,6 @@ export default function SchedulePage() {
   const [editEnd, setEditEnd] = useState("");
   const [editMaxSpots, setEditMaxSpots] = useState(20);
 
-  // New class form state
   const [newDirection, setNewDirection] = useState("");
   const [newTeacher, setNewTeacher] = useState("");
   const [newRoom, setNewRoom] = useState("");
@@ -96,7 +94,20 @@ export default function SchedulePage() {
 
   useEffect(() => { fetchData(); }, [monday]);
 
-  const classesThisWeek = classes.filter(c => weekDates.includes(c.date));
+  const classesByDate = useMemo(() => {
+    const map: Record<string, ScheduleClass[]> = {};
+    for (const date of weekDates) map[date] = [];
+    for (const c of classes) {
+      if (map[c.date]) map[c.date].push(c);
+    }
+    // Sort each day by start_time
+    for (const date of weekDates) {
+      map[date].sort((a, b) => a.start_time.localeCompare(b.start_time));
+    }
+    return map;
+  }, [classes, weekDates]);
+
+  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
 
   const selClass = selectedClass ? classes.find(c => c.id === selectedClass) : null;
   const selDir = selClass ? directions.find(d => d.id === selClass.direction_id) : null;
@@ -118,61 +129,38 @@ export default function SchedulePage() {
   const saveEdit = async () => {
     if (!selClass) return;
     const { error } = await supabase.from("schedule_classes").update({
-      direction_id: editDirection,
-      teacher_id: editTeacher,
-      room_id: editRoom,
-      date: editDate,
-      start_time: editStart,
-      end_time: editEnd,
-      max_spots: editMaxSpots,
+      direction_id: editDirection, teacher_id: editTeacher, room_id: editRoom,
+      date: editDate, start_time: editStart, end_time: editEnd, max_spots: editMaxSpots,
     }).eq("id", selClass.id);
-    if (error) {
-      toast.error("Ошибка сохранения");
-      return;
-    }
+    if (error) { toast.error("Ошибка сохранения"); return; }
     toast.success("Занятие обновлено");
-    setEditing(false);
-    setSelectedClass(null);
-    fetchData();
+    setEditing(false); setSelectedClass(null); fetchData();
   };
 
   const cancelClass = async () => {
     if (!selClass) return;
-    const { error } = await supabase.from("schedule_classes").update({
-      cancelled: !selClass.cancelled,
-    }).eq("id", selClass.id);
-    if (error) {
-      toast.error("Ошибка");
-      return;
-    }
+    const { error } = await supabase.from("schedule_classes").update({ cancelled: !selClass.cancelled }).eq("id", selClass.id);
+    if (error) { toast.error("Ошибка"); return; }
     toast.success(selClass.cancelled ? "Занятие восстановлено" : "Занятие отменено");
-    setSelectedClass(null);
-    fetchData();
+    setSelectedClass(null); fetchData();
   };
 
   const createClass = async () => {
     if (!newDirection || !newTeacher || !newRoom || !newDate || !newStart || !newEnd) {
-      toast.error("Заполните все поля");
-      return;
+      toast.error("Заполните все поля"); return;
     }
     const { error } = await supabase.from("schedule_classes").insert({
-      direction_id: newDirection,
-      teacher_id: newTeacher,
-      room_id: newRoom,
-      date: newDate,
-      start_time: newStart,
-      end_time: newEnd,
-      max_spots: newMaxSpots,
+      direction_id: newDirection, teacher_id: newTeacher, room_id: newRoom,
+      date: newDate, start_time: newStart, end_time: newEnd, max_spots: newMaxSpots,
     });
-    if (error) {
-      toast.error("Ошибка создания");
-      return;
-    }
+    if (error) { toast.error("Ошибка создания"); return; }
     toast.success("Занятие создано");
     setNewClassOpen(false);
     setNewDirection(""); setNewTeacher(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
     fetchData();
   };
+
+  const todayStr = fmt(new Date());
 
   return (
     <div className="space-y-4">
@@ -193,33 +181,53 @@ export default function SchedulePage() {
             <Button variant="ghost" size="sm" onClick={() => setWeekOffset(0)} className="text-admin-muted">Сегодня</Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-7">
-            {DAYS.map((day, i) => {
-              const date = weekDates[i];
-              const dayClasses = classesThisWeek.filter(c => c.date === date).sort((a, b) => a.start_time.localeCompare(b.start_time));
-              const isToday = date === fmt(new Date());
-              return (
-                <div key={i} className={`rounded-lg border border-admin-border bg-white p-2 min-h-[120px] ${isToday ? 'ring-2 ring-admin-accent' : ''}`}>
-                  <div className={`mb-2 text-center text-xs font-medium ${isToday ? 'text-admin-accent' : 'text-admin-muted'}`}>
-                    {day} <span className="block text-lg font-bold text-admin-foreground">{new Date(date + 'T00:00').getDate()}</span>
+          {/* Weekly table view */}
+          <div className="rounded-lg border border-admin-border bg-white overflow-hidden">
+            {/* Header */}
+            <div className="grid grid-cols-7 border-b border-admin-border">
+              {DAYS.map((day, i) => {
+                const date = weekDates[i];
+                const isToday = date === todayStr;
+                const dateObj = new Date(date + 'T00:00');
+                return (
+                  <div key={i} className={`border-r border-admin-border last:border-r-0 px-2 py-3 text-center ${isToday ? 'bg-yellow-50' : ''}`}>
+                    <div className={`text-xs font-medium ${isToday ? 'text-admin-accent' : 'text-admin-muted'}`}>{day}</div>
+                    <div className={`text-lg font-bold ${isToday ? 'text-admin-accent' : 'text-admin-foreground'}`}>{dateObj.getDate()}</div>
                   </div>
-                  <div className="space-y-1.5">
-                    {dayClasses.map(c => {
-                      const dir = directions.find(d => d.id === c.direction_id);
-                      const teacher = teachers.find(t => t.id === c.teacher_id);
-                      return (
-                        <button key={c.id} onClick={() => { setSelectedClass(c.id); setEditing(false); }} className={`w-full rounded-md p-1.5 text-left text-[11px] leading-tight transition-colors hover:opacity-80 ${c.cancelled ? 'opacity-50 line-through' : ''}`} style={{ backgroundColor: (dir?.color || '#3B82F6') + '20', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}>
-                          <div className="font-medium" style={{ color: dir?.color }}>{dir?.name}</div>
-                          <div className="text-admin-muted">{c.start_time.slice(0,5)}–{c.end_time.slice(0,5)}</div>
-                          <div className="text-admin-muted">{teacher?.first_name} {teacher?.last_name?.[0]}.</div>
-                          <div className="text-admin-muted">{c.max_spots} мест</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
+            {/* Body rows */}
+            {Array.from({ length: maxClasses }).map((_, rowIdx) => (
+              <div key={rowIdx} className="grid grid-cols-7 border-b border-admin-border last:border-b-0">
+                {weekDates.map((date, colIdx) => {
+                  const cls = classesByDate[date]?.[rowIdx];
+                  const isToday = date === todayStr;
+                  if (!cls) return (
+                    <div key={colIdx} className={`border-r border-admin-border last:border-r-0 min-h-[80px] ${isToday ? 'bg-yellow-50/50' : ''}`} />
+                  );
+                  const dir = directions.find(d => d.id === cls.direction_id);
+                  const teacher = teachers.find(t => t.id === cls.teacher_id);
+                  return (
+                    <div key={colIdx} className={`border-r border-admin-border last:border-r-0 p-1.5 min-h-[80px] ${isToday ? 'bg-yellow-50/50' : ''}`}>
+                      <button
+                        onClick={() => { setSelectedClass(cls.id); setEditing(false); }}
+                        className={`w-full rounded-md p-2 text-left text-[11px] leading-tight transition-colors hover:opacity-80 ${cls.cancelled ? 'opacity-50 line-through' : ''}`}
+                        style={{ backgroundColor: (dir?.color || '#3B82F6') + '20', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
+                      >
+                        <div className="font-medium" style={{ color: dir?.color }}>{dir?.name}</div>
+                        <div className="text-admin-muted">{cls.start_time.slice(0,5)}–{cls.end_time.slice(0,5)}</div>
+                        <div className="text-admin-muted">{teacher?.first_name} {teacher?.last_name?.[0]}.</div>
+                        <div className="text-admin-muted">{cls.max_spots} мест</div>
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+            {classes.length === 0 && (
+              <div className="p-8 text-center text-admin-muted">Нет занятий на этой неделе</div>
+            )}
           </div>
         </TabsContent>
 
@@ -253,20 +261,12 @@ export default function SchedulePage() {
                 <div><strong>Макс. мест:</strong> {selClass.max_spots}</div>
               </div>
               <DialogFooter className="gap-2 sm:gap-2">
-                <Button
-                  variant="destructive"
-                  onClick={cancelClass}
-                  className="gap-1"
-                >
+                <Button variant="destructive" onClick={cancelClass} className="gap-1">
                   <X className="h-4 w-4" />
                   {selClass.cancelled ? "Восстановить" : "Отменить занятие"}
                 </Button>
-                <Button
-                  onClick={startEditing}
-                  className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"
-                >
-                  <Pencil className="h-4 w-4" />
-                  Редактировать
+                <Button onClick={startEditing} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1">
+                  <Pencil className="h-4 w-4" /> Редактировать
                 </Button>
               </DialogFooter>
             </>
@@ -349,7 +349,7 @@ export default function SchedulePage() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewClassOpen(false)} className="border-admin-border">Отмена</Button>
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={createClass}>Создать</Button>
+            <Button onClick={createClass} className="bg-admin-accent text-black hover:bg-yellow-400">Создать</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
