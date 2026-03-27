@@ -46,7 +46,7 @@ export default function TrialRequestsPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       {r.status === 'new' && <Button size="sm" variant="outline" className="text-xs border-admin-border" onClick={() => toast.success("Статус: Связались")}>Связались</Button>}
-                      {(r.status === 'new' || r.status === 'contacted') && {(r.status === 'new' || r.status === 'contacted') && <Button size="sm" className="text-xs bg-admin-accent text-black hover:bg-yellow-400" onClick={() => toast.success("Клиент записан")}>Записать</Button>}
+                      {(r.status === 'new' || r.status === 'contacted') && <Button size="sm" className="text-xs bg-admin-accent text-black hover:bg-yellow-400" onClick={() => toast.success("Клиент записан")}>Записать</Button>}
                       {r.status !== 'declined' && r.status !== 'enrolled' && (
                         <AlertDialog>
                           <AlertDialogTrigger asChild><Button size="sm" variant="destructive" className="text-xs">Отклонить</Button></AlertDialogTrigger>
