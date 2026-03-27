@@ -112,7 +112,7 @@ export default function SubscriptionTypesPage() {
               <th className="px-4 py-3">Название</th>
               <th className="px-4 py-3">Часов</th>
               <th className="px-4 py-3">Срок</th>
-              <th className="px-4 py-3">Длительность</th>
+              
               <th className="px-4 py-3">Цена</th>
               <th className="px-4 py-3">Старая цена</th>
               <th className="px-4 py-3">Тип</th>
@@ -126,7 +126,7 @@ export default function SubscriptionTypesPage() {
                 <td className="px-4 py-3 font-medium text-admin-foreground">{st.name}</td>
                 <td className="px-4 py-3">{st.hours_count ?? "∞"}</td>
                 <td className="px-4 py-3">{st.duration_days} дн.</td>
-                <td className="px-4 py-3">{st.class_duration} мин</td>
+                
                 <td className="px-4 py-3 font-medium text-admin-foreground">{formatPrice(st.price)}</td>
                 <td className="px-4 py-3 text-admin-muted">
                   {st.old_price ? <span className="line-through">{formatPrice(st.old_price)}</span> : "—"}
@@ -155,7 +155,7 @@ export default function SubscriptionTypesPage() {
               </tr>
             ))}
             {items.length === 0 && (
-              <tr><td colSpan={9} className="px-4 py-8 text-center text-admin-muted">Нет типов абонементов</td></tr>
+              <tr><td colSpan={8} className="px-4 py-8 text-center text-admin-muted">Нет типов абонементов</td></tr>
             )}
           </tbody>
         </table>
@@ -186,16 +186,6 @@ export default function SubscriptionTypesPage() {
                 <Label>Срок (дней) *</Label>
                 <Input type="number" className="bg-white border-admin-border" value={form.duration_days} onChange={(e) => setForm({ ...form, duration_days: e.target.value })} />
               </div>
-            </div>
-            <div>
-              <Label>Длительность</Label>
-              <Select value={form.class_duration} onValueChange={(v) => setForm({ ...form, class_duration: v })}>
-                <SelectTrigger className="bg-white border-admin-border"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="60">60 мин</SelectItem>
-                  <SelectItem value="90">90 мин</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
