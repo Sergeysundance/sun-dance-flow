@@ -288,36 +288,85 @@ const StudentDashboard = () => {
           {/* Schedule tab */}
           <TabsContent value="schedule">
             <Card>
-              <CardHeader>
-                <CardTitle>Расписание по моим направлениям</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Расписание на неделю</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => setWeekOffset(w => w - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium text-foreground min-w-[180px] text-center">
+                    {formatWeekLabel(monday)}
+                  </span>
+                  <Button variant="outline" size="icon" onClick={() => setWeekOffset(w => w + 1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  {weekOffset !== 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => setWeekOffset(0)} className="text-muted-foreground text-xs">
+                      Сегодня
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                {userClasses.length > 0 ? (
-                  <div className="space-y-3">
-                    {userClasses.slice(0, 10).map(sc => {
-                      const dir = directions.find(d => d.id === sc.directionId);
-                      return (
-                        <div key={sc.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                          <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: dir?.color }} />
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{dir?.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(sc.date).toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" })} · {sc.startTime}–{sc.endTime}
-                            </p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {sc.enrolledClientIds.length}/{sc.maxSpots} мест
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
+                {(profile?.preferred_directions || []).length === 0 ? (
                   <p className="text-muted-foreground">
-                    {preferredDirs.length === 0
-                      ? "Выберите предпочтительные направления в профиле, чтобы видеть расписание."
-                      : "Нет занятий по выбранным направлениям."}
+                    Выберите предпочтительные направления в профиле, чтобы видеть расписание.
                   </p>
+                ) : (
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    {/* Header */}
+                    <div className="grid grid-cols-7 border-b border-border">
+                      {DAYS_SHORT.map((day, i) => {
+                        const date = weekDates[i];
+                        const isToday = date === todayStr;
+                        const dateObj = new Date(date + 'T00:00');
+                        return (
+                          <div key={i} className={`border-r border-border last:border-r-0 px-2 py-2 text-center ${isToday ? 'bg-sun/10' : ''}`}>
+                            <div className={`text-xs font-medium ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
+                            <div className={`text-base font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Body */}
+                    {Object.values(classesByDate).some(arr => arr.length > 0) ? (
+                      Array.from({ length: maxClasses }).map((_, rowIdx) => (
+                        <div key={rowIdx} className="grid grid-cols-7 border-b border-border last:border-b-0">
+                          {weekDates.map((date, colIdx) => {
+                            const cls = classesByDate[date]?.[rowIdx];
+                            const isToday = date === todayStr;
+                            if (!cls) return <div key={colIdx} className={`border-r border-border last:border-r-0 min-h-[70px] ${isToday ? 'bg-sun/5' : ''}`} />;
+                            const dir = getDir(cls.direction_id);
+                            const teacher = getTeacher(cls.teacher_id);
+                            const room = getRoom(cls.room_id);
+                            return (
+                              <div key={colIdx} className={`border-r border-border last:border-r-0 p-1 min-h-[70px] ${isToday ? 'bg-sun/5' : ''}`}>
+                                <div
+                                  className="rounded-md p-2 h-full space-y-0.5"
+                                  style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
+                                >
+                                  <div className="text-[11px] font-semibold text-foreground">
+                                    {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
+                                  </div>
+                                  <div className="text-xs font-bold" style={{ color: dir?.color }}>
+                                    {dir?.name}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {teacher?.first_name} {teacher?.last_name?.[0]}.
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {room?.name}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
