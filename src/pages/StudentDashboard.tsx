@@ -319,7 +319,7 @@ const StudentDashboard = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Мои абонементы</CardTitle>
-                <Button variant="sun" size="sm" onClick={() => navigate("/#pricing")}>
+                <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
                   <CreditCard className="h-4 w-4 mr-1" /> Купить абонемент
                 </Button>
               </CardHeader>
@@ -327,6 +327,8 @@ const StudentDashboard = () => {
                 <p className="text-muted-foreground">У вас пока нет активных абонементов.</p>
               </CardContent>
             </Card>
+
+            <BuySubscriptionDialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen} />
           </TabsContent>
 
           {/* Schedule tab */}
