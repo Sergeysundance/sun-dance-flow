@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -40,6 +40,7 @@ const StudentDashboard = () => {
   const [editData, setEditData] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
+  const [userId, setUserId] = useState("");
   const [directions, setDirections] = useState<any[]>([]);
 
   // Schedule state
@@ -47,6 +48,8 @@ const StudentDashboard = () => {
   const [scheduleData, setScheduleData] = useState<any[]>([]);
   const [schedTeachers, setSchedTeachers] = useState<any[]>([]);
   const [schedRooms, setSchedRooms] = useState<any[]>([]);
+  const [bookings, setBookings] = useState<Set<string>>(new Set());
+  const [bookingLoading, setBookingLoading] = useState<string | null>(null);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -60,6 +63,7 @@ const StudentDashboard = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/"); return; }
       setUserEmail(session.user.email || "");
+      setUserId(session.user.id);
       const [profileRes, dirsRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
         supabase.from("directions").select("*").eq("active", true),
@@ -75,10 +79,11 @@ const StudentDashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Fetch schedule data when week changes
+  // Fetch schedule + bookings when week changes
   useEffect(() => {
     const fetchSchedule = async () => {
       const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      const classIds: string[] = [];
       const [clsRes, tchRes, rmRes] = await Promise.all([
         supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time"),
         supabase.from("teachers").select("*").eq("active", true),
@@ -87,27 +92,61 @@ const StudentDashboard = () => {
       setScheduleData(clsRes.data || []);
       setSchedTeachers(tchRes.data || []);
       setSchedRooms(rmRes.data || []);
+
+      // Fetch bookings for this week's classes
+      if (userId && clsRes.data && clsRes.data.length > 0) {
+        const ids = clsRes.data.map((c: any) => c.id);
+        const { data: bookingsData } = await supabase
+          .from("bookings")
+          .select("class_id")
+          .eq("user_id", userId)
+          .in("class_id", ids);
+        setBookings(new Set((bookingsData || []).map((b: any) => b.class_id)));
+      } else {
+        setBookings(new Set());
+      }
     };
-    fetchSchedule();
-  }, [monday]);
+    if (userId) fetchSchedule();
+  }, [monday, userId]);
 
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
     for (const date of weekDates) map[date] = [];
-    const preferredDirs = profile?.preferred_directions || [];
     for (const c of scheduleData) {
-      if (map[c.date] && (preferredDirs.length === 0 || preferredDirs.includes(c.direction_id))) {
+      if (map[c.date]) {
         map[c.date].push(c);
       }
     }
     return map;
-  }, [scheduleData, weekDates, profile]);
+  }, [scheduleData, weekDates]);
 
   const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
   const todayStr = fmtDate(new Date());
   const getDir = (id: string) => directions.find((d: any) => d.id === id);
   const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
   const getRoom = (id: string) => schedRooms.find((r: any) => r.id === id);
+
+  const handleBooking = async (classId: string) => {
+    setBookingLoading(classId);
+    if (bookings.has(classId)) {
+      // Cancel booking
+      const { error } = await supabase.from("bookings").delete().eq("user_id", userId).eq("class_id", classId);
+      if (error) { toast.error("Ошибка отмены записи"); }
+      else {
+        setBookings(prev => { const n = new Set(prev); n.delete(classId); return n; });
+        toast.success("Запись отменена");
+      }
+    } else {
+      // Book
+      const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: classId });
+      if (error) { toast.error("Ошибка записи на занятие"); }
+      else {
+        setBookings(prev => new Set(prev).add(classId));
+        toast.success("Вы записаны на занятие!");
+      }
+    }
+    setBookingLoading(null);
+  };
 
   const handleSave = async () => {
     if (!editData) return;
@@ -308,66 +347,125 @@ const StudentDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                {(profile?.preferred_directions || []).length === 0 ? (
-                  <p className="text-muted-foreground">
-                    Выберите предпочтительные направления в профиле, чтобы видеть расписание.
-                  </p>
-                ) : (
-                  <div className="rounded-lg border border-border overflow-hidden">
-                    {/* Header */}
-                    <div className="grid grid-cols-7 border-b border-border">
-                      {DAYS_SHORT.map((day, i) => {
-                        const date = weekDates[i];
-                        const isToday = date === todayStr;
-                        const dateObj = new Date(date + 'T00:00');
-                        return (
-                          <div key={i} className={`border-r border-border last:border-r-0 px-2 py-2 text-center ${isToday ? 'bg-sun/10' : ''}`}>
-                            <div className={`text-xs font-medium ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
-                            <div className={`text-base font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    {/* Body */}
-                    {Object.values(classesByDate).some(arr => arr.length > 0) ? (
-                      Array.from({ length: maxClasses }).map((_, rowIdx) => (
-                        <div key={rowIdx} className="grid grid-cols-7 border-b border-border last:border-b-0">
-                          {weekDates.map((date, colIdx) => {
-                            const cls = classesByDate[date]?.[rowIdx];
-                            const isToday = date === todayStr;
-                            if (!cls) return <div key={colIdx} className={`border-r border-border last:border-r-0 min-h-[70px] ${isToday ? 'bg-sun/5' : ''}`} />;
+                {/* Mobile: card list */}
+                <div className="sm:hidden space-y-3">
+                  {weekDates.map((date, i) => {
+                    const classes = classesByDate[date] || [];
+                    if (classes.length === 0) return null;
+                    const dateObj = new Date(date + 'T00:00');
+                    const isToday = date === todayStr;
+                    return (
+                      <div key={date}>
+                        <div className={`text-sm font-bold mb-1.5 ${isToday ? 'text-sun' : 'text-foreground'}`}>
+                          {DAYS_SHORT[i]}, {dateObj.getDate()}{isToday ? ' — сегодня' : ''}
+                        </div>
+                        <div className="space-y-2">
+                          {classes.map((cls: any) => {
                             const dir = getDir(cls.direction_id);
                             const teacher = getTeacher(cls.teacher_id);
                             const room = getRoom(cls.room_id);
+                            const isBooked = bookings.has(cls.id);
                             return (
-                              <div key={colIdx} className={`border-r border-border last:border-r-0 p-1 min-h-[70px] ${isToday ? 'bg-sun/5' : ''}`}>
-                                <div
-                                  className="rounded-md p-2 h-full space-y-0.5"
-                                  style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
-                                >
-                                  <div className="text-[11px] font-semibold text-foreground">
-                                    {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
+                              <div key={cls.id} className="rounded-lg p-3 border border-border" style={{ borderLeftWidth: 4, borderLeftColor: dir?.color || '#3B82F6' }}>
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
+                                    <div className="text-xs text-foreground font-medium">{cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
+                                    <div className="text-xs text-muted-foreground">{teacher?.first_name} {teacher?.last_name}</div>
+                                    <div className="text-xs text-muted-foreground">{room?.name}</div>
                                   </div>
-                                  <div className="text-xs font-bold" style={{ color: dir?.color }}>
-                                    {dir?.name}
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    {teacher?.first_name} {teacher?.last_name?.[0]}.
-                                  </div>
-                                  <div className="text-[10px] text-muted-foreground">
-                                    {room?.name}
-                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant={isBooked ? "outline" : "sun"}
+                                    disabled={bookingLoading === cls.id}
+                                    onClick={() => handleBooking(cls.id)}
+                                    className="shrink-0 text-xs"
+                                  >
+                                    {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
+                                  </Button>
                                 </div>
                               </div>
                             );
                           })}
                         </div>
-                      ))
-                    ) : (
-                      <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
-                    )}
+                      </div>
+                    );
+                  })}
+                  {!weekDates.some(d => (classesByDate[d] || []).length > 0) && (
+                    <p className="text-center text-muted-foreground py-6">Нет занятий на этой неделе</p>
+                  )}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="hidden sm:block rounded-lg border border-border overflow-hidden">
+                  {/* Header */}
+                  <div className="grid grid-cols-7 border-b border-border">
+                    {DAYS_SHORT.map((day, i) => {
+                      const date = weekDates[i];
+                      const isToday = date === todayStr;
+                      const dateObj = new Date(date + 'T00:00');
+                      return (
+                        <div key={i} className={`border-r border-border last:border-r-0 px-2 py-2 text-center ${isToday ? 'bg-sun/10' : ''}`}>
+                          <div className={`text-xs font-medium ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
+                          <div className={`text-base font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
+                        </div>
+                      );
+                    })}
                   </div>
-                )}
+                  {/* Body */}
+                  {Object.values(classesByDate).some(arr => arr.length > 0) ? (
+                    Array.from({ length: maxClasses }).map((_, rowIdx) => (
+                      <div key={rowIdx} className="grid grid-cols-7 border-b border-border last:border-b-0">
+                        {weekDates.map((date, colIdx) => {
+                          const cls = classesByDate[date]?.[rowIdx];
+                          const isToday = date === todayStr;
+                          if (!cls) return <div key={colIdx} className={`border-r border-border last:border-r-0 min-h-[90px] ${isToday ? 'bg-sun/5' : ''}`} />;
+                          const dir = getDir(cls.direction_id);
+                          const teacher = getTeacher(cls.teacher_id);
+                          const room = getRoom(cls.room_id);
+                          const isBooked = bookings.has(cls.id);
+                          return (
+                            <div key={colIdx} className={`border-r border-border last:border-r-0 p-1 min-h-[90px] ${isToday ? 'bg-sun/5' : ''}`}>
+                              <div
+                                className="rounded-md p-2 h-full space-y-0.5 flex flex-col"
+                                style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
+                              >
+                                <div className="text-[11px] font-semibold text-foreground">
+                                  {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
+                                </div>
+                                <div className="text-xs font-bold" style={{ color: dir?.color }}>
+                                  {dir?.name}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {teacher?.first_name} {teacher?.last_name?.[0]}.
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {room?.name}
+                                </div>
+                                <div className="mt-auto pt-1">
+                                  <button
+                                    disabled={bookingLoading === cls.id}
+                                    onClick={() => handleBooking(cls.id)}
+                                    className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
+                                      isBooked
+                                        ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
+                                        : 'text-white hover:opacity-90'
+                                    }`}
+                                    style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
+                                  >
+                                    {isBooked ? 'Отменить' : 'Записаться'}
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
