@@ -39,7 +39,7 @@ export default function RoomsPage() {
               </div>
               <div className="mt-3 flex gap-2">
                 <Button variant="outline" size="sm" className="border-admin-border">Редактировать</Button>
-                <Button variant="outline" size="sm" className="border-admin-border text-red-600">Деактивировать</Button>
+                <Button variant="destructive" size="sm">Деактивировать</Button>
               </div>
             </CardContent>
           </Card>

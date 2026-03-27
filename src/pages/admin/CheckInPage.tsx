@@ -95,10 +95,10 @@ export default function CheckInPage() {
                   <Badge className="bg-gray-100 text-gray-600 gap-1 px-3 py-1.5"><X className="h-3.5 w-3.5" /> Не пришёл</Badge>
                 ) : (
                   <>
-                    <Button size="lg" className="bg-green-600 text-white hover:bg-green-700 gap-1" onClick={() => { setCheckedIn(p => ({ ...p, [key]: 'attended' })); toast.success(`${client.firstName} отмечен(а)`); }}>
+                    <Button size="lg" className="bg-admin-accent text-black hover:bg-yellow-400 gap-1" onClick={() => { setCheckedIn(p => ({ ...p, [key]: 'attended' })); toast.success(`${client.firstName} отмечен(а)`); }}>
                       <Check className="h-4 w-4" /> Пришёл
                     </Button>
-                    <Button size="lg" variant="outline" className="border-red-200 text-red-600 hover:bg-red-50 gap-1" onClick={() => { setCheckedIn(p => ({ ...p, [key]: 'noshow' })); toast.info(`${client.firstName} — не пришёл`); }}>
+                    <Button size="lg" variant="destructive" className="gap-1" onClick={() => { setCheckedIn(p => ({ ...p, [key]: 'noshow' })); toast.info(`${client.firstName} — не пришёл`); }}>
                       <X className="h-4 w-4" /> Не пришёл
                     </Button>
                   </>
