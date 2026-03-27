@@ -203,6 +203,48 @@ export type Database = {
           },
         ]
       }
+      subscription_types: {
+        Row: {
+          active: boolean
+          class_count: number | null
+          class_duration: number
+          created_at: string
+          description: string
+          duration_days: number
+          id: string
+          name: string
+          old_price: number | null
+          price: number
+          type: string
+        }
+        Insert: {
+          active?: boolean
+          class_count?: number | null
+          class_duration?: number
+          created_at?: string
+          description?: string
+          duration_days?: number
+          id?: string
+          name: string
+          old_price?: number | null
+          price?: number
+          type?: string
+        }
+        Update: {
+          active?: boolean
+          class_count?: number | null
+          class_duration?: number
+          created_at?: string
+          description?: string
+          duration_days?: number
+          id?: string
+          name?: string
+          old_price?: number | null
+          price?: number
+          type?: string
+        }
+        Relationships: []
+      }
       teachers: {
         Row: {
           active: boolean
