@@ -19,6 +19,20 @@ interface Profile {
   notes: string | null;
 }
 
+const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+function getMonday(d: Date): Date {
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff);
+}
+function fmtDate(d: Date) { return d.toISOString().split("T")[0]; }
+function formatWeekLabel(monday: Date): string {
+  const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+  const m = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
+}
+
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -26,85 +40,76 @@ const StudentDashboard = () => {
   const [editData, setEditData] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
+  const [directions, setDirections] = useState<any[]>([]);
+
+  // Schedule state
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [scheduleData, setScheduleData] = useState<any[]>([]);
+  const [schedTeachers, setSchedTeachers] = useState<any[]>([]);
+  const [schedRooms, setSchedRooms] = useState<any[]>([]);
+
+  const monday = useMemo(() => {
+    const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
+  }, [weekOffset]);
+  const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
+  }), [monday]);
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/");
-        return;
-      }
+      if (!session) { navigate("/"); return; }
       setUserEmail(session.user.email || "");
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
-      if (data) {
-        setProfile(data);
-        setEditData(data);
-      }
+      const [profileRes, dirsRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
+        supabase.from("directions").select("*").eq("active", true),
+      ]);
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); }
+      if (dirsRes.data) setDirections(dirsRes.data);
       setLoading(false);
     };
     checkAuth();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") navigate("/");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  const handleSave = async () => {
-    if (!editData) return;
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+  // Fetch schedule data when week changes
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      const [clsRes, tchRes, rmRes] = await Promise.all([
+        supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time"),
+        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+      ]);
+      setScheduleData(clsRes.data || []);
+      setSchedTeachers(tchRes.data || []);
+      setSchedRooms(rmRes.data || []);
+    };
+    fetchSchedule();
+  }, [monday]);
 
-    const { error } = await supabase.from("profiles").update({
-      first_name: editData.first_name,
-      last_name: editData.last_name,
-      phone: editData.phone,
-      birth_date: editData.birth_date,
-      preferred_directions: editData.preferred_directions,
-    }).eq("user_id", session.user.id);
-
-    if (error) {
-      toast.error("Ошибка сохранения");
-    } else {
-      setProfile(editData);
-      setEditing(false);
-      toast.success("Профиль обновлён");
+  const classesByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const date of weekDates) map[date] = [];
+    const preferredDirs = profile?.preferred_directions || [];
+    for (const c of scheduleData) {
+      if (map[c.date] && (preferredDirs.length === 0 || preferredDirs.includes(c.direction_id))) {
+        map[c.date].push(c);
+      }
     }
-  };
+    return map;
+  }, [scheduleData, weekDates, profile]);
 
-  const toggleDirection = (id: string) => {
-    if (!editData) return;
-    const current = editData.preferred_directions || [];
-    setEditData({
-      ...editData,
-      preferred_directions: current.includes(id)
-        ? current.filter(d => d !== id)
-        : [...current, id],
-    });
-  };
-
-  const handleLogout = async () => {
-    await supabase.auth.signOut();
-    toast.success("Вы вышли из системы");
-    navigate("/");
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Загрузка...</p>
-      </div>
-    );
-  }
+  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
+  const todayStr = fmtDate(new Date());
+  const getDir = (id: string) => directions.find((d: any) => d.id === id);
+  const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
+  const getRoom = (id: string) => schedRooms.find((r: any) => r.id === id);
 
   const preferredDirs = profile?.preferred_directions || [];
-  const userClasses = scheduleClasses.filter(
-    sc => !sc.cancelled && preferredDirs.some(d => d === sc.directionId)
-  );
 
   return (
     <div className="min-h-screen bg-background">
