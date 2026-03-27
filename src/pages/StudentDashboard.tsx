@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,7 +9,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { directions, scheduleClasses, subscriptionTypes } from "@/data/mockData";
 
 interface Profile {
   first_name: string;
@@ -20,6 +19,20 @@ interface Profile {
   notes: string | null;
 }
 
+const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+
+function getMonday(d: Date): Date {
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(d.getFullYear(), d.getMonth(), diff);
+}
+function fmtDate(d: Date) { return d.toISOString().split("T")[0]; }
+function formatWeekLabel(monday: Date): string {
+  const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+  const m = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
+}
+
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -27,54 +40,86 @@ const StudentDashboard = () => {
   const [editData, setEditData] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
+  const [directions, setDirections] = useState<any[]>([]);
+
+  // Schedule state
+  const [weekOffset, setWeekOffset] = useState(0);
+  const [scheduleData, setScheduleData] = useState<any[]>([]);
+  const [schedTeachers, setSchedTeachers] = useState<any[]>([]);
+  const [schedRooms, setSchedRooms] = useState<any[]>([]);
+
+  const monday = useMemo(() => {
+    const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
+  }, [weekOffset]);
+  const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
+  }), [monday]);
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate("/");
-        return;
-      }
+      if (!session) { navigate("/"); return; }
       setUserEmail(session.user.email || "");
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", session.user.id)
-        .single();
-      if (data) {
-        setProfile(data);
-        setEditData(data);
-      }
+      const [profileRes, dirsRes] = await Promise.all([
+        supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
+        supabase.from("directions").select("*").eq("active", true),
+      ]);
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); }
+      if (dirsRes.data) setDirections(dirsRes.data);
       setLoading(false);
     };
     checkAuth();
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === "SIGNED_OUT") navigate("/");
     });
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Fetch schedule data when week changes
+  useEffect(() => {
+    const fetchSchedule = async () => {
+      const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      const [clsRes, tchRes, rmRes] = await Promise.all([
+        supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time"),
+        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+      ]);
+      setScheduleData(clsRes.data || []);
+      setSchedTeachers(tchRes.data || []);
+      setSchedRooms(rmRes.data || []);
+    };
+    fetchSchedule();
+  }, [monday]);
+
+  const classesByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const date of weekDates) map[date] = [];
+    const preferredDirs = profile?.preferred_directions || [];
+    for (const c of scheduleData) {
+      if (map[c.date] && (preferredDirs.length === 0 || preferredDirs.includes(c.direction_id))) {
+        map[c.date].push(c);
+      }
+    }
+    return map;
+  }, [scheduleData, weekDates, profile]);
+
+  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
+  const todayStr = fmtDate(new Date());
+  const getDir = (id: string) => directions.find((d: any) => d.id === id);
+  const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
+  const getRoom = (id: string) => schedRooms.find((r: any) => r.id === id);
+
   const handleSave = async () => {
     if (!editData) return;
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
-
     const { error } = await supabase.from("profiles").update({
-      first_name: editData.first_name,
-      last_name: editData.last_name,
-      phone: editData.phone,
-      birth_date: editData.birth_date,
+      first_name: editData.first_name, last_name: editData.last_name,
+      phone: editData.phone, birth_date: editData.birth_date,
       preferred_directions: editData.preferred_directions,
     }).eq("user_id", session.user.id);
-
-    if (error) {
-      toast.error("Ошибка сохранения");
-    } else {
-      setProfile(editData);
-      setEditing(false);
-      toast.success("Профиль обновлён");
-    }
+    if (error) { toast.error("Ошибка сохранения"); }
+    else { setProfile(editData); setEditing(false); toast.success("Профиль обновлён"); }
   };
 
   const toggleDirection = (id: string) => {
@@ -82,9 +127,7 @@ const StudentDashboard = () => {
     const current = editData.preferred_directions || [];
     setEditData({
       ...editData,
-      preferred_directions: current.includes(id)
-        ? current.filter(d => d !== id)
-        : [...current, id],
+      preferred_directions: current.includes(id) ? current.filter(d => d !== id) : [...current, id],
     });
   };
 
@@ -101,11 +144,6 @@ const StudentDashboard = () => {
       </div>
     );
   }
-
-  const preferredDirs = profile?.preferred_directions || [];
-  const userClasses = scheduleClasses.filter(
-    sc => !sc.cancelled && preferredDirs.some(d => d === sc.directionId)
-  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -216,8 +254,8 @@ const StudentDashboard = () => {
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {preferredDirs.length > 0
-                        ? preferredDirs.map(id => {
+                      {(profile?.preferred_directions || []).length > 0
+                        ? (profile?.preferred_directions || []).map(id => {
                             const dir = directions.find(d => d.id === id);
                             return dir ? (
                               <span key={id} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border border-border">
@@ -250,36 +288,85 @@ const StudentDashboard = () => {
           {/* Schedule tab */}
           <TabsContent value="schedule">
             <Card>
-              <CardHeader>
-                <CardTitle>Расписание по моим направлениям</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Расписание на неделю</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => setWeekOffset(w => w - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium text-foreground min-w-[180px] text-center">
+                    {formatWeekLabel(monday)}
+                  </span>
+                  <Button variant="outline" size="icon" onClick={() => setWeekOffset(w => w + 1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  {weekOffset !== 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => setWeekOffset(0)} className="text-muted-foreground text-xs">
+                      Сегодня
+                    </Button>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
-                {userClasses.length > 0 ? (
-                  <div className="space-y-3">
-                    {userClasses.slice(0, 10).map(sc => {
-                      const dir = directions.find(d => d.id === sc.directionId);
-                      return (
-                        <div key={sc.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                          <span className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: dir?.color }} />
-                          <div className="flex-1">
-                            <p className="font-medium text-foreground">{dir?.name}</p>
-                            <p className="text-sm text-muted-foreground">
-                              {new Date(sc.date).toLocaleDateString("ru-RU", { weekday: "short", day: "numeric", month: "short" })} · {sc.startTime}–{sc.endTime}
-                            </p>
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            {sc.enrolledClientIds.length}/{sc.maxSpots} мест
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
+                {(profile?.preferred_directions || []).length === 0 ? (
                   <p className="text-muted-foreground">
-                    {preferredDirs.length === 0
-                      ? "Выберите предпочтительные направления в профиле, чтобы видеть расписание."
-                      : "Нет занятий по выбранным направлениям."}
+                    Выберите предпочтительные направления в профиле, чтобы видеть расписание.
                   </p>
+                ) : (
+                  <div className="rounded-lg border border-border overflow-hidden">
+                    {/* Header */}
+                    <div className="grid grid-cols-7 border-b border-border">
+                      {DAYS_SHORT.map((day, i) => {
+                        const date = weekDates[i];
+                        const isToday = date === todayStr;
+                        const dateObj = new Date(date + 'T00:00');
+                        return (
+                          <div key={i} className={`border-r border-border last:border-r-0 px-2 py-2 text-center ${isToday ? 'bg-sun/10' : ''}`}>
+                            <div className={`text-xs font-medium ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
+                            <div className={`text-base font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    {/* Body */}
+                    {Object.values(classesByDate).some(arr => arr.length > 0) ? (
+                      Array.from({ length: maxClasses }).map((_, rowIdx) => (
+                        <div key={rowIdx} className="grid grid-cols-7 border-b border-border last:border-b-0">
+                          {weekDates.map((date, colIdx) => {
+                            const cls = classesByDate[date]?.[rowIdx];
+                            const isToday = date === todayStr;
+                            if (!cls) return <div key={colIdx} className={`border-r border-border last:border-r-0 min-h-[70px] ${isToday ? 'bg-sun/5' : ''}`} />;
+                            const dir = getDir(cls.direction_id);
+                            const teacher = getTeacher(cls.teacher_id);
+                            const room = getRoom(cls.room_id);
+                            return (
+                              <div key={colIdx} className={`border-r border-border last:border-r-0 p-1 min-h-[70px] ${isToday ? 'bg-sun/5' : ''}`}>
+                                <div
+                                  className="rounded-md p-2 h-full space-y-0.5"
+                                  style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
+                                >
+                                  <div className="text-[11px] font-semibold text-foreground">
+                                    {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
+                                  </div>
+                                  <div className="text-xs font-bold" style={{ color: dir?.color }}>
+                                    {dir?.name}
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {teacher?.first_name} {teacher?.last_name?.[0]}.
+                                  </div>
+                                  <div className="text-[10px] text-muted-foreground">
+                                    {room?.name}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
+                    )}
+                  </div>
                 )}
               </CardContent>
             </Card>
