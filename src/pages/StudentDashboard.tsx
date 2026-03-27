@@ -163,7 +163,7 @@ const StudentDashboard = () => {
                   <div>
                     <Label>Имя</Label>
                     {editing ? (
-                      <Input value={editData?.first_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, first_name: e.target.value } : prev)} />
+                      <Input className="border-muted-foreground/40" value={editData?.first_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, first_name: e.target.value } : prev)} />
                     ) : (
                       <p className="text-foreground mt-1">{profile?.first_name || "—"}</p>
                     )}
@@ -171,7 +171,7 @@ const StudentDashboard = () => {
                   <div>
                     <Label>Фамилия</Label>
                     {editing ? (
-                      <Input value={editData?.last_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, last_name: e.target.value } : prev)} />
+                      <Input className="border-muted-foreground/40" value={editData?.last_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, last_name: e.target.value } : prev)} />
                     ) : (
                       <p className="text-foreground mt-1">{profile?.last_name || "—"}</p>
                     )}
@@ -180,7 +180,7 @@ const StudentDashboard = () => {
                 <div>
                   <Label>Телефон</Label>
                   {editing ? (
-                    <Input value={editData?.phone || ""} onChange={e => setEditData(prev => prev ? { ...prev, phone: e.target.value } : prev)} />
+                    <Input className="border-muted-foreground/40" value={editData?.phone || ""} onChange={e => setEditData(prev => prev ? { ...prev, phone: e.target.value } : prev)} />
                   ) : (
                     <p className="text-foreground mt-1">{profile?.phone || "—"}</p>
                   )}
@@ -188,7 +188,7 @@ const StudentDashboard = () => {
                 <div>
                   <Label>Дата рождения</Label>
                   {editing ? (
-                    <Input type="date" value={editData?.birth_date || ""} onChange={e => setEditData(prev => prev ? { ...prev, birth_date: e.target.value || null } : prev)} />
+                    <Input className="border-muted-foreground/40" type="date" value={editData?.birth_date || ""} onChange={e => setEditData(prev => prev ? { ...prev, birth_date: e.target.value || null } : prev)} />
                   ) : (
                     <p className="text-foreground mt-1">
                       {profile?.birth_date ? new Date(profile.birth_date).toLocaleDateString("ru-RU") : "—"}
