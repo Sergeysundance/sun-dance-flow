@@ -13,7 +13,6 @@ serve(async (req) => {
   }
 
   try {
-    // Validate JWT
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "Необходима авторизация" }), {
@@ -37,26 +36,30 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { amount, hours, description, returnUrl } = body;
+    const { subscription_type_id, returnUrl } = body;
 
-    // Validate input
-    if (!amount || !hours || !description || !returnUrl) {
+    if (!subscription_type_id || !returnUrl) {
       return new Response(JSON.stringify({ error: "Неверные параметры" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const allowedPlans = [
-      { hours: 4, price: 3200 },
-      { hours: 8, price: 5600 },
-      { hours: 12, price: 7200 },
-      { hours: 16, price: 8800 },
-    ];
+    // Fetch the subscription type from DB
+    const adminClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+    );
 
-    const plan = allowedPlans.find((p) => p.hours === hours && p.price === amount);
-    if (!plan) {
-      return new Response(JSON.stringify({ error: "Недопустимый тариф" }), {
+    const { data: plan, error: planError } = await adminClient
+      .from("subscription_types")
+      .select("id, name, price, hours_count, active")
+      .eq("id", subscription_type_id)
+      .eq("active", true)
+      .single();
+
+    if (planError || !plan) {
+      return new Response(JSON.stringify({ error: "Абонемент не найден или неактивен" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -72,7 +75,6 @@ serve(async (req) => {
       });
     }
 
-    // Create YooKassa payment
     const idempotenceKey = crypto.randomUUID();
     const paymentResponse = await fetch("https://api.yookassa.ru/v3/payments", {
       method: "POST",
@@ -83,7 +85,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         amount: {
-          value: amount.toFixed(2),
+          value: plan.price.toFixed(2),
           currency: "RUB",
         },
         confirmation: {
@@ -91,11 +93,12 @@ serve(async (req) => {
           return_url: returnUrl,
         },
         capture: true,
-        description,
+        description: plan.name,
         save_payment_method: true,
         metadata: {
           user_id: user.id,
-          hours: hours,
+          subscription_type_id: plan.id,
+          hours: plan.hours_count,
         },
       }),
     });
