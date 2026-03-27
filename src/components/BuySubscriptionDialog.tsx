@@ -73,7 +73,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProp
         <div className="grid grid-cols-2 gap-3 my-4">
           {subscriptionPlans.map((plan, idx) => (
             <button
-              key={plan.classes}
+              key={plan.hours}
               onClick={() => setSelected(idx)}
               className={`relative rounded-lg border-2 p-4 text-left transition-all ${
                 selected === idx
