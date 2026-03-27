@@ -87,7 +87,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader>
           <DialogTitle className="font-display text-xl font-bold">Выберите абонемент</DialogTitle>
           <DialogDescription>Выберите абонемент и перейдите к оплате</DialogDescription>
