@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, MoreHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,9 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
-import { teachers, directions, getDirection, type Teacher } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
+
+type Teacher = Tables<"teachers">;
+type Direction = Tables<"directions">;
 
 export default function TeachersPage() {
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
+  const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
 
@@ -25,6 +32,20 @@ export default function TeachersPage() {
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
 
   const isEditing = !!editTeacher;
+
+  const fetchData = async () => {
+    const [tRes, dRes] = await Promise.all([
+      supabase.from("teachers").select("*").order("created_at", { ascending: false }),
+      supabase.from("directions").select("*").order("sort_order"),
+    ]);
+    if (tRes.data) setTeachers(tRes.data);
+    if (dRes.data) setDirections(dRes.data);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const getDirection = (id: string) => directions.find(d => d.id === id);
 
   const resetForm = () => {
     setFirstName("");
@@ -44,21 +65,53 @@ export default function TeachersPage() {
 
   const openEdit = (t: Teacher) => {
     setEditTeacher(t);
-    setFirstName(t.firstName);
-    setLastName(t.lastName);
+    setFirstName(t.first_name);
+    setLastName(t.last_name);
     setPhone(t.phone);
     setEmail(t.email);
     setBio(t.bio);
-    setTelegramId(t.telegramId);
-    setSelectedDirections([...t.directionIds]);
+    setTelegramId(t.telegram_id);
+    setSelectedDirections([...t.direction_ids]);
     setDialogOpen(true);
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!firstName.trim()) {
+      toast.error("Введите имя преподавателя");
+      return;
+    }
+
+    const payload = {
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      phone: phone.trim(),
+      email: email.trim(),
+      bio: bio.trim(),
+      telegram_id: telegramId.trim(),
+      direction_ids: selectedDirections,
+    };
+
+    if (isEditing && editTeacher) {
+      const { error } = await supabase.from("teachers").update(payload).eq("id", editTeacher.id);
+      if (error) { toast.error("Ошибка при обновлении"); return; }
+      toast.success("Преподаватель обновлён");
+    } else {
+      const { error } = await supabase.from("teachers").insert(payload);
+      if (error) { toast.error("Ошибка при создании"); return; }
+      toast.success("Преподаватель создан");
+    }
+
     setDialogOpen(false);
-    toast.success(isEditing ? "Преподаватель обновлён" : "Преподаватель сохранён");
     resetForm();
     setEditTeacher(null);
+    fetchData();
+  };
+
+  const handleDeactivate = async (t: Teacher) => {
+    const { error } = await supabase.from("teachers").update({ active: !t.active }).eq("id", t.id);
+    if (error) { toast.error("Ошибка"); return; }
+    toast.success(t.active ? "Преподаватель деактивирован" : "Преподаватель активирован");
+    fetchData();
   };
 
   const toggleDirection = (dirId: string) => {
@@ -66,6 +119,8 @@ export default function TeachersPage() {
       prev.includes(dirId) ? prev.filter(id => id !== dirId) : [...prev, dirId]
     );
   };
+
+  if (loading) return <div className="text-admin-muted p-8">Загрузка…</div>;
 
   return (
     <div className="space-y-4">
@@ -81,10 +136,10 @@ export default function TeachersPage() {
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-full bg-admin-accent/20 text-lg font-bold text-admin-foreground">
-                    {t.firstName[0]}{t.lastName[0]}
+                    {t.first_name[0]}{t.last_name[0]}
                   </div>
                   <div>
-                    <div className="font-semibold text-admin-foreground">{t.firstName} {t.lastName}</div>
+                    <div className="font-semibold text-admin-foreground">{t.first_name} {t.last_name}</div>
                     <div className="text-xs text-admin-muted">{t.phone}</div>
                   </div>
                 </div>
@@ -92,12 +147,14 @@ export default function TeachersPage() {
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => openEdit(t)}>Редактировать</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600">Деактивировать</DropdownMenuItem>
+                    <DropdownMenuItem className="text-red-600" onClick={() => handleDeactivate(t)}>
+                      {t.active ? "Деактивировать" : "Активировать"}
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
               <div className="mt-3 flex flex-wrap gap-1">
-                {t.directionIds.map(dId => {
+                {t.direction_ids.map(dId => {
                   const dir = getDirection(dId);
                   return dir ? <Badge key={dId} variant="outline" style={{ borderColor: dir.color, color: dir.color }} className="text-xs">{dir.name}</Badge> : null;
                 })}
@@ -125,8 +182,8 @@ export default function TeachersPage() {
               <div className="mt-1 space-y-2">
                 {directions.map(d => (
                   <div key={d.id} className="flex items-center gap-2">
-                    <Checkbox id={d.id} checked={selectedDirections.includes(d.id)} onCheckedChange={() => toggleDirection(d.id)} />
-                    <label htmlFor={d.id} className="text-sm text-admin-foreground">{d.name}</label>
+                    <Checkbox id={`dir-${d.id}`} checked={selectedDirections.includes(d.id)} onCheckedChange={() => toggleDirection(d.id)} />
+                    <label htmlFor={`dir-${d.id}`} className="text-sm text-admin-foreground">{d.name}</label>
                   </div>
                 ))}
               </div>
