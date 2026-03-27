@@ -51,6 +51,7 @@ const StudentDashboard = () => {
   const [schedRooms, setSchedRooms] = useState<any[]>([]);
   const [bookings, setBookings] = useState<Set<string>>(new Set());
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
