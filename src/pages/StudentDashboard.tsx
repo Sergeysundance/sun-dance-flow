@@ -315,11 +315,14 @@ const StudentDashboard = () => {
           {/* Subscriptions tab */}
           <TabsContent value="subscriptions">
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Мои абонементы</CardTitle>
+                <Button variant="sun" size="sm" onClick={() => navigate("/#pricing")}>
+                  <CreditCard className="h-4 w-4 mr-1" /> Купить абонемент
+                </Button>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">У вас пока нет активных абонементов. Посмотрите доступные варианты на <a href="/#pricing" className="text-sun hover:underline">странице абонементов</a>.</p>
+                <p className="text-muted-foreground">У вас пока нет активных абонементов.</p>
               </CardContent>
             </Card>
           </TabsContent>
