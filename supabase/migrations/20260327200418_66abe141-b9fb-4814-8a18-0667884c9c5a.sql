@@ -1,0 +1,1 @@
+ALTER TABLE public.subscription_types RENAME COLUMN class_count TO hours_count;

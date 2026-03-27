@@ -206,11 +206,11 @@ export type Database = {
       subscription_types: {
         Row: {
           active: boolean
-          class_count: number | null
           class_duration: number
           created_at: string
           description: string
           duration_days: number
+          hours_count: number | null
           id: string
           name: string
           old_price: number | null
@@ -219,11 +219,11 @@ export type Database = {
         }
         Insert: {
           active?: boolean
-          class_count?: number | null
           class_duration?: number
           created_at?: string
           description?: string
           duration_days?: number
+          hours_count?: number | null
           id?: string
           name: string
           old_price?: number | null
@@ -232,11 +232,11 @@ export type Database = {
         }
         Update: {
           active?: boolean
-          class_count?: number | null
           class_duration?: number
           created_at?: string
           description?: string
           duration_days?: number
+          hours_count?: number | null
           id?: string
           name?: string
           old_price?: number | null
