@@ -109,7 +109,41 @@ const StudentDashboard = () => {
   const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
   const getRoom = (id: string) => schedRooms.find((r: any) => r.id === id);
 
-  const preferredDirs = profile?.preferred_directions || [];
+  const handleSave = async () => {
+    if (!editData) return;
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return;
+    const { error } = await supabase.from("profiles").update({
+      first_name: editData.first_name, last_name: editData.last_name,
+      phone: editData.phone, birth_date: editData.birth_date,
+      preferred_directions: editData.preferred_directions,
+    }).eq("user_id", session.user.id);
+    if (error) { toast.error("Ошибка сохранения"); }
+    else { setProfile(editData); setEditing(false); toast.success("Профиль обновлён"); }
+  };
+
+  const toggleDirection = (id: string) => {
+    if (!editData) return;
+    const current = editData.preferred_directions || [];
+    setEditData({
+      ...editData,
+      preferred_directions: current.includes(id) ? current.filter(d => d !== id) : [...current, id],
+    });
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Вы вышли из системы");
+    navigate("/");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Загрузка...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
