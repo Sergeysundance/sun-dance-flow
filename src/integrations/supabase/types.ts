@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          class_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          class_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          class_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_class_id_fkey"
+            columns: ["class_id"]
+            isOneToOne: false
+            referencedRelation: "schedule_classes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       directions: {
         Row: {
           active: boolean
