@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      directions: {
+        Row: {
+          active: boolean
+          color: string
+          created_at: string
+          description: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          color?: string
+          created_at?: string
+          description?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           birth_date: string | null
@@ -50,6 +80,136 @@ export type Database = {
           preferred_directions?: string[] | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      rooms: {
+        Row: {
+          active: boolean
+          area: number
+          capacity: number
+          color: string
+          created_at: string
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean
+          area?: number
+          capacity?: number
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean
+          area?: number
+          capacity?: number
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      schedule_classes: {
+        Row: {
+          cancelled: boolean
+          created_at: string
+          date: string
+          direction_id: string
+          end_time: string
+          id: string
+          max_spots: number
+          room_id: string
+          start_time: string
+          teacher_id: string
+        }
+        Insert: {
+          cancelled?: boolean
+          created_at?: string
+          date: string
+          direction_id: string
+          end_time: string
+          id?: string
+          max_spots?: number
+          room_id: string
+          start_time: string
+          teacher_id: string
+        }
+        Update: {
+          cancelled?: boolean
+          created_at?: string
+          date?: string
+          direction_id?: string
+          end_time?: string
+          id?: string
+          max_spots?: number
+          room_id?: string
+          start_time?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_classes_direction_id_fkey"
+            columns: ["direction_id"]
+            isOneToOne: false
+            referencedRelation: "directions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_classes_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "rooms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_classes_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teachers: {
+        Row: {
+          active: boolean
+          bio: string
+          created_at: string
+          direction_ids: string[]
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          phone: string
+          telegram_id: string
+        }
+        Insert: {
+          active?: boolean
+          bio?: string
+          created_at?: string
+          direction_ids?: string[]
+          email?: string
+          first_name: string
+          id?: string
+          last_name?: string
+          phone?: string
+          telegram_id?: string
+        }
+        Update: {
+          active?: boolean
+          bio?: string
+          created_at?: string
+          direction_ids?: string[]
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          phone?: string
+          telegram_id?: string
         }
         Relationships: []
       }
