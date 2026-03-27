@@ -9,6 +9,7 @@ const navItems = [
   { label: "О НАС", href: "#about" },
   { label: "КОМАНДА", href: "#team" },
   { label: "НАПРАВЛЕНИЯ", href: "#directions" },
+  { label: "РАСПИСАНИЕ", href: "#schedule" },
   { label: "АБОНЕМЕНТЫ", href: "#pricing" },
   { label: "КОНТАКТЫ", href: "#contacts" },
 ];

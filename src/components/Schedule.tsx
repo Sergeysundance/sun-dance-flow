@@ -1,7 +1,7 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-import { scheduleClasses, getDirection, getTeacher, getRoom } from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 
 const DAYS_SHORT = ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'];
 const DAYS_FULL = ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'];
@@ -13,26 +13,48 @@ function getMonday(d: Date): Date {
 }
 
 const Schedule = () => {
+  const [scheduleData, setScheduleData] = useState<any[]>([]);
+  const [directions, setDirections] = useState<any[]>([]);
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const monday = getMonday(new Date());
+      const sunday = new Date(monday);
+      sunday.setDate(sunday.getDate() + 6);
+      const fmt = (d: Date) => d.toISOString().split("T")[0];
+
+      const [classesRes, dirsRes, teachersRes, roomsRes] = await Promise.all([
+        supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday)).eq("cancelled", false).order("date").order("start_time"),
+        supabase.from("directions").select("*").eq("active", true),
+        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+      ]);
+
+      setScheduleData(classesRes.data || []);
+      setDirections(dirsRes.data || []);
+      setTeachers(teachersRes.data || []);
+      setRooms(roomsRes.data || []);
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const getDir = (id: string) => directions.find((d: any) => d.id === id);
+  const getTeacher = (id: string) => teachers.find((t: any) => t.id === id);
+  const getRoom = (id: string) => rooms.find((r: any) => r.id === id);
+
   const grouped = useMemo(() => {
-    const monday = getMonday(new Date());
-    const weekDates = Array.from({ length: 7 }, (_, i) => {
-      const d = new Date(monday);
-      d.setDate(d.getDate() + i);
-      return d.toISOString().split("T")[0];
-    });
-
-    const classes = scheduleClasses
-      .filter(c => weekDates.includes(c.date) && !c.cancelled)
-      .sort((a, b) => `${a.date}${a.startTime}`.localeCompare(`${b.date}${b.startTime}`));
-
-    const byDay: Record<string, typeof classes> = {};
-    for (const c of classes) {
+    const byDay: Record<string, any[]> = {};
+    for (const c of scheduleData) {
       if (!byDay[c.date]) byDay[c.date] = [];
       byDay[c.date].push(c);
     }
 
-    return weekDates
-      .filter(d => byDay[d])
+    return Object.keys(byDay)
+      .sort()
       .map(d => {
         const date = new Date(d);
         return {
@@ -43,7 +65,7 @@ const Schedule = () => {
           classes: byDay[d],
         };
       });
-  }, []);
+  }, [scheduleData]);
 
   return (
     <section id="schedule" className="bg-background py-20">
@@ -56,6 +78,10 @@ const Schedule = () => {
         >
           РАСПИСАНИЕ
         </motion.h2>
+
+        {loading && (
+          <p className="text-center text-muted-foreground">Загрузка...</p>
+        )}
 
         <div className="mx-auto max-w-4xl space-y-6">
           {grouped.map((day, di) => (
@@ -79,9 +105,9 @@ const Schedule = () => {
               {/* Classes */}
               <div className="space-y-2 pl-[52px]">
                 {day.classes.map(c => {
-                  const dir = getDirection(c.directionId);
-                  const teacher = getTeacher(c.teacherId);
-                  const room = getRoom(c.roomId);
+                  const dir = getDir(c.direction_id);
+                  const teacher = getTeacher(c.teacher_id);
+                  const room = getRoom(c.room_id);
                   return (
                     <div
                       key={c.id}
@@ -89,7 +115,7 @@ const Schedule = () => {
                     >
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span className="font-body text-sm font-semibold text-foreground min-w-[100px]">
-                          {c.startTime}–{c.endTime}
+                          {c.start_time?.slice(0, 5)}–{c.end_time?.slice(0, 5)}
                         </span>
                         <span className="flex items-center gap-2">
                           <span
@@ -101,7 +127,7 @@ const Schedule = () => {
                           </span>
                         </span>
                         <span className="font-body text-sm text-muted-foreground">
-                          {teacher?.firstName} {teacher?.lastName?.[0]}.
+                          {teacher?.first_name} {teacher?.last_name?.[0]}.
                         </span>
                         <span className="font-body text-xs text-muted-foreground">
                           {room?.name}
