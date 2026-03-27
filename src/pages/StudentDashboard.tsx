@@ -181,6 +181,19 @@ const StudentDashboard = () => {
         toast.success("Запись отменена");
       }
     } else {
+      // Check for active subscription before booking
+      if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
+        toast.error("Для записи на занятие необходим действующий абонемент", {
+          description: "Перейдите к покупке абонемента",
+          action: {
+            label: "Купить абонемент",
+            onClick: () => setBuyDialogOpen(true),
+          },
+          duration: 6000,
+        });
+        setBookingLoading(null);
+        return;
+      }
       const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: classId });
       if (error) { toast.error("Ошибка записи на занятие"); }
       else {
