@@ -12,10 +12,10 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 
 const subscriptionPlans = [
-  { classes: 4, price: 3200, pricePerClass: 800, label: "4 занятия" },
-  { classes: 8, price: 5600, pricePerClass: 700, label: "8 занятий", popular: true },
-  { classes: 12, price: 7200, pricePerClass: 600, label: "12 занятий" },
-  { classes: 16, price: 8800, pricePerClass: 550, label: "16 занятий", best: true },
+  { hours: 4, price: 3200, pricePerHour: 800, label: "4 часа" },
+  { hours: 8, price: 5600, pricePerHour: 700, label: "8 часов", popular: true },
+  { hours: 12, price: 7200, pricePerHour: 600, label: "12 часов" },
+  { hours: 16, price: 8800, pricePerHour: 550, label: "16 часов", best: true },
 ];
 
 interface BuySubscriptionDialogProps {
@@ -43,8 +43,8 @@ const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProp
       const { data, error } = await supabase.functions.invoke("create-payment", {
         body: {
           amount: plan.price,
-          classes: plan.classes,
-          description: `Абонемент на ${plan.classes} занятий`,
+          hours: plan.hours,
+          description: `Абонемент на ${plan.hours} часов`,
           returnUrl: window.location.origin + "/dashboard",
         },
       });
@@ -73,7 +73,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProp
         <div className="grid grid-cols-2 gap-3 my-4">
           {subscriptionPlans.map((plan, idx) => (
             <button
-              key={plan.classes}
+              key={plan.hours}
               onClick={() => setSelected(idx)}
               className={`relative rounded-lg border-2 p-4 text-left transition-all ${
                 selected === idx
@@ -96,7 +96,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProp
                 {plan.price.toLocaleString("ru-RU")} ₽
               </div>
               <div className="text-xs text-muted-foreground mt-1">
-                {plan.pricePerClass} ₽ / занятие
+                {plan.pricePerHour} ₽ / час
               </div>
               {selected === idx && (
                 <div className="absolute top-2 left-2">

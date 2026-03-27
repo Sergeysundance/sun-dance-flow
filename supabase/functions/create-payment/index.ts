@@ -37,10 +37,10 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { amount, classes, description, returnUrl } = body;
+    const { amount, hours, description, returnUrl } = body;
 
     // Validate input
-    if (!amount || !classes || !description || !returnUrl) {
+    if (!amount || !hours || !description || !returnUrl) {
       return new Response(JSON.stringify({ error: "Неверные параметры" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -48,13 +48,13 @@ serve(async (req) => {
     }
 
     const allowedPlans = [
-      { classes: 4, price: 3200 },
-      { classes: 8, price: 5600 },
-      { classes: 12, price: 7200 },
-      { classes: 16, price: 8800 },
+      { hours: 4, price: 3200 },
+      { hours: 8, price: 5600 },
+      { hours: 12, price: 7200 },
+      { hours: 16, price: 8800 },
     ];
 
-    const plan = allowedPlans.find((p) => p.classes === classes && p.price === amount);
+    const plan = allowedPlans.find((p) => p.hours === hours && p.price === amount);
     if (!plan) {
       return new Response(JSON.stringify({ error: "Недопустимый тариф" }), {
         status: 400,
@@ -95,7 +95,7 @@ serve(async (req) => {
         save_payment_method: true,
         metadata: {
           user_id: user.id,
-          classes: classes,
+          hours: hours,
         },
       }),
     });

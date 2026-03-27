@@ -23,7 +23,7 @@ const typeColors: Record<string, string> = {
 };
 
 const emptyForm = {
-  name: "", description: "", class_count: "" as string, duration_days: "30",
+  name: "", description: "", hours_count: "" as string, duration_days: "30",
   class_duration: "60", price: "", old_price: "", type: "group", active: true,
 };
 
@@ -45,7 +45,7 @@ export default function SubscriptionTypesPage() {
   const openEdit = (item: any) => {
     setForm({
       name: item.name, description: item.description || "",
-      class_count: item.class_count?.toString() || "",
+      hours_count: item.hours_count?.toString() || "",
       duration_days: item.duration_days?.toString() || "30",
       class_duration: item.class_duration?.toString() || "60",
       price: item.price?.toString() || "", old_price: item.old_price?.toString() || "",
@@ -62,7 +62,7 @@ export default function SubscriptionTypesPage() {
     setLoading(true);
     const payload = {
       name: form.name, description: form.description,
-      class_count: form.class_count ? parseInt(form.class_count) : null,
+      hours_count: form.hours_count ? parseInt(form.hours_count) : null,
       duration_days: parseInt(form.duration_days),
       class_duration: parseInt(form.class_duration),
       price: parseInt(form.price),
@@ -110,7 +110,7 @@ export default function SubscriptionTypesPage() {
           <thead>
             <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
               <th className="px-4 py-3">Название</th>
-              <th className="px-4 py-3">Занятий</th>
+              <th className="px-4 py-3">Часов</th>
               <th className="px-4 py-3">Срок</th>
               <th className="px-4 py-3">Длительность</th>
               <th className="px-4 py-3">Цена</th>
@@ -124,7 +124,7 @@ export default function SubscriptionTypesPage() {
             {items.map((st, i) => (
               <tr key={st.id} className={`border-b border-admin-border last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? "bg-gray-50/50" : ""}`}>
                 <td className="px-4 py-3 font-medium text-admin-foreground">{st.name}</td>
-                <td className="px-4 py-3">{st.class_count ?? "∞"}</td>
+                <td className="px-4 py-3">{st.hours_count ?? "∞"}</td>
                 <td className="px-4 py-3">{st.duration_days} дн.</td>
                 <td className="px-4 py-3">{st.class_duration} мин</td>
                 <td className="px-4 py-3 font-medium text-admin-foreground">{formatPrice(st.price)}</td>
@@ -179,8 +179,8 @@ export default function SubscriptionTypesPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Кол-во занятий</Label>
-                <Input type="number" placeholder="Пусто = безлимит" className="bg-white border-admin-border" value={form.class_count} onChange={(e) => setForm({ ...form, class_count: e.target.value })} />
+                <Label>Кол-во часов</Label>
+                <Input type="number" placeholder="Пусто = безлимит" className="bg-white border-admin-border" value={form.hours_count} onChange={(e) => setForm({ ...form, hours_count: e.target.value })} />
               </div>
               <div>
                 <Label>Срок (дней) *</Label>
