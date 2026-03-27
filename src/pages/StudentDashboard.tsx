@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 
 interface Profile {
   first_name: string;
@@ -50,6 +51,7 @@ const StudentDashboard = () => {
   const [schedRooms, setSchedRooms] = useState<any[]>([]);
   const [bookings, setBookings] = useState<Set<string>>(new Set());
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -317,7 +319,7 @@ const StudentDashboard = () => {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Мои абонементы</CardTitle>
-                <Button variant="sun" size="sm" onClick={() => navigate("/#pricing")}>
+                <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
                   <CreditCard className="h-4 w-4 mr-1" /> Купить абонемент
                 </Button>
               </CardHeader>
@@ -325,6 +327,8 @@ const StudentDashboard = () => {
                 <p className="text-muted-foreground">У вас пока нет активных абонементов.</p>
               </CardContent>
             </Card>
+
+            <BuySubscriptionDialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen} />
           </TabsContent>
 
           {/* Schedule tab */}
