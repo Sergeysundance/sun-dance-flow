@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,6 +18,21 @@ interface Profile {
   birth_date: string | null;
   preferred_directions: string[] | null;
   notes: string | null;
+}
+
+interface UserSubscription {
+  id: string;
+  hours_remaining: number;
+  hours_total: number;
+  purchased_at: string;
+  expires_at: string;
+  active: boolean;
+  subscription_type_id: string;
+  subscription_type?: {
+    name: string;
+    hours_count: number | null;
+    price: number;
+  };
 }
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -43,6 +58,7 @@ const StudentDashboard = () => {
   const [userEmail, setUserEmail] = useState("");
   const [userId, setUserId] = useState("");
   const [directions, setDirections] = useState<any[]>([]);
+  const [userSubscriptions, setUserSubscriptions] = useState<UserSubscription[]>([]);
 
   // Schedule state
   const [weekOffset, setWeekOffset] = useState(0);
@@ -60,6 +76,34 @@ const StudentDashboard = () => {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
 
+  const fetchSubscriptions = async (uid: string) => {
+    const { data: subs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .eq("active", true)
+      .gte("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: true });
+
+    if (subs && subs.length > 0) {
+      // Fetch subscription type names
+      const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
+      const { data: types } = await supabase
+        .from("subscription_types")
+        .select("id, name, hours_count, price")
+        .in("id", typeIds);
+
+      const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
+      const enriched = subs.map((s: any) => ({
+        ...s,
+        subscription_type: typesMap.get(s.subscription_type_id),
+      }));
+      setUserSubscriptions(enriched);
+    } else {
+      setUserSubscriptions([]);
+    }
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -72,6 +116,7 @@ const StudentDashboard = () => {
       ]);
       if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); }
       if (dirsRes.data) setDirections(dirsRes.data);
+      await fetchSubscriptions(session.user.id);
       setLoading(false);
     };
     checkAuth();
@@ -85,7 +130,6 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
-      const classIds: string[] = [];
       const [clsRes, tchRes, rmRes] = await Promise.all([
         supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time"),
         supabase.from("teachers").select("*").eq("active", true),
@@ -95,7 +139,6 @@ const StudentDashboard = () => {
       setSchedTeachers(tchRes.data || []);
       setSchedRooms(rmRes.data || []);
 
-      // Fetch bookings for this week's classes
       if (userId && clsRes.data && clsRes.data.length > 0) {
         const ids = clsRes.data.map((c: any) => c.id);
         const { data: bookingsData } = await supabase
@@ -131,7 +174,6 @@ const StudentDashboard = () => {
   const handleBooking = async (classId: string) => {
     setBookingLoading(classId);
     if (bookings.has(classId)) {
-      // Cancel booking
       const { error } = await supabase.from("bookings").delete().eq("user_id", userId).eq("class_id", classId);
       if (error) { toast.error("Ошибка отмены записи"); }
       else {
@@ -139,7 +181,6 @@ const StudentDashboard = () => {
         toast.success("Запись отменена");
       }
     } else {
-      // Book
       const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: classId });
       if (error) { toast.error("Ошибка записи на занятие"); }
       else {
@@ -177,6 +218,15 @@ const StudentDashboard = () => {
     toast.success("Вы вышли из системы");
     navigate("/");
   };
+
+  const formatHours = (n: number) => {
+    if (n === 1) return "1 час";
+    if (n >= 2 && n <= 4) return `${n} часа`;
+    return `${n} часов`;
+  };
+
+  // Active subscription summary for profile tab
+  const activeSubscription = userSubscriptions.length > 0 ? userSubscriptions[0] : null;
 
   if (loading) {
     return (
@@ -221,6 +271,56 @@ const StudentDashboard = () => {
 
           {/* Profile tab */}
           <TabsContent value="profile">
+            {/* Active subscription card on profile */}
+            {activeSubscription && (
+              <Card className="mb-4 border-sun/30">
+                <CardContent className="py-4">
+                  <div className="flex items-center justify-between flex-wrap gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
+                        <CreditCard className="h-5 w-5 text-sun" />
+                      </div>
+                      <div>
+                        <div className="font-display text-sm font-bold text-foreground">
+                          {activeSubscription.subscription_type?.name || "Абонемент"}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          до {new Date(activeSubscription.expires_at).toLocaleDateString("ru-RU")}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-sun" />
+                      <span className="font-display text-lg font-black text-foreground">
+                        {activeSubscription.hours_remaining}
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        / {activeSubscription.hours_total} {formatHours(activeSubscription.hours_total)}
+                      </span>
+                    </div>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-sun transition-all"
+                      style={{ width: `${Math.max(0, (activeSubscription.hours_remaining / activeSubscription.hours_total) * 100)}%` }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {!activeSubscription && (
+              <Card className="mb-4 border-dashed border-muted-foreground/30">
+                <CardContent className="py-4 flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">У вас нет активного абонемента</p>
+                  <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
+                    Купить абонемент
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Мои данные</CardTitle>
@@ -324,11 +424,45 @@ const StudentDashboard = () => {
                 </Button>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground">У вас пока нет активных абонементов.</p>
+                {userSubscriptions.length === 0 ? (
+                  <p className="text-muted-foreground">У вас пока нет активных абонементов.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {userSubscriptions.map(sub => (
+                      <div key={sub.id} className="rounded-lg border border-border p-4">
+                        <div className="flex items-center justify-between flex-wrap gap-2">
+                          <div>
+                            <div className="font-display text-base font-bold text-foreground">
+                              {sub.subscription_type?.name || "Абонемент"}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-0.5">
+                              Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="font-display text-xl font-black text-foreground">
+                              {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                            </div>
+                            <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                          </div>
+                        </div>
+                        <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-sun transition-all"
+                            style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
-            <BuySubscriptionDialog open={buyDialogOpen} onOpenChange={setBuyDialogOpen} />
+            <BuySubscriptionDialog open={buyDialogOpen} onOpenChange={(open) => {
+              setBuyDialogOpen(open);
+              if (!open && userId) fetchSubscriptions(userId);
+            }} />
           </TabsContent>
 
           {/* Schedule tab */}
