@@ -311,14 +311,49 @@ const StudentDashboard = () => {
             )}
 
             {!activeSubscription && (
-              <Card className="mb-4 border-dashed border-muted-foreground/30">
-                <CardContent className="py-4 flex items-center justify-between">
-                  <p className="text-sm text-muted-foreground">У вас нет активного абонемента</p>
-                  <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
-                    Купить абонемент
-                  </Button>
-                </CardContent>
-              </Card>
+              <div className="mb-4 rounded-xl bg-card border border-border shadow-sm p-5 relative overflow-hidden">
+                {/* Decorative circles */}
+                <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-sun/5" />
+                <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-sun/5" />
+
+                <div className="relative flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <div className="font-display text-sm font-bold text-foreground">Абонемент</div>
+                        <div className="text-xs text-muted-foreground">не активен</div>
+                      </div>
+                    </div>
+                    <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
+                      Купить
+                    </Button>
+                  </div>
+
+                  {/* Hours grid */}
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Доступные варианты часов:</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[4, 8, 12, 16, 20, 24].map(h => (
+                        <span key={h} className="inline-flex items-center justify-center rounded-md border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
+                          {h} ч
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Empty progress bar */}
+                  <div className="h-2 rounded-full bg-muted overflow-hidden">
+                    <div className="h-full rounded-full bg-muted-foreground/20 w-0" />
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">0 часов</span>
+                    <span className="text-xs text-muted-foreground">—</span>
+                  </div>
+                </div>
+              </div>
             )}
 
             <Card>
