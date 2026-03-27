@@ -254,8 +254,8 @@ const StudentDashboard = () => {
                     </div>
                   ) : (
                     <div className="flex flex-wrap gap-2 mt-1">
-                      {preferredDirs.length > 0
-                        ? preferredDirs.map(id => {
+                      {(profile?.preferred_directions || []).length > 0
+                        ? (profile?.preferred_directions || []).map(id => {
                             const dir = directions.find(d => d.id === id);
                             return dir ? (
                               <span key={id} className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium border border-border">
