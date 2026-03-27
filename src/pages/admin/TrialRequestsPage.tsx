@@ -46,11 +46,11 @@ export default function TrialRequestsPage() {
                   <td className="px-4 py-3">
                     <div className="flex gap-1">
                       {r.status === 'new' && <Button size="sm" variant="outline" className="text-xs border-admin-border" onClick={() => toast.success("Статус: Связались")}>Связались</Button>}
-                      {(r.status === 'new' || r.status === 'contacted') && <Button size="sm" variant="outline" className="text-xs border-admin-border text-green-600" onClick={() => toast.success("Клиент записан")}>Записать</Button>}
+                      {(r.status === 'new' || r.status === 'contacted') && <Button size="sm" className="text-xs bg-admin-accent text-black hover:bg-yellow-400" onClick={() => toast.success("Клиент записан")}>Записать</Button>}
                       {r.status !== 'declined' && r.status !== 'enrolled' && (
                         <AlertDialog>
-                          <AlertDialogTrigger asChild><Button size="sm" variant="outline" className="text-xs border-admin-border text-red-600">Отклонить</Button></AlertDialogTrigger>
-                          <AlertDialogContent className="bg-white text-admin-foreground"><AlertDialogHeader><AlertDialogTitle>Отклонить заявку?</AlertDialogTitle><AlertDialogDescription>Заявка от {r.name} будет отклонена.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction onClick={() => toast.success("Заявка отклонена")} className="bg-red-600 text-white">Отклонить</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                          <AlertDialogTrigger asChild><Button size="sm" variant="destructive" className="text-xs">Отклонить</Button></AlertDialogTrigger>
+                          <AlertDialogContent className="bg-white text-admin-foreground"><AlertDialogHeader><AlertDialogTitle>Отклонить заявку?</AlertDialogTitle><AlertDialogDescription>Заявка от {r.name} будет отклонена.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Отмена</AlertDialogCancel><AlertDialogAction onClick={() => toast.success("Заявка отклонена")} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Отклонить</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
                         </AlertDialog>
                       )}
                     </div>
