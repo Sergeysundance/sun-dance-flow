@@ -185,14 +185,7 @@ const StudentDashboard = () => {
     } else {
       // Check for active subscription before booking
       if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
-        toast.error("Для записи на занятие необходим действующий абонемент", {
-          description: "Перейдите к покупке абонемента",
-          action: {
-            label: "Купить абонемент",
-            onClick: () => setBuyDialogOpen(true),
-          },
-          duration: 6000,
-        });
+        setNoSubDialogOpen(true);
         setBookingLoading(null);
         return;
       }
