@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
