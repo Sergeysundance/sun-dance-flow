@@ -506,6 +506,31 @@ const StudentDashboard = () => {
               setBuyDialogOpen(open);
               if (!open && userId) fetchSubscriptions(userId);
             }} />
+
+            <Dialog open={noSubDialogOpen} onOpenChange={setNoSubDialogOpen}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Нет активного абонемента
+                  </DialogTitle>
+                  <DialogDescription>
+                    Для записи на занятие необходимо приобрести абонемент. Выберите подходящий вариант и оплатите его.
+                  </DialogDescription>
+                </DialogHeader>
+                <Button
+                  variant="sun"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setNoSubDialogOpen(false);
+                    setBuyDialogOpen(true);
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Купить абонемент
+                </Button>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Schedule tab */}
