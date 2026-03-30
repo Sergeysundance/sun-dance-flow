@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
@@ -68,6 +69,7 @@ const StudentDashboard = () => {
   const [bookings, setBookings] = useState<Set<string>>(new Set());
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -183,14 +185,7 @@ const StudentDashboard = () => {
     } else {
       // Check for active subscription before booking
       if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
-        toast.error("Для записи на занятие необходим действующий абонемент", {
-          description: "Перейдите к покупке абонемента",
-          action: {
-            label: "Купить абонемент",
-            onClick: () => setBuyDialogOpen(true),
-          },
-          duration: 6000,
-        });
+        setNoSubDialogOpen(true);
         setBookingLoading(null);
         return;
       }
@@ -511,6 +506,31 @@ const StudentDashboard = () => {
               setBuyDialogOpen(open);
               if (!open && userId) fetchSubscriptions(userId);
             }} />
+
+            <Dialog open={noSubDialogOpen} onOpenChange={setNoSubDialogOpen}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Нет активного абонемента
+                  </DialogTitle>
+                  <DialogDescription>
+                    Для записи на занятие необходимо приобрести абонемент. Выберите подходящий вариант и оплатите его.
+                  </DialogDescription>
+                </DialogHeader>
+                <Button
+                  variant="sun"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setNoSubDialogOpen(false);
+                    setBuyDialogOpen(true);
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Купить абонемент
+                </Button>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Schedule tab */}
