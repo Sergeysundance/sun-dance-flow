@@ -201,6 +201,7 @@ export default function SchedulePage() {
             <TabsTrigger value="templates">Шаблоны</TabsTrigger>
           </TabsList>
           <Button onClick={() => setNewClassOpen(true)} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Занятие</Button>
+          <Button variant="outline" onClick={copyWeekForward} className="border-admin-border gap-1"><Copy className="h-4 w-4" /> Повторить на месяц</Button>
         </div>
 
         <TabsContent value="calendar" className="mt-4 space-y-4">
