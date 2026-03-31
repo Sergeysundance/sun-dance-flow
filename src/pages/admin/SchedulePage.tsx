@@ -163,6 +163,33 @@ export default function SchedulePage() {
     fetchData();
   };
 
+  const copyWeekForward = async () => {
+    if (classes.length === 0) {
+      toast.error("Нет занятий для копирования");
+      return;
+    }
+    const inserts = [];
+    for (let week = 1; week <= 4; week++) {
+      for (const cls of classes) {
+        const origDate = new Date(cls.date + "T00:00");
+        origDate.setDate(origDate.getDate() + week * 7);
+        inserts.push({
+          direction_id: cls.direction_id,
+          teacher_id: cls.teacher_id,
+          room_id: cls.room_id,
+          date: fmt(origDate),
+          start_time: cls.start_time,
+          end_time: cls.end_time,
+          max_spots: cls.max_spots,
+        });
+      }
+    }
+    const { error } = await supabase.from("schedule_classes").insert(inserts);
+    if (error) { toast.error("Ошибка копирования"); return; }
+    toast.success(`Расписание скопировано на 4 недели вперёд (${inserts.length} занятий)`);
+    fetchData();
+  };
+
   const todayStr = fmt(new Date());
 
   return (
