@@ -20,16 +20,29 @@ const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [isTeacher, setIsTeacher] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      if (session?.user) checkTeacher(session.user.id);
     });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      if (session?.user) checkTeacher(session.user.id);
+      else setIsTeacher(false);
     });
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkTeacher = async (uid: string) => {
+    const { data } = await supabase.from("teachers").select("id").eq("user_id", uid).maybeSingle();
+    setIsTeacher(!!data);
+  };
+
+  const goToDashboard = () => {
+    navigate(isTeacher ? "/teacher-dashboard" : "/dashboard");
+  };
 
   useEffect(() => {
     const handler = () => setScrolled(window.scrollY > 50);
