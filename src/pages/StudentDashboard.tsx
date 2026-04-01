@@ -702,6 +702,47 @@ const StudentDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Delete account section */}
+        <div className="mt-12 border-t border-border pt-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-destructive">Удаление аккаунта</h3>
+              <p className="text-xs text-muted-foreground mt-1">Это действие необратимо. Все данные будут удалены.</p>
+            </div>
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteDialogOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-1" /> Удалить аккаунт
+            </Button>
+          </div>
+        </div>
+
+        {/* Delete confirmation dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={(o) => { setDeleteDialogOpen(o); if (!o) setDeleteConfirmText(""); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Удаление аккаунта</DialogTitle>
+              <DialogDescription>
+                Все ваши данные, абонементы и записи на занятия будут безвозвратно удалены. Введите <strong>УДАЛИТЬ</strong> для подтверждения.
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Введите УДАЛИТЬ"
+              className="border-destructive/40"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Отмена</Button>
+              <Button
+                variant="destructive"
+                disabled={deleteConfirmText !== "УДАЛИТЬ" || deleting}
+                onClick={handleDeleteAccount}
+              >
+                {deleting ? "Удаление..." : "Подтвердить удаление"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
