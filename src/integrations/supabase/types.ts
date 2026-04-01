@@ -73,6 +73,45 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_teacher_registrations: {
+        Row: {
+          bio: string
+          created_at: string
+          direction_ids: string[]
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          middle_name: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          bio?: string
+          created_at?: string
+          direction_ids?: string[]
+          email?: string
+          first_name: string
+          id?: string
+          last_name?: string
+          middle_name?: string
+          phone?: string
+          user_id: string
+        }
+        Update: {
+          bio?: string
+          created_at?: string
+          direction_ids?: string[]
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          middle_name?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           birth_date: string | null
