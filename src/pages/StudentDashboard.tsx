@@ -209,6 +209,7 @@ const StudentDashboard = () => {
     if (!session) return;
     const { error } = await supabase.from("profiles").update({
       first_name: editData.first_name, last_name: editData.last_name,
+      middle_name: editData.middle_name,
       phone: editData.phone, birth_date: editData.birth_date,
       preferred_directions: editData.preferred_directions,
     }).eq("user_id", session.user.id);
