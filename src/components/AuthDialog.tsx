@@ -49,6 +49,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     setPassword("");
     setFirstName("");
     setLastName("");
+    setMiddleName("");
     setPhone("");
     setBirthDate("");
     setSelectedDirections([]);
