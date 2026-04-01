@@ -81,8 +81,8 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   };
 
   const handleRegister = async () => {
-    if (!email || !password || !firstName || !phone) {
-      toast.error("Заполните обязательные поля");
+    if (!email || !password || !firstName || !lastName || !middleName || !phone) {
+      toast.error("Заполните все обязательные поля (Имя, Фамилия, Отчество, Телефон, Email, Пароль)");
       return;
     }
     setLoading(true);
