@@ -121,7 +121,7 @@ const Header = () => {
             </Button>
           </a>
           {user ? (
-            <Button variant="sunInverse" size="lg" onClick={() => { setMenuOpen(false); navigate("/dashboard"); }}>
+            <Button variant="sunInverse" size="lg" onClick={() => { setMenuOpen(false); goToDashboard(); }}>
               <User className="h-4 w-4 mr-1" /> КАБИНЕТ
             </Button>
           ) : (
