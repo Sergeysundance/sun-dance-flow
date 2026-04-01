@@ -94,7 +94,21 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     }
 
     if (data.user) {
-      // Update profile
+      // If teacher, save pending registration data (will be processed by DB trigger)
+      if (role === "teacher") {
+        await supabase.from("pending_teacher_registrations").insert({
+          user_id: data.user.id,
+          first_name: firstName,
+          last_name: lastName,
+          middle_name: middleName,
+          phone,
+          email,
+          bio,
+          direction_ids: selectedDirections,
+        });
+      }
+
+      // Update profile (may be created by trigger)
       await supabase.from("profiles").update({
         first_name: firstName,
         last_name: lastName,
@@ -114,19 +128,6 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
           role: role === "teacher" ? "преподаватель" : "ученик",
         },
       }).catch(() => {});
-
-      // If teacher, create teacher record linked to user
-      if (role === "teacher") {
-        await supabase.from("teachers").insert({
-          first_name: firstName,
-          last_name: lastName,
-          phone,
-          email,
-          bio,
-          direction_ids: selectedDirections,
-          user_id: data.user.id,
-        });
-      }
     }
 
     setLoading(false);
