@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,28 +7,111 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import {
-  clients, subscriptions, directions, getSubscriptionType, getClientActiveSubscription,
-  getSourceLabel, getSubscriptionStatusLabel,
-} from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
+import type { Tables } from "@/integrations/supabase/types";
 
-const statusColors: Record<string, string> = {
-  active: "bg-green-100 text-green-800",
-  expired: "bg-gray-100 text-gray-800",
-  frozen: "bg-blue-100 text-blue-800",
-  exhausted: "bg-red-100 text-red-800",
-};
+type Profile = Tables<"profiles">;
+type Direction = Tables<"directions">;
+type UserSubscription = Tables<"user_subscriptions">;
 
 export default function ClientsPage() {
   const navigate = useNavigate();
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
+  const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
+
+  // Dialog state
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editProfile, setEditProfile] = useState<Profile | null>(null);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [notes, setNotes] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+
+  const isEditing = !!editProfile;
+
+  const fetchData = async () => {
+    const [pRes, dRes, sRes] = await Promise.all([
+      supabase.from("profiles").select("*").order("created_at", { ascending: false }),
+      supabase.from("directions").select("*").order("sort_order"),
+      supabase.from("user_subscriptions").select("*"),
+    ]);
+    if (pRes.data) setProfiles(pRes.data);
+    if (dRes.data) setDirections(dRes.data);
+    if (sRes.data) setSubscriptions(sRes.data);
+    setLoading(false);
+  };
+
+  useEffect(() => { fetchData(); }, []);
+
+  const resetForm = () => {
+    setFirstName("");
+    setLastName("");
+    setMiddleName("");
+    setPhone("");
+    setBirthDate("");
+    setNotes("");
+    setSelectedDirections([]);
+    setEditProfile(null);
+  };
+
+  const openNew = () => {
+    resetForm();
+    setDialogOpen(true);
+  };
+
+  const openEdit = (p: Profile) => {
+    setEditProfile(p);
+    setFirstName(p.first_name);
+    setLastName(p.last_name);
+    setMiddleName(p.middle_name);
+    setPhone(p.phone);
+    setBirthDate(p.birth_date || "");
+    setNotes(p.notes || "");
+    setSelectedDirections(p.preferred_directions || []);
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!firstName.trim() || !lastName.trim()) {
+      toast.error("Введите имя и фамилию");
+      return;
+    }
+
+    const payload = {
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      middle_name: middleName.trim(),
+      phone: phone.trim(),
+      birth_date: birthDate || null,
+      notes: notes.trim() || null,
+      preferred_directions: selectedDirections,
+    };
+
+    if (isEditing && editProfile) {
+      const { error } = await supabase.from("profiles").update(payload).eq("id", editProfile.id);
+      if (error) { toast.error("Ошибка при обновлении"); return; }
+      toast.success("Клиент обновлён");
+    } else {
+      toast.info("Создание клиентов доступно через регистрацию на сайте");
+      setDialogOpen(false);
+      resetForm();
+      return;
+    }
+
+    setDialogOpen(false);
+    resetForm();
+    fetchData();
+  };
 
   const toggleDirection = (id: string) => {
     setSelectedDirections(prev =>
@@ -36,19 +119,21 @@ export default function ClientsPage() {
     );
   };
 
-  const handleOpenDialog = () => {
-    setSelectedDirections([]);
-    setDialogOpen(true);
-  };
+  const getActiveSub = (userId: string) =>
+    subscriptions.find(s => s.user_id === userId && s.active);
 
-  const filtered = clients.filter(c => {
+  const filtered = profiles.filter(p => {
     const q = search.toLowerCase();
-    const matchesSearch = !q || `${c.firstName} ${c.lastName}`.toLowerCase().includes(q) || c.phone.includes(q);
+    const matchesSearch = !q ||
+      `${p.first_name} ${p.last_name} ${p.middle_name}`.toLowerCase().includes(q) ||
+      p.phone.includes(q);
     if (!matchesSearch) return false;
-    if (tab === "with") return !!getClientActiveSubscription(c.id);
-    if (tab === "without") return !getClientActiveSubscription(c.id);
+    if (tab === "with") return !!getActiveSub(p.user_id);
+    if (tab === "without") return !getActiveSub(p.user_id);
     return true;
   });
+
+  if (loading) return <div className="text-admin-muted p-8">Загрузка…</div>;
 
   return (
     <div className="space-y-4">
@@ -65,28 +150,43 @@ export default function ClientsPage() {
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted" />
             <Input placeholder="Поиск по имени или телефону" className="pl-9 w-64 bg-white border-admin-border" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <Button onClick={handleOpenDialog} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый клиент</Button>
         </div>
       </div>
 
       <div className="overflow-x-auto rounded-lg border border-admin-border bg-white shadow-sm">
         <table className="w-full text-sm">
-          <thead><tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
-            <th className="px-4 py-3">Имя</th><th className="px-4 py-3">Телефон</th><th className="px-4 py-3">Абонемент</th><th className="px-4 py-3">Осталось</th><th className="px-4 py-3">Источник</th><th className="px-4 py-3">Регистрация</th>
-          </tr></thead>
+          <thead>
+            <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
+              <th className="px-4 py-3">Имя</th>
+              <th className="px-4 py-3">Телефон</th>
+              <th className="px-4 py-3">Абонемент</th>
+              <th className="px-4 py-3">Регистрация</th>
+              <th className="px-4 py-3 w-20"></th>
+            </tr>
+          </thead>
           <tbody>
-            {filtered.map((c, i) => {
-              const sub = subscriptions.find(s => s.clientId === c.id && (s.status === 'active' || s.status === 'frozen'));
-              const subType = sub ? getSubscriptionType(sub.subscriptionTypeId) : null;
-              const remaining = sub && subType?.classCount ? subType.classCount - sub.usedClasses : null;
+            {filtered.map((p, i) => {
+              const sub = getActiveSub(p.user_id);
               return (
-                <tr key={c.id} onClick={() => navigate(`/admin/clients/${c.id}`)} className={`cursor-pointer border-b border-admin-border last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}>
-                  <td className="px-4 py-3 font-medium text-admin-foreground">{c.firstName} {c.lastName}</td>
-                  <td className="px-4 py-3"><a href={`tel:${c.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{c.phone}</a></td>
-                  <td className="px-4 py-3">{sub ? <Badge className={statusColors[sub.status]}>{subType?.name}</Badge> : <span className="text-admin-muted">—</span>}</td>
-                  <td className="px-4 py-3">{remaining !== null ? remaining : sub ? '∞' : '—'}</td>
-                  <td className="px-4 py-3 text-admin-muted">{getSourceLabel(c.source)}</td>
-                  <td className="px-4 py-3 text-admin-muted">{new Date(c.createdAt).toLocaleDateString('ru-RU')}</td>
+                <tr
+                  key={p.id}
+                  className={`border-b border-admin-border last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}
+                >
+                  <td className="px-4 py-3 font-medium text-admin-foreground">
+                    {p.last_name} {p.first_name} {p.middle_name}
+                  </td>
+                  <td className="px-4 py-3">
+                    <a href={`tel:${p.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{p.phone}</a>
+                  </td>
+                  <td className="px-4 py-3">
+                    {sub ? <Badge className="bg-green-100 text-green-800">Активен</Badge> : <span className="text-admin-muted">—</span>}
+                  </td>
+                  <td className="px-4 py-3 text-admin-muted">{new Date(p.created_at).toLocaleDateString('ru-RU')}</td>
+                  <td className="px-4 py-3">
+                    <Button variant="ghost" size="sm" className="text-admin-muted hover:text-admin-foreground" onClick={(e) => { e.stopPropagation(); openEdit(p); }}>
+                      Изменить
+                    </Button>
+                  </td>
                 </tr>
               );
             })}
@@ -95,23 +195,22 @@ export default function ClientsPage() {
         {filtered.length === 0 && <div className="p-8 text-center text-admin-muted">Клиенты не найдены</div>}
       </div>
 
-      {/* New client dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      {/* Edit client dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md">
-          <DialogHeader><DialogTitle className="text-admin-foreground">Новый клиент</DialogTitle></DialogHeader>
+          <DialogHeader>
+            <DialogTitle className="text-admin-foreground">
+              {isEditing ? "Редактировать клиента" : "Новый клиент"}
+            </DialogTitle>
+          </DialogHeader>
           <div className="max-h-[60vh] overflow-y-auto grid gap-3 pr-1">
             <div className="grid grid-cols-2 gap-3">
-              <div><Label>Имя *</Label><Input className="bg-white border-admin-border" /></div>
-              <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" /></div>
+              <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" value={lastName} onChange={e => setLastName(e.target.value)} /></div>
+              <div><Label>Имя *</Label><Input className="bg-white border-admin-border" value={firstName} onChange={e => setFirstName(e.target.value)} /></div>
             </div>
-            <div><Label>Телефон *</Label><Input placeholder="+7 (___) ___-__-__" className="bg-white border-admin-border" /></div>
-            <div><Label>Email</Label><Input type="email" className="bg-white border-admin-border" /></div>
-            <div><Label>Дата рождения</Label><Input type="date" className="bg-white border-admin-border" /></div>
-            <div><Label>Источник</Label>
-              <Select><SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>{["Сайт","Instagram","VK","Telegram","Рекомендация","Другое"].map(s => <SelectItem key={s} value={s.toLowerCase()}>{s}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
+            <div><Label>Отчество</Label><Input className="bg-white border-admin-border" value={middleName} onChange={e => setMiddleName(e.target.value)} /></div>
+            <div><Label>Телефон</Label><Input placeholder="+7 (___) ___-__-__" className="bg-white border-admin-border" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+            <div><Label>Дата рождения</Label><Input type="date" className="bg-white border-admin-border" value={birthDate} onChange={e => setBirthDate(e.target.value)} /></div>
             <div>
               <Label>Предпочтительные направления</Label>
               <div className="mt-1.5 space-y-1.5 rounded-md border border-admin-border p-3">
@@ -127,11 +226,11 @@ export default function ClientsPage() {
                 ))}
               </div>
             </div>
-            <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" /></div>
+            <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" value={notes} onChange={e => setNotes(e.target.value)} /></div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-admin-border">Отмена</Button>
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => { setDialogOpen(false); toast.success("Клиент сохранён"); }}>Сохранить</Button>
+            <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }} className="border-admin-border">Отмена</Button>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave}>Сохранить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
