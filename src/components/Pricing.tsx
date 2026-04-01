@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 function formatPrice(price: number): string {
   return price.toLocaleString("ru-RU") + " ₽";
@@ -10,7 +11,7 @@ function formatPrice(price: number): string {
 
 const Pricing = () => {
   const [plans, setPlans] = useState<any[]>([]);
-  const [buyOpen, setBuyOpen] = useState(false);
+  const [loadingPlanId, setLoadingPlanId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetch = async () => {
@@ -23,6 +24,36 @@ const Pricing = () => {
     };
     fetch();
   }, []);
+
+  const handleBuy = async (planId: string) => {
+    setLoadingPlanId(planId);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error("Необходимо войти в аккаунт для покупки абонемента");
+        setLoadingPlanId(null);
+        return;
+      }
+
+      const { data, error } = await supabase.functions.invoke("create-payment", {
+        body: {
+          subscription_type_id: planId,
+          returnUrl: window.location.origin + "/dashboard",
+        },
+      });
+
+      if (error || !data?.confirmation_url) {
+        toast.error(data?.error || "Ошибка создания платежа");
+        setLoadingPlanId(null);
+        return;
+      }
+
+      window.location.href = data.confirmation_url;
+    } catch (e) {
+      toast.error("Ошибка при создании платежа");
+      setLoadingPlanId(null);
+    }
+  };
 
   return (
     <section id="pricing" className="bg-background py-20 sm:py-28">
@@ -44,6 +75,7 @@ const Pricing = () => {
               : plan.hours_count === null
               ? "ХИТ"
               : null;
+            const isLoading = loadingPlanId === plan.id;
 
             return (
               <motion.div
@@ -80,16 +112,26 @@ const Pricing = () => {
                   {plan.description}
                 </p>
 
-                <Button variant="sun" className="w-full" onClick={() => setBuyOpen(true)}>
-                  Купить
+                <Button
+                  variant="sun"
+                  className="w-full"
+                  disabled={!!loadingPlanId}
+                  onClick={() => handleBuy(plan.id)}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Создание платежа...
+                    </>
+                  ) : (
+                    "Купить"
+                  )}
                 </Button>
               </motion.div>
             );
           })}
         </div>
       </div>
-
-      <BuySubscriptionDialog open={buyOpen} onOpenChange={setBuyOpen} />
     </section>
   );
 };
