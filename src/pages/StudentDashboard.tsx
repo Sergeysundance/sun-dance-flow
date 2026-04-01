@@ -70,6 +70,9 @@ const StudentDashboard = () => {
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
