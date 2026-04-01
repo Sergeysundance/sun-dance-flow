@@ -98,10 +98,22 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       await supabase.from("profiles").update({
         first_name: firstName,
         last_name: lastName,
+        middle_name: middleName,
         phone,
         birth_date: birthDate || null,
         preferred_directions: selectedDirections,
       }).eq("user_id", data.user.id);
+
+      // Send welcome email (non-blocking)
+      supabase.functions.invoke("send-welcome-email", {
+        body: {
+          email,
+          firstName,
+          lastName,
+          middleName,
+          role: role === "teacher" ? "преподаватель" : "ученик",
+        },
+      }).catch(() => {});
 
       // If teacher, create teacher record linked to user
       if (role === "teacher") {
