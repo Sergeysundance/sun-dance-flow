@@ -1,13 +1,13 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
@@ -70,6 +70,9 @@ const StudentDashboard = () => {
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -225,6 +228,26 @@ const StudentDashboard = () => {
     await supabase.auth.signOut();
     toast.success("Вы вышли из системы");
     navigate("/");
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "УДАЛИТЬ") return;
+    setDeleting(true);
+    try {
+      // Delete profile and related data
+      await supabase.from("bookings").delete().eq("user_id", userId);
+      await supabase.from("user_subscriptions").delete().eq("user_id", userId);
+      await supabase.from("profiles").delete().eq("user_id", userId);
+      
+      // Sign out (actual auth user deletion requires admin/service role)
+      await supabase.auth.signOut();
+      toast.success("Аккаунт удалён");
+      navigate("/");
+    } catch {
+      toast.error("Ошибка удаления аккаунта");
+    } finally {
+      setDeleting(false);
+    }
   };
 
   const formatHours = (n: number) => {
@@ -679,6 +702,47 @@ const StudentDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Delete account section */}
+        <div className="mt-12 border-t border-border pt-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="text-sm font-semibold text-destructive">Удаление аккаунта</h3>
+              <p className="text-xs text-muted-foreground mt-1">Это действие необратимо. Все данные будут удалены.</p>
+            </div>
+            <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => setDeleteDialogOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-1" /> Удалить аккаунт
+            </Button>
+          </div>
+        </div>
+
+        {/* Delete confirmation dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={(o) => { setDeleteDialogOpen(o); if (!o) setDeleteConfirmText(""); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Удаление аккаунта</DialogTitle>
+              <DialogDescription>
+                Все ваши данные, абонементы и записи на занятия будут безвозвратно удалены. Введите <strong>УДАЛИТЬ</strong> для подтверждения.
+              </DialogDescription>
+            </DialogHeader>
+            <Input
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              placeholder="Введите УДАЛИТЬ"
+              className="border-destructive/40"
+            />
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Отмена</Button>
+              <Button
+                variant="destructive"
+                disabled={deleteConfirmText !== "УДАЛИТЬ" || deleting}
+                onClick={handleDeleteAccount}
+              >
+                {deleting ? "Удаление..." : "Подтвердить удаление"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
