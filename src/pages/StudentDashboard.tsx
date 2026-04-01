@@ -230,6 +230,26 @@ const StudentDashboard = () => {
     navigate("/");
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "УДАЛИТЬ") return;
+    setDeleting(true);
+    try {
+      // Delete profile and related data
+      await supabase.from("bookings").delete().eq("user_id", userId);
+      await supabase.from("user_subscriptions").delete().eq("user_id", userId);
+      await supabase.from("profiles").delete().eq("user_id", userId);
+      
+      // Sign out (actual auth user deletion requires admin/service role)
+      await supabase.auth.signOut();
+      toast.success("Аккаунт удалён");
+      navigate("/");
+    } catch {
+      toast.error("Ошибка удаления аккаунта");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const formatHours = (n: number) => {
     if (n === 1) return "1 час";
     if (n >= 2 && n <= 4) return `${n} часа`;
