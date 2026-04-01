@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,6 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { directions } from "@/data/mockData";
 
 interface AuthDialogProps {
   open: boolean;
@@ -14,10 +13,12 @@ interface AuthDialogProps {
 }
 
 type Mode = "login" | "register";
+type Role = "student" | "teacher";
 
 const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState<Role>("student");
 
   // Login fields
   const [email, setEmail] = useState("");
@@ -29,6 +30,18 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const [phone, setPhone] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+  const [bio, setBio] = useState("");
+
+  // Directions from DB
+  const [directions, setDirections] = useState<any[]>([]);
+
+  useEffect(() => {
+    if (open) {
+      supabase.from("directions").select("*").eq("active", true).order("sort_order").then(({ data }) => {
+        if (data) setDirections(data);
+      });
+    }
+  }, [open]);
 
   const resetForm = () => {
     setEmail("");
@@ -38,6 +51,8 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     setPhone("");
     setBirthDate("");
     setSelectedDirections([]);
+    setBio("");
+    setRole("student");
   };
 
   const toggleDirection = (id: string) => {
@@ -76,8 +91,8 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       return;
     }
 
-    // Update profile with additional data
     if (data.user) {
+      // Update profile
       await supabase.from("profiles").update({
         first_name: firstName,
         last_name: lastName,
@@ -85,6 +100,19 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
         birth_date: birthDate || null,
         preferred_directions: selectedDirections,
       }).eq("user_id", data.user.id);
+
+      // If teacher, create teacher record linked to user
+      if (role === "teacher") {
+        await supabase.from("teachers").insert({
+          first_name: firstName,
+          last_name: lastName,
+          phone,
+          email,
+          bio,
+          direction_ids: selectedDirections,
+          user_id: data.user.id,
+        });
+      }
     }
 
     setLoading(false);
@@ -124,6 +152,31 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
         <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
           {mode === "register" && (
             <>
+              {/* Role selector */}
+              <div>
+                <Label>Я регистрируюсь как</Label>
+                <div className="flex gap-2 mt-1.5">
+                  <Button
+                    type="button"
+                    variant={role === "student" ? "sun" : "outline"}
+                    size="sm"
+                    onClick={() => setRole("student")}
+                    className="flex-1"
+                  >
+                    Ученик
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={role === "teacher" ? "sun" : "outline"}
+                    size="sm"
+                    onClick={() => setRole("teacher")}
+                    className="flex-1"
+                  >
+                    Преподаватель
+                  </Button>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label>Имя *</Label>
@@ -156,8 +209,16 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
                 <Label>Дата рождения</Label>
                 <Input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
               </div>
+
+              {role === "teacher" && (
+                <div>
+                  <Label>О себе (био)</Label>
+                  <Input value={bio} onChange={e => setBio(e.target.value)} placeholder="Расскажите о своём опыте" />
+                </div>
+              )}
+
               <div>
-                <Label>Предпочтительные направления</Label>
+                <Label>{role === "teacher" ? "Направления преподавания" : "Предпочтительные направления"}</Label>
                 <div className="mt-1.5 space-y-1.5 rounded-md border border-border p-3">
                   {directions.filter(d => d.active).map(d => (
                     <label key={d.id} className="flex items-center gap-2 cursor-pointer text-sm">
