@@ -159,6 +159,28 @@ export default function TeacherDashboard() {
     navigate("/");
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "УДАЛИТЬ") return;
+    setDeleting(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+      const uid = session.user.id;
+
+      await supabase.from("bookings").delete().eq("user_id", uid);
+      await supabase.from("teachers").delete().eq("user_id", uid);
+      await supabase.from("profiles").delete().eq("user_id", uid);
+
+      await supabase.auth.signOut();
+      toast.success("Аккаунт удалён");
+      navigate("/");
+    } catch {
+      toast.error("Ошибка удаления аккаунта");
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
