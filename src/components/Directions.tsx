@@ -1,9 +1,22 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 const Directions = () => {
   const [directions, setDirections] = useState<any[]>([]);
+  const [selected, setSelected] = useState<any | null>(null);
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -16,6 +29,20 @@ const Directions = () => {
     };
     fetch();
   }, []);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !phone.trim()) {
+      toast.error("Заполните имя и телефон");
+      return;
+    }
+    setLoading(true);
+    // Scroll to CTA or just show success — no dedicated trial table yet
+    toast.success(`Заявка на пробный урок «${selected?.name}» отправлена! Мы свяжемся с вами.`);
+    setName("");
+    setPhone("");
+    setSelected(null);
+    setLoading(false);
+  };
 
   return (
     <section id="directions" className="bg-background py-20 sm:py-28">
@@ -40,7 +67,8 @@ const Directions = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
-              className="group flex flex-col gap-2 border-t border-border py-6 sm:flex-row sm:items-center sm:gap-8"
+              className="group flex cursor-pointer flex-col gap-2 border-t border-border py-6 sm:flex-row sm:items-center sm:gap-8"
+              onClick={() => setSelected(d)}
             >
               <span className="font-body text-sm font-semibold text-sun">
                 {String(i + 1).padStart(2, "0")}
@@ -56,6 +84,51 @@ const Directions = () => {
           <div className="border-t border-border" />
         </div>
       </div>
+
+      <Dialog open={!!selected} onOpenChange={(open) => !open && setSelected(null)}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display text-2xl font-black uppercase">
+              {selected?.name}
+            </DialogTitle>
+            <DialogDescription className="pt-2 font-body text-sm text-muted-foreground">
+              {selected?.description}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="mt-4 flex flex-col gap-3">
+            <p className="font-body text-sm font-semibold text-foreground">
+              Запишитесь на пробный урок — 550 ₽ вместо 1 100 ₽
+            </p>
+            <input
+              type="text"
+              placeholder="Ваше имя"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="rounded-md border border-border bg-background px-4 py-3 font-body text-sm text-foreground placeholder:text-muted-foreground focus:border-sun focus:outline-none"
+            />
+            <input
+              type="tel"
+              placeholder="Телефон"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="rounded-md border border-border bg-background px-4 py-3 font-body text-sm text-foreground placeholder:text-muted-foreground focus:border-sun focus:outline-none"
+            />
+            <Button
+              variant="sun"
+              size="lg"
+              className="w-full"
+              disabled={loading}
+              onClick={handleSubmit}
+            >
+              ЗАПИСАТЬСЯ НА ПРОБНЫЙ УРОК
+            </Button>
+            <p className="font-body text-xs text-muted-foreground">
+              Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 };
