@@ -15,6 +15,7 @@ import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 interface Profile {
   first_name: string;
   last_name: string;
+  middle_name: string;
   phone: string;
   birth_date: string | null;
   preferred_directions: string[] | null;
