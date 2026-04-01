@@ -299,6 +299,7 @@ export type Database = {
           last_name: string
           phone: string
           telegram_id: string
+          user_id: string | null
         }
         Insert: {
           active?: boolean
@@ -311,6 +312,7 @@ export type Database = {
           last_name?: string
           phone?: string
           telegram_id?: string
+          user_id?: string | null
         }
         Update: {
           active?: boolean
@@ -323,6 +325,7 @@ export type Database = {
           last_name?: string
           phone?: string
           telegram_id?: string
+          user_id?: string | null
         }
         Relationships: []
       }
