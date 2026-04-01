@@ -37,6 +37,9 @@ export default function TeacherDashboard() {
   const [classes, setClasses] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [bookingsMap, setBookingsMap] = useState<Record<string, any[]>>({});
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
