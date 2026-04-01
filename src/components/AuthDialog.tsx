@@ -27,6 +27,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   // Register fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [middleName, setMiddleName] = useState("");
   const [phone, setPhone] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
@@ -48,6 +49,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     setPassword("");
     setFirstName("");
     setLastName("");
+    setMiddleName("");
     setPhone("");
     setBirthDate("");
     setSelectedDirections([]);
@@ -79,8 +81,8 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   };
 
   const handleRegister = async () => {
-    if (!email || !password || !firstName || !phone) {
-      toast.error("Заполните обязательные поля");
+    if (!email || !password || !firstName || !lastName || !middleName || !phone) {
+      toast.error("Заполните все обязательные поля (Имя, Фамилия, Отчество, Телефон, Email, Пароль)");
       return;
     }
     setLoading(true);
@@ -96,10 +98,22 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       await supabase.from("profiles").update({
         first_name: firstName,
         last_name: lastName,
+        middle_name: middleName,
         phone,
         birth_date: birthDate || null,
         preferred_directions: selectedDirections,
       }).eq("user_id", data.user.id);
+
+      // Send welcome email (non-blocking)
+      supabase.functions.invoke("send-welcome-email", {
+        body: {
+          email,
+          firstName,
+          lastName,
+          middleName,
+          role: role === "teacher" ? "преподаватель" : "ученик",
+        },
+      }).catch(() => {});
 
       // If teacher, create teacher record linked to user
       if (role === "teacher") {
@@ -179,13 +193,17 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <Label>Фамилия *</Label>
+                  <Input value={lastName} onChange={e => setLastName(e.target.value)} />
+                </div>
+                <div>
                   <Label>Имя *</Label>
                   <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
                 </div>
-                <div>
-                  <Label>Фамилия</Label>
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} />
-                </div>
+              </div>
+              <div>
+                <Label>Отчество *</Label>
+                <Input value={middleName} onChange={e => setMiddleName(e.target.value)} />
               </div>
               <div>
                 <Label>Телефон *</Label>

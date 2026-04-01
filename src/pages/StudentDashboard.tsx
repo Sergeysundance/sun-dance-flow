@@ -15,6 +15,7 @@ import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 interface Profile {
   first_name: string;
   last_name: string;
+  middle_name: string;
   phone: string;
   birth_date: string | null;
   preferred_directions: string[] | null;
@@ -208,6 +209,7 @@ const StudentDashboard = () => {
     if (!session) return;
     const { error } = await supabase.from("profiles").update({
       first_name: editData.first_name, last_name: editData.last_name,
+      middle_name: editData.middle_name,
       phone: editData.phone, birth_date: editData.birth_date,
       preferred_directions: editData.preferred_directions,
     }).eq("user_id", session.user.id);
@@ -406,14 +408,6 @@ const StudentDashboard = () => {
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <Label>Имя</Label>
-                    {editing ? (
-                      <Input className="border-muted-foreground/40" value={editData?.first_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, first_name: e.target.value } : prev)} />
-                    ) : (
-                      <p className="text-foreground mt-1">{profile?.first_name || "—"}</p>
-                    )}
-                  </div>
-                  <div>
                     <Label>Фамилия</Label>
                     {editing ? (
                       <Input className="border-muted-foreground/40" value={editData?.last_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, last_name: e.target.value } : prev)} />
@@ -421,6 +415,22 @@ const StudentDashboard = () => {
                       <p className="text-foreground mt-1">{profile?.last_name || "—"}</p>
                     )}
                   </div>
+                  <div>
+                    <Label>Имя</Label>
+                    {editing ? (
+                      <Input className="border-muted-foreground/40" value={editData?.first_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, first_name: e.target.value } : prev)} />
+                    ) : (
+                      <p className="text-foreground mt-1">{profile?.first_name || "—"}</p>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label>Отчество</Label>
+                  {editing ? (
+                    <Input className="border-muted-foreground/40" value={editData?.middle_name || ""} onChange={e => setEditData(prev => prev ? { ...prev, middle_name: e.target.value } : prev)} />
+                  ) : (
+                    <p className="text-foreground mt-1">{profile?.middle_name || "—"}</p>
+                  )}
                 </div>
                 <div>
                   <Label>Телефон</Label>
