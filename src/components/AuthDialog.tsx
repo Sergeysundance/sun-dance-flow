@@ -193,13 +193,17 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
+                  <Label>Фамилия *</Label>
+                  <Input value={lastName} onChange={e => setLastName(e.target.value)} />
+                </div>
+                <div>
                   <Label>Имя *</Label>
                   <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
                 </div>
-                <div>
-                  <Label>Фамилия</Label>
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} />
-                </div>
+              </div>
+              <div>
+                <Label>Отчество *</Label>
+                <Input value={middleName} onChange={e => setMiddleName(e.target.value)} />
               </div>
               <div>
                 <Label>Телефон *</Label>
