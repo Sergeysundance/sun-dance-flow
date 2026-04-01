@@ -1,24 +1,25 @@
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-
-const team = [
-  {
-    name: "Алексей Солнцев",
-    tags: ["Бачата", "Латина"],
-    desc: "Основатель студии. Преподает бачату более 5 лет. Создает атмосферу, в которой хочется танцевать.",
-  },
-  {
-    name: "Марина Волкова",
-    tags: ["Йога", "Стретчинг"],
-    desc: "Сертифицированный инструктор йоги. Мягкий подход к каждому ученику.",
-  },
-  {
-    name: "Диана Огнева",
-    tags: ["Восточные танцы", "Contemporary"],
-    desc: "Хореограф с международным опытом. Раскрывает пластику и женственность.",
-  },
-];
+import { supabase } from "@/integrations/supabase/client";
 
 const Team = () => {
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [directions, setDirections] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const [tRes, dRes] = await Promise.all([
+        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("directions").select("id, name").eq("active", true),
+      ]);
+      if (tRes.data) setTeachers(tRes.data);
+      if (dRes.data) setDirections(dRes.data);
+    };
+    fetch();
+  }, []);
+
+  const getDirName = (id: string) => directions.find((d) => d.id === id)?.name || "";
+
   return (
     <section id="team" className="section-light bg-background py-20 sm:py-28">
       <div className="container mx-auto px-4">
@@ -33,9 +34,9 @@ const Team = () => {
         </motion.h2>
 
         <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-          {team.map((member, i) => (
+          {teachers.map((member, i) => (
             <motion.div
-              key={member.name}
+              key={member.id}
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
@@ -46,17 +47,23 @@ const Team = () => {
                 <span className="font-body text-sm text-muted-foreground">фото</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {member.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full bg-card px-3 py-1 font-body text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                  >
-                    {tag}
-                  </span>
-                ))}
+                {(member.direction_ids || []).map((dirId: string) => {
+                  const name = getDirName(dirId);
+                  if (!name) return null;
+                  return (
+                    <span
+                      key={dirId}
+                      className="rounded-full bg-card px-3 py-1 font-body text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                    >
+                      {name}
+                    </span>
+                  );
+                })}
               </div>
-              <h3 className="font-display text-xl font-bold uppercase text-foreground">{member.name}</h3>
-              <p className="font-body text-sm text-muted-foreground">{member.desc}</p>
+              <h3 className="font-display text-xl font-bold uppercase text-foreground">
+                {member.first_name} {member.last_name}
+              </h3>
+              <p className="font-body text-sm text-muted-foreground">{member.bio}</p>
             </motion.div>
           ))}
         </div>
