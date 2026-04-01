@@ -627,15 +627,19 @@ const StudentDashboard = () => {
                                     <div className="text-xs text-muted-foreground">{teacher?.first_name} {teacher?.last_name}</div>
                                     <div className="text-xs text-muted-foreground">{room?.name}</div>
                                   </div>
-                                  <Button
-                                    size="sm"
-                                    variant={isBooked ? "outline" : "sun"}
-                                    disabled={bookingLoading === cls.id}
-                                    onClick={() => handleBooking(cls.id)}
-                                    className="shrink-0 text-xs"
-                                  >
-                                    {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
-                                  </Button>
+                                  {isBooked && isWithin6Hours(cls) ? (
+                                    <span className="text-[10px] text-muted-foreground italic">Отмена недоступна</span>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant={isBooked ? "outline" : "sun"}
+                                      disabled={bookingLoading === cls.id}
+                                      onClick={() => handleBooking(cls.id)}
+                                      className="shrink-0 text-xs"
+                                    >
+                                      {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             );
