@@ -205,12 +205,23 @@ const StudentDashboard = () => {
         setBookingLoading(null);
         return;
       }
-      const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: classId });
-      if (error) { toast.error("Ошибка записи на занятие"); }
-      else {
-        setBookings(prev => new Set(prev).add(classId));
-        toast.success("Вы записаны на занятие!");
-      }
+      // Show confirmation dialog with cancellation warning
+      setConfirmBookingClassId(classId);
+      setBookingLoading(null);
+      return;
+    }
+    setBookingLoading(null);
+  };
+
+  const confirmBooking = async () => {
+    if (!confirmBookingClassId) return;
+    setBookingLoading(confirmBookingClassId);
+    setConfirmBookingClassId(null);
+    const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: confirmBookingClassId });
+    if (error) { toast.error("Ошибка записи на занятие"); }
+    else {
+      setBookings(prev => new Set(prev).add(confirmBookingClassId));
+      toast.success("Вы записаны на занятие!");
     }
     setBookingLoading(null);
   };
