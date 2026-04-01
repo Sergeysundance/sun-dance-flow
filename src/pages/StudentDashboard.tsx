@@ -563,6 +563,25 @@ const StudentDashboard = () => {
               if (!open && userId) fetchSubscriptions(userId);
             }} />
 
+            {/* Confirm booking dialog */}
+            <Dialog open={!!confirmBookingClassId} onOpenChange={(open) => { if (!open) setConfirmBookingClassId(null); }}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Подтверждение записи
+                  </DialogTitle>
+                  <DialogDescription>
+                    Обратите внимание: отменить запись менее чем за 6 часов до начала занятия будет невозможно. Час абонемента будет списан автоматически.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button variant="outline" onClick={() => setConfirmBookingClassId(null)}>Отмена</Button>
+                  <Button variant="sun" onClick={confirmBooking}>Записаться</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
             <Dialog open={noSubDialogOpen} onOpenChange={setNoSubDialogOpen}>
               <DialogContent className="sm:max-w-sm">
                 <DialogHeader>
