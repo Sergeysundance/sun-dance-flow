@@ -10,6 +10,7 @@ function formatPrice(price: number): string {
 
 const Pricing = () => {
   const [plans, setPlans] = useState<any[]>([]);
+  const [buyOpen, setBuyOpen] = useState(false);
 
   useEffect(() => {
     const fetch = async () => {
@@ -79,16 +80,16 @@ const Pricing = () => {
                   {plan.description}
                 </p>
 
-                <a href="#cta">
-                  <Button variant="sun" className="w-full">
-                    Записаться
-                  </Button>
-                </a>
+                <Button variant="sun" className="w-full" onClick={() => setBuyOpen(true)}>
+                  Купить
+                </Button>
               </motion.div>
             );
           })}
         </div>
       </div>
+
+      <BuySubscriptionDialog open={buyOpen} onOpenChange={setBuyOpen} />
     </section>
   );
 };
