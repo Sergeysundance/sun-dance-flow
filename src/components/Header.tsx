@@ -82,7 +82,7 @@ const Header = () => {
             </Button>
           </a>
           {user ? (
-            <Button variant="sunInverse" size="sm" onClick={() => navigate("/dashboard")}>
+            <Button variant="sunInverse" size="sm" onClick={goToDashboard}>
               <User className="h-4 w-4 mr-1" /> КАБИНЕТ
             </Button>
           ) : (
