@@ -177,9 +177,20 @@ const StudentDashboard = () => {
   const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
   const getRoom = (id: string) => schedRooms.find((r: any) => r.id === id);
 
+  const isWithin6Hours = (cls: any) => {
+    const classStart = new Date(`${cls.date}T${cls.start_time}`);
+    return classStart.getTime() - Date.now() < 6 * 60 * 60 * 1000;
+  };
+
   const handleBooking = async (classId: string) => {
     setBookingLoading(classId);
     if (bookings.has(classId)) {
+      const cls = scheduleData.find((c: any) => c.id === classId);
+      if (cls && isWithin6Hours(cls)) {
+        toast.error("Отмена невозможна менее чем за 6 часов до начала занятия");
+        setBookingLoading(null);
+        return;
+      }
       const { error } = await supabase.from("bookings").delete().eq("user_id", userId).eq("class_id", classId);
       if (error) { toast.error("Ошибка отмены записи"); }
       else {
@@ -616,15 +627,19 @@ const StudentDashboard = () => {
                                     <div className="text-xs text-muted-foreground">{teacher?.first_name} {teacher?.last_name}</div>
                                     <div className="text-xs text-muted-foreground">{room?.name}</div>
                                   </div>
-                                  <Button
-                                    size="sm"
-                                    variant={isBooked ? "outline" : "sun"}
-                                    disabled={bookingLoading === cls.id}
-                                    onClick={() => handleBooking(cls.id)}
-                                    className="shrink-0 text-xs"
-                                  >
-                                    {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
-                                  </Button>
+                                  {isBooked && isWithin6Hours(cls) ? (
+                                    <span className="text-[10px] text-muted-foreground italic">Отмена недоступна</span>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant={isBooked ? "outline" : "sun"}
+                                      disabled={bookingLoading === cls.id}
+                                      onClick={() => handleBooking(cls.id)}
+                                      className="shrink-0 text-xs"
+                                    >
+                                      {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             );
@@ -685,18 +700,24 @@ const StudentDashboard = () => {
                                   {room?.name}
                                 </div>
                                 <div className="mt-auto pt-1">
-                                  <button
-                                    disabled={bookingLoading === cls.id}
-                                    onClick={() => handleBooking(cls.id)}
-                                    className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
-                                      isBooked
-                                        ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
-                                        : 'text-white hover:opacity-90'
-                                    }`}
-                                    style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
-                                  >
-                                    {isBooked ? 'Отменить' : 'Записаться'}
-                                  </button>
+                                  {isBooked && isWithin6Hours(cls) ? (
+                                    <div className="w-full text-[10px] font-medium rounded px-1 py-0.5 text-center text-muted-foreground bg-muted italic">
+                                      Отмена недоступна
+                                    </div>
+                                  ) : (
+                                    <button
+                                      disabled={bookingLoading === cls.id}
+                                      onClick={() => handleBooking(cls.id)}
+                                      className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
+                                        isBooked
+                                          ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
+                                          : 'text-white hover:opacity-90'
+                                      }`}
+                                      style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
+                                    >
+                                      {isBooked ? 'Отменить' : 'Записаться'}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>
