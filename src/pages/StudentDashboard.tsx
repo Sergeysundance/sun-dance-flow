@@ -700,18 +700,24 @@ const StudentDashboard = () => {
                                   {room?.name}
                                 </div>
                                 <div className="mt-auto pt-1">
-                                  <button
-                                    disabled={bookingLoading === cls.id}
-                                    onClick={() => handleBooking(cls.id)}
-                                    className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
-                                      isBooked
-                                        ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
-                                        : 'text-white hover:opacity-90'
-                                    }`}
-                                    style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
-                                  >
-                                    {isBooked ? 'Отменить' : 'Записаться'}
-                                  </button>
+                                  {isBooked && isWithin6Hours(cls) ? (
+                                    <div className="w-full text-[10px] font-medium rounded px-1 py-0.5 text-center text-muted-foreground bg-muted italic">
+                                      Отмена недоступна
+                                    </div>
+                                  ) : (
+                                    <button
+                                      disabled={bookingLoading === cls.id}
+                                      onClick={() => handleBooking(cls.id)}
+                                      className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
+                                        isBooked
+                                          ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
+                                          : 'text-white hover:opacity-90'
+                                      }`}
+                                      style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
+                                    >
+                                      {isBooked ? 'Отменить' : 'Записаться'}
+                                    </button>
+                                  )}
                                 </div>
                               </div>
                             </div>

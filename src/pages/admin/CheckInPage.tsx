@@ -69,6 +69,18 @@ export default function CheckInPage() {
   const selRoom = selectedClass ? getRoom(selectedClass.room_id) : null;
   const classBookings = selectedClass ? getClassBookings(selectedClass.id) : [];
 
+  // Auto-mark as attended if within 6 hours of class start
+  useEffect(() => {
+    if (!selectedClass || classBookings.length === 0) return;
+    const classStart = new Date(`${selectedClass.date}T${selectedClass.start_time}`);
+    const hoursUntil = (classStart.getTime() - Date.now()) / (1000 * 60 * 60);
+    if (hoursUntil <= 6) {
+      const autoMarked: Record<string, 'attended' | 'noshow'> = {};
+      classBookings.forEach(b => { autoMarked[b.id] = 'attended'; });
+      setCheckedIn(prev => ({ ...autoMarked, ...prev }));
+    }
+  }, [selectedClassId, classBookings.length]);
+
   const attendedCount = Object.values(checkedIn).filter(v => v === 'attended').length;
 
   if (loading) return <div className="text-admin-muted p-8">Загрузка…</div>;
