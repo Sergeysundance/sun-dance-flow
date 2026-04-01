@@ -177,9 +177,20 @@ const StudentDashboard = () => {
   const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
   const getRoom = (id: string) => schedRooms.find((r: any) => r.id === id);
 
+  const isWithin6Hours = (cls: any) => {
+    const classStart = new Date(`${cls.date}T${cls.start_time}`);
+    return classStart.getTime() - Date.now() < 6 * 60 * 60 * 1000;
+  };
+
   const handleBooking = async (classId: string) => {
     setBookingLoading(classId);
     if (bookings.has(classId)) {
+      const cls = scheduleData.find((c: any) => c.id === classId);
+      if (cls && isWithin6Hours(cls)) {
+        toast.error("Отмена невозможна менее чем за 6 часов до начала занятия");
+        setBookingLoading(null);
+        return;
+      }
       const { error } = await supabase.from("bookings").delete().eq("user_id", userId).eq("class_id", classId);
       if (error) { toast.error("Ошибка отмены записи"); }
       else {
