@@ -86,7 +86,20 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       return;
     }
     setLoading(true);
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          middle_name: middleName,
+          phone,
+          birth_date: birthDate || "",
+          preferred_directions: selectedDirections,
+        },
+      },
+    });
     if (error) {
       setLoading(false);
       toast.error(error.message);
@@ -107,16 +120,6 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
           direction_ids: selectedDirections,
         });
       }
-
-      // Update profile (may be created by trigger)
-      await supabase.from("profiles").update({
-        first_name: firstName,
-        last_name: lastName,
-        middle_name: middleName,
-        phone,
-        birth_date: birthDate || null,
-        preferred_directions: selectedDirections,
-      }).eq("user_id", data.user.id);
 
       // Send welcome email (non-blocking)
       supabase.functions.invoke("send-welcome-email", {
