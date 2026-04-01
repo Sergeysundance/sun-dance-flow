@@ -71,6 +71,7 @@ const StudentDashboard = () => {
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [confirmBookingClassId, setConfirmBookingClassId] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
@@ -204,12 +205,23 @@ const StudentDashboard = () => {
         setBookingLoading(null);
         return;
       }
-      const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: classId });
-      if (error) { toast.error("Ошибка записи на занятие"); }
-      else {
-        setBookings(prev => new Set(prev).add(classId));
-        toast.success("Вы записаны на занятие!");
-      }
+      // Show confirmation dialog with cancellation warning
+      setConfirmBookingClassId(classId);
+      setBookingLoading(null);
+      return;
+    }
+    setBookingLoading(null);
+  };
+
+  const confirmBooking = async () => {
+    if (!confirmBookingClassId) return;
+    setBookingLoading(confirmBookingClassId);
+    setConfirmBookingClassId(null);
+    const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: confirmBookingClassId });
+    if (error) { toast.error("Ошибка записи на занятие"); }
+    else {
+      setBookings(prev => new Set(prev).add(confirmBookingClassId));
+      toast.success("Вы записаны на занятие!");
     }
     setBookingLoading(null);
   };
@@ -550,6 +562,25 @@ const StudentDashboard = () => {
               setBuyDialogOpen(open);
               if (!open && userId) fetchSubscriptions(userId);
             }} />
+
+            {/* Confirm booking dialog */}
+            <Dialog open={!!confirmBookingClassId} onOpenChange={(open) => { if (!open) setConfirmBookingClassId(null); }}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Подтверждение записи
+                  </DialogTitle>
+                  <DialogDescription>
+                    Обратите внимание: отменить запись менее чем за 6 часов до начала занятия будет невозможно. Час абонемента будет списан автоматически.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button variant="outline" onClick={() => setConfirmBookingClassId(null)}>Отмена</Button>
+                  <Button variant="sun" onClick={confirmBooking}>Записаться</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             <Dialog open={noSubDialogOpen} onOpenChange={setNoSubDialogOpen}>
               <DialogContent className="sm:max-w-sm">
