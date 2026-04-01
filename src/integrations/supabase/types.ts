@@ -80,6 +80,7 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          middle_name: string
           notes: string | null
           phone: string
           preferred_directions: string[] | null
@@ -92,6 +93,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          middle_name?: string
           notes?: string | null
           phone?: string
           preferred_directions?: string[] | null
@@ -104,6 +106,7 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          middle_name?: string
           notes?: string | null
           phone?: string
           preferred_directions?: string[] | null
