@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,7 @@ export default function TeachersPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
+  const [deactivateTeacher, setDeactivateTeacher] = useState<Teacher | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -147,7 +149,7 @@ export default function TeachersPage() {
                   <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => openEdit(t)}>Редактировать</DropdownMenuItem>
-                    <DropdownMenuItem className="text-red-600" onClick={() => handleDeactivate(t)}>
+                    <DropdownMenuItem className="text-red-600" onClick={() => setDeactivateTeacher(t)}>
                       {t.active ? "Деактивировать" : "Активировать"}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -196,6 +198,33 @@ export default function TeachersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deactivateTeacher} onOpenChange={(open) => { if (!open) setDeactivateTeacher(null); }}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deactivateTeacher?.active ? "Деактивировать преподавателя?" : "Активировать преподавателя?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deactivateTeacher?.active
+                ? `${deactivateTeacher.first_name} ${deactivateTeacher.last_name} будет деактивирован и не будет отображаться в расписании.`
+                : `${deactivateTeacher?.first_name} ${deactivateTeacher?.last_name} будет снова активирован.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              className={deactivateTeacher?.active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
+              onClick={() => {
+                if (deactivateTeacher) handleDeactivate(deactivateTeacher);
+                setDeactivateTeacher(null);
+              }}
+            >
+              {deactivateTeacher?.active ? "Деактивировать" : "Активировать"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
