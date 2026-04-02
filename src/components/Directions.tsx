@@ -37,6 +37,13 @@ const Directions = () => {
     }
     setLoading(true);
     try {
+      // Save trial request to database
+      await supabase.from("trial_requests").insert({
+        name: name.trim(),
+        phone: phone.trim(),
+        direction_id: selected?.id,
+      });
+
       const { data, error } = await supabase.functions.invoke("create-trial-payment", {
         body: {
           name: name.trim(),
