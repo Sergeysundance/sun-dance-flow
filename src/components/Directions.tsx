@@ -36,12 +36,28 @@ const Directions = () => {
       return;
     }
     setLoading(true);
-    // Scroll to CTA or just show success — no dedicated trial table yet
-    toast.success(`Заявка на пробный урок «${selected?.name}» отправлена! Мы свяжемся с вами.`);
-    setName("");
-    setPhone("");
-    setSelected(null);
-    setLoading(false);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-trial-payment", {
+        body: {
+          name: name.trim(),
+          phone: phone.trim(),
+          direction_id: selected?.id,
+          direction_name: selected?.name,
+          returnUrl: window.location.origin,
+        },
+      });
+
+      if (error || !data?.confirmation_url) {
+        toast.error(data?.error || "Ошибка создания платежа");
+        setLoading(false);
+        return;
+      }
+
+      window.location.href = data.confirmation_url;
+    } catch {
+      toast.error("Ошибка соединения");
+      setLoading(false);
+    }
   };
 
   return (
