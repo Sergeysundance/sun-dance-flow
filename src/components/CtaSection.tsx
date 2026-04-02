@@ -1,13 +1,56 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
-
-const directionOptions = ["Бачата", "Йога", "Восточные танцы", "Латина", "Contemporary", "Стретчинг"];
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const CtaSection = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [direction, setDirection] = useState("");
+  const [directions, setDirections] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchDirections = async () => {
+      const { data } = await supabase
+        .from("directions")
+        .select("*")
+        .eq("active", true)
+        .order("sort_order");
+      if (data) setDirections(data);
+    };
+    fetchDirections();
+  }, []);
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !phone.trim() || !direction) {
+      toast.error("Заполните все поля");
+      return;
+    }
+    const selected = directions.find((d) => d.id === direction);
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("create-trial-payment", {
+        body: {
+          name: name.trim(),
+          phone: phone.trim(),
+          direction_id: direction,
+          direction_name: selected?.name,
+          returnUrl: window.location.origin,
+        },
+      });
+      if (error || !data?.confirmation_url) {
+        toast.error(data?.error || "Ошибка создания платежа");
+        setLoading(false);
+        return;
+      }
+      window.location.href = data.confirmation_url;
+    } catch {
+      toast.error("Ошибка соединения");
+      setLoading(false);
+    }
+  };
 
   return (
     <section id="cta" className="bg-sun py-20 sm:py-28">
@@ -55,15 +98,21 @@ const CtaSection = () => {
             className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground focus:border-primary-foreground focus:outline-none"
           >
             <option value="" className="bg-background text-foreground">НАПРАВЛЕНИЕ</option>
-            {directionOptions.map((d) => (
-              <option key={d} value={d} className="bg-background text-foreground">
-                {d}
+            {directions.map((d) => (
+              <option key={d.id} value={d.id} className="bg-background text-foreground">
+                {d.name}
               </option>
             ))}
           </select>
 
-          <Button variant="sunInverse" size="lg" className="w-full py-6 text-base">
-            Я ПРИДУ
+          <Button
+            variant="sunInverse"
+            size="lg"
+            className="w-full py-6 text-base"
+            disabled={loading}
+            onClick={handleSubmit}
+          >
+            {loading ? "ПЕРЕНАПРАВЛЕНИЕ..." : "ОПЛАТИТЬ ПРОБНОЕ ЗАНЯТИЕ"}
           </Button>
 
           <p className="font-body text-xs text-primary-foreground/60">
