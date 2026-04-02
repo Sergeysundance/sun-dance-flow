@@ -137,7 +137,7 @@ const Directions = () => {
               disabled={loading}
               onClick={handleSubmit}
             >
-              ЗАПИСАТЬСЯ НА ПРОБНЫЙ УРОК
+              {loading ? "Перенаправление..." : "ОПЛАТИТЬ ПРОБНОЕ ЗАНЯТИЕ"}
             </Button>
             <p className="font-body text-xs text-muted-foreground">
               Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
