@@ -198,6 +198,33 @@ export default function TeachersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={!!deactivateTeacher} onOpenChange={(open) => { if (!open) setDeactivateTeacher(null); }}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {deactivateTeacher?.active ? "Деактивировать преподавателя?" : "Активировать преподавателя?"}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {deactivateTeacher?.active
+                ? `${deactivateTeacher.first_name} ${deactivateTeacher.last_name} будет деактивирован и не будет отображаться в расписании.`
+                : `${deactivateTeacher?.first_name} ${deactivateTeacher?.last_name} будет снова активирован.`}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              className={deactivateTeacher?.active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
+              onClick={() => {
+                if (deactivateTeacher) handleDeactivate(deactivateTeacher);
+                setDeactivateTeacher(null);
+              }}
+            >
+              {deactivateTeacher?.active ? "Деактивировать" : "Активировать"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
