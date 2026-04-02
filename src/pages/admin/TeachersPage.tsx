@@ -23,6 +23,7 @@ export default function TeachersPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
+  const [deactivateTeacher, setDeactivateTeacher] = useState<Teacher | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
