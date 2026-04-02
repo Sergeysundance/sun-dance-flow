@@ -381,6 +381,7 @@ export type Database = {
           payment_id: string | null
           phone: string
           status: string
+          user_id: string | null
         }
         Insert: {
           comment?: string | null
@@ -391,6 +392,7 @@ export type Database = {
           payment_id?: string | null
           phone: string
           status?: string
+          user_id?: string | null
         }
         Update: {
           comment?: string | null
@@ -401,6 +403,7 @@ export type Database = {
           payment_id?: string | null
           phone?: string
           status?: string
+          user_id?: string | null
         }
         Relationships: [
           {
