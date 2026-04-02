@@ -371,6 +371,47 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_requests: {
+        Row: {
+          comment: string | null
+          created_at: string
+          direction_id: string | null
+          id: string
+          name: string
+          payment_id: string | null
+          phone: string
+          status: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          direction_id?: string | null
+          id?: string
+          name: string
+          payment_id?: string | null
+          phone: string
+          status?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          direction_id?: string | null
+          id?: string
+          name?: string
+          payment_id?: string | null
+          phone?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trial_requests_direction_id_fkey"
+            columns: ["direction_id"]
+            isOneToOne: false
+            referencedRelation: "directions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_subscriptions: {
         Row: {
           active: boolean
