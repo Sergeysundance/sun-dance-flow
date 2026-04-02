@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import AuthDialog from "./AuthDialog";
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -33,6 +34,18 @@ const Schedule = () => {
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date());
@@ -72,7 +85,6 @@ const Schedule = () => {
   const getTeacher = (id: string) => teachers.find((t: any) => t.id === id);
   const getRoom = (id: string) => rooms.find((r: any) => r.id === id);
 
-  // Group classes by date
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
     for (const date of weekDates) map[date] = [];
@@ -82,10 +94,17 @@ const Schedule = () => {
     return map;
   }, [scheduleData, weekDates]);
 
-  // Find max classes in a day for row count
   const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
-
   const today = fmt(new Date());
+
+  const handleSignUp = () => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    // User is logged in — scroll to CTA or pricing
+    document.getElementById("cta")?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <section id="schedule" className="bg-background py-20">
@@ -99,7 +118,6 @@ const Schedule = () => {
           РАСПИСАНИЕ
         </motion.h2>
 
-        {/* Week navigation */}
         <div className="mb-6 flex items-center justify-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => setWeekOffset(w => w - 1)} className="text-muted-foreground hover:text-foreground">
             <ChevronLeft className="h-5 w-5" />
@@ -129,7 +147,6 @@ const Schedule = () => {
           className="mx-auto max-w-6xl hidden md:block"
         >
           <div className="rounded-xl border border-border overflow-hidden">
-            {/* Header row */}
             <div className="grid grid-cols-7 bg-card/80">
               {DAYS_SHORT.map((day, i) => {
                 const date = weekDates[i];
@@ -143,7 +160,6 @@ const Schedule = () => {
                 );
               })}
             </div>
-            {/* Body rows */}
             {Array.from({ length: maxClasses }).map((_, rowIdx) => (
               <div key={rowIdx} className="grid grid-cols-7 border-t border-border">
                 {weekDates.map((date, colIdx) => {
@@ -170,11 +186,14 @@ const Schedule = () => {
                         <div className="font-body text-[11px] text-muted-foreground">
                           {room?.name}
                         </div>
-                        <a href="#cta" className="block mt-1">
-                          <Button variant="sun" size="sm" className="text-[10px] px-3 h-6 w-full">
-                            Записаться
-                          </Button>
-                        </a>
+                        <Button
+                          variant="sun"
+                          size="sm"
+                          className="text-[10px] px-3 h-6 w-full mt-1"
+                          onClick={handleSignUp}
+                        >
+                          Записаться
+                        </Button>
                       </div>
                     </div>
                   );
@@ -213,7 +232,6 @@ const Schedule = () => {
                   {dayClasses.map(cls => {
                     const dir = getDir(cls.direction_id);
                     const teacher = getTeacher(cls.teacher_id);
-                    const room = getRoom(cls.room_id);
                     return (
                       <div
                         key={cls.id}
@@ -231,9 +249,9 @@ const Schedule = () => {
                             {teacher?.first_name} {teacher?.last_name?.[0]}.
                           </span>
                         </div>
-                        <a href="#cta">
-                          <Button variant="sun" size="sm" className="text-xs px-4">Записаться</Button>
-                        </a>
+                        <Button variant="sun" size="sm" className="text-xs px-4" onClick={handleSignUp}>
+                          Записаться
+                        </Button>
                       </div>
                     );
                   })}
@@ -246,6 +264,8 @@ const Schedule = () => {
           )}
         </motion.div>
       </div>
+
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </section>
   );
 };

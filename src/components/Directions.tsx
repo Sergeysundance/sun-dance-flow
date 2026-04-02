@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import AuthDialog from "./AuthDialog";
 
 const Directions = () => {
   const [directions, setDirections] = useState<any[]>([]);
@@ -17,9 +18,12 @@ const Directions = () => {
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
   const [loading, setLoading] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [trialUsed, setTrialUsed] = useState(false);
 
   useEffect(() => {
-    const fetch = async () => {
+    const fetchDirs = async () => {
       const { data } = await supabase
         .from("directions")
         .select("*")
@@ -27,21 +31,62 @@ const Directions = () => {
         .order("sort_order");
       if (data) setDirections(data);
     };
-    fetch();
+    fetchDirs();
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) checkTrialUsed(session.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) checkTrialUsed(session.user.id);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
+  const checkTrialUsed = async (uid: string) => {
+    const { data } = await supabase
+      .from("trial_requests")
+      .select("id")
+      .eq("user_id", uid)
+      .limit(1);
+    setTrialUsed(!!(data && data.length > 0));
+  };
+
+  const handleDirectionClick = (d: any) => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    if (trialUsed) {
+      toast.info("Пробное занятие уже использовано. Приобретите абонемент.");
+      window.location.href = "#pricing";
+      return;
+    }
+    setSelected(d);
+  };
+
   const handleSubmit = async () => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    if (trialUsed) {
+      toast.error("Вы уже использовали пробное занятие.");
+      setSelected(null);
+      return;
+    }
     if (!name.trim() || !phone.trim()) {
       toast.error("Заполните имя и телефон");
       return;
     }
     setLoading(true);
     try {
-      // Save trial request to database
       await supabase.from("trial_requests").insert({
         name: name.trim(),
         phone: phone.trim(),
         direction_id: selected?.id,
+        user_id: user.id,
       });
 
       const { data, error } = await supabase.functions.invoke("create-trial-payment", {
@@ -91,7 +136,7 @@ const Directions = () => {
               viewport={{ once: true }}
               transition={{ duration: 0.4, delay: i * 0.06 }}
               className="group flex cursor-pointer flex-col gap-2 border-t border-border py-6 sm:flex-row sm:items-center sm:gap-8"
-              onClick={() => setSelected(d)}
+              onClick={() => handleDirectionClick(d)}
             >
               <span className="font-body text-sm font-semibold text-sun">
                 {String(i + 1).padStart(2, "0")}
@@ -152,6 +197,8 @@ const Directions = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </section>
   );
 };

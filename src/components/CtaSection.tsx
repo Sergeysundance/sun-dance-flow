@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import AuthDialog from "./AuthDialog";
 
 const CtaSection = () => {
   const [name, setName] = useState("");
@@ -10,6 +11,9 @@ const CtaSection = () => {
   const [direction, setDirection] = useState("");
   const [directions, setDirections] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [user, setUser] = useState<any>(null);
+  const [trialUsed, setTrialUsed] = useState(false);
 
   useEffect(() => {
     const fetchDirections = async () => {
@@ -21,9 +25,36 @@ const CtaSection = () => {
       if (data) setDirections(data);
     };
     fetchDirections();
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      if (session?.user) checkTrialUsed(session.user.id);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) checkTrialUsed(session.user.id);
+    });
+    return () => subscription.unsubscribe();
   }, []);
 
+  const checkTrialUsed = async (uid: string) => {
+    const { data } = await supabase
+      .from("trial_requests")
+      .select("id")
+      .eq("user_id", uid)
+      .limit(1);
+    setTrialUsed(!!(data && data.length > 0));
+  };
+
   const handleSubmit = async () => {
+    if (!user) {
+      setAuthOpen(true);
+      return;
+    }
+    if (trialUsed) {
+      toast.error("Вы уже использовали пробное занятие. Приобретите абонемент для записи на занятия.");
+      return;
+    }
     if (!name.trim() || !phone.trim() || !direction) {
       toast.error("Заполните все поля");
       return;
@@ -31,11 +62,11 @@ const CtaSection = () => {
     const selected = directions.find((d) => d.id === direction);
     setLoading(true);
     try {
-      // Save trial request to database
       await supabase.from("trial_requests").insert({
         name: name.trim(),
         phone: phone.trim(),
         direction_id: direction,
+        user_id: user.id,
       });
 
       const { data, error } = await supabase.functions.invoke("create-trial-payment", {
@@ -75,7 +106,9 @@ const CtaSection = () => {
         </motion.h2>
 
         <p className="mb-10 font-body text-base text-primary-foreground/80">
-          Первое групповое занятие — 550 ₽ вместо 1 100 ₽
+          {trialUsed
+            ? "Приобретите абонемент для записи на занятия"
+            : "Первое групповое занятие — 550 ₽ вместо 1 100 ₽"}
         </p>
 
         <motion.div
@@ -85,48 +118,62 @@ const CtaSection = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mx-auto flex max-w-md flex-col gap-4"
         >
-          <input
-            type="text"
-            placeholder="ВАШЕ ИМЯ"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground placeholder:text-primary-foreground/50 focus:border-primary-foreground focus:outline-none"
-          />
-          <input
-            type="tel"
-            placeholder="ТЕЛЕФОН"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground placeholder:text-primary-foreground/50 focus:border-primary-foreground focus:outline-none"
-          />
-          <select
-            value={direction}
-            onChange={(e) => setDirection(e.target.value)}
-            className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground focus:border-primary-foreground focus:outline-none"
-          >
-            <option value="" className="bg-background text-foreground">НАПРАВЛЕНИЕ</option>
-            {directions.map((d) => (
-              <option key={d.id} value={d.id} className="bg-background text-foreground">
-                {d.name}
-              </option>
-            ))}
-          </select>
+          {!trialUsed && (
+            <>
+              <input
+                type="text"
+                placeholder="ВАШЕ ИМЯ"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground placeholder:text-primary-foreground/50 focus:border-primary-foreground focus:outline-none"
+              />
+              <input
+                type="tel"
+                placeholder="ТЕЛЕФОН"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground placeholder:text-primary-foreground/50 focus:border-primary-foreground focus:outline-none"
+              />
+              <select
+                value={direction}
+                onChange={(e) => setDirection(e.target.value)}
+                className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground focus:border-primary-foreground focus:outline-none"
+              >
+                <option value="" className="bg-background text-foreground">НАПРАВЛЕНИЕ</option>
+                {directions.map((d) => (
+                  <option key={d.id} value={d.id} className="bg-background text-foreground">
+                    {d.name}
+                  </option>
+                ))}
+              </select>
+            </>
+          )}
 
           <Button
             variant="sunInverse"
             size="lg"
             className="w-full py-6 text-base"
             disabled={loading}
-            onClick={handleSubmit}
+            onClick={trialUsed ? () => window.location.href = "#pricing" : handleSubmit}
           >
-            {loading ? "ПЕРЕНАПРАВЛЕНИЕ..." : "ОПЛАТИТЬ ПРОБНОЕ ЗАНЯТИЕ"}
+            {loading
+              ? "ПЕРЕНАПРАВЛЕНИЕ..."
+              : trialUsed
+                ? "ВЫБРАТЬ АБОНЕМЕНТ"
+                : user
+                  ? "ОПЛАТИТЬ ПРОБНОЕ ЗАНЯТИЕ"
+                  : "ВОЙТИ И ЗАПИСАТЬСЯ"}
           </Button>
 
-          <p className="font-body text-xs text-primary-foreground/60">
-            Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
-          </p>
+          {!trialUsed && (
+            <p className="font-body text-xs text-primary-foreground/60">
+              Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
+            </p>
+          )}
         </motion.div>
       </div>
+
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </section>
   );
 };
