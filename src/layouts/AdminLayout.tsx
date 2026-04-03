@@ -21,6 +21,7 @@ const navItems = [
   { title: "Заявки", path: "/admin/trial-requests", icon: Mail },
   { title: "Check-in", path: "/admin/check-in", icon: CheckSquare },
   { title: "Вопрос/Ответ", path: "/admin/faq", icon: HelpCircle },
+  { title: "Филиалы", path: "/admin/branches", icon: MapPin },
   { title: "Настройки", path: "/admin/settings", icon: Settings },
 ];
 

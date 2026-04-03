@@ -48,6 +48,7 @@ const App = () => (
             <Route path="trial-requests" element={<TrialRequestsPage />} />
             <Route path="check-in" element={<CheckInPage />} />
             <Route path="faq" element={<FaqPage />} />
+            <Route path="branches" element={<BranchesPage />} />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
