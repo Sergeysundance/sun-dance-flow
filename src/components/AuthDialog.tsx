@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
+import { Eye, EyeOff } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface AuthDialogProps {
@@ -23,7 +24,9 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   // Login fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   // Register fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -47,6 +50,9 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const resetForm = () => {
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setFirstName("");
     setLastName("");
     setMiddleName("");
@@ -83,6 +89,14 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const handleRegister = async () => {
     if (!email || !password || !firstName || !lastName || !middleName || !phone) {
       toast.error("Заполните все обязательные поля (Имя, Фамилия, Отчество, Телефон, Email, Пароль)");
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error("Пароли не совпадают");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Пароль должен содержать минимум 6 символов");
       return;
     }
     setLoading(true);
@@ -222,8 +236,45 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
           </div>
           <div>
             <Label>Пароль *</Label>
-            <Input type="password" value={password} onChange={e => setPassword(e.target.value)} />
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                onClick={() => setShowPassword(!showPassword)}
+                tabIndex={-1}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
+
+          {mode === "register" && (
+            <div>
+              <Label>Повторите пароль *</Label>
+              <div className="relative">
+                <Input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  tabIndex={-1}
+                >
+                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+          )}
 
           {mode === "register" && (
             <>
