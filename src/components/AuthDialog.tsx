@@ -50,6 +50,9 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const resetForm = () => {
     setEmail("");
     setPassword("");
+    setConfirmPassword("");
+    setShowPassword(false);
+    setShowConfirmPassword(false);
     setFirstName("");
     setLastName("");
     setMiddleName("");
