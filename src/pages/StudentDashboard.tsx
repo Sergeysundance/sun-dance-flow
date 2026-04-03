@@ -317,7 +317,7 @@ const StudentDashboard = () => {
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <h1 className="font-display text-2xl font-bold mb-6">Личный кабинет</h1>
 
-        <Tabs defaultValue="profile">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="mb-6">
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
