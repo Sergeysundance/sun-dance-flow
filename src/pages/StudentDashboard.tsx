@@ -395,7 +395,7 @@ const StudentDashboard = () => {
                         <div className="text-xs text-muted-foreground">не активен</div>
                       </div>
                     </div>
-                    <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
                       Купить
                     </Button>
                   </div>
