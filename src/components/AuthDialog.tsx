@@ -262,7 +262,13 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
                   type={showConfirmPassword ? "text" : "password"}
                   value={confirmPassword}
                   onChange={e => setConfirmPassword(e.target.value)}
-                  className="pr-10"
+                  className={`pr-10 ${
+                    confirmPassword
+                      ? password === confirmPassword
+                        ? "border-primary focus-visible:ring-primary"
+                        : "border-destructive focus-visible:ring-destructive"
+                      : ""
+                  }`}
                 />
                 <button
                   type="button"
@@ -273,6 +279,9 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
                   {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+              {confirmPassword && password !== confirmPassword && (
+                <p className="text-xs text-destructive mt-1">Пароли не совпадают</p>
+              )}
             </div>
           )}
 
