@@ -6,7 +6,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, GraduationCap, CalendarDays, CreditCard,
-  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle,
+  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +21,7 @@ const navItems = [
   { title: "Заявки", path: "/admin/trial-requests", icon: Mail },
   { title: "Check-in", path: "/admin/check-in", icon: CheckSquare },
   { title: "Вопрос/Ответ", path: "/admin/faq", icon: HelpCircle },
+  { title: "Филиалы", path: "/admin/branches", icon: MapPin },
   { title: "Настройки", path: "/admin/settings", icon: Settings },
 ];
 
