@@ -207,6 +207,7 @@ const StudentDashboard = () => {
     } else {
       // Check for active subscription before booking
       if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
+        setActiveTab("subscriptions");
         setNoSubDialogOpen(true);
         setBookingLoading(null);
         return;
