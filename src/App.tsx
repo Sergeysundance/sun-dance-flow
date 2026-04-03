@@ -17,6 +17,7 @@ import RoomsPage from "./pages/admin/RoomsPage.tsx";
 import DirectionsPage from "./pages/admin/DirectionsPage.tsx";
 import TrialRequestsPage from "./pages/admin/TrialRequestsPage.tsx";
 import CheckInPage from "./pages/admin/CheckInPage.tsx";
+import FaqPage from "./pages/admin/FaqPage.tsx";
 import SettingsPage from "./pages/admin/SettingsPage.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import TeacherDashboard from "./pages/TeacherDashboard.tsx";
