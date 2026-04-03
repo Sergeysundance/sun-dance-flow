@@ -28,6 +28,7 @@ export default function ClientDetailPage() {
   const [subscriptions, setSubscriptions] = useState<(UserSubscription & { type?: SubscriptionType })[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bonusAmount, setBonusAmount] = useState("");
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
