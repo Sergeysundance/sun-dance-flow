@@ -93,8 +93,20 @@ const StudentDashboard = () => {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
 
+  const enrichSubscriptions = async (subs: any[]) => {
+    if (!subs || subs.length === 0) return [];
+    const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
+    const { data: types } = await supabase
+      .from("subscription_types")
+      .select("id, name, hours_count, price, type")
+      .in("id", typeIds);
+    const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
+    return subs.map((s: any) => ({ ...s, subscription_type: typesMap.get(s.subscription_type_id) }));
+  };
+
   const fetchSubscriptions = async (uid: string) => {
-    const { data: subs } = await supabase
+    // Active subscriptions
+    const { data: activeSubs } = await supabase
       .from("user_subscriptions")
       .select("*")
       .eq("user_id", uid)
@@ -102,23 +114,17 @@ const StudentDashboard = () => {
       .gte("expires_at", new Date().toISOString())
       .order("expires_at", { ascending: true });
 
-    if (subs && subs.length > 0) {
-      // Fetch subscription type names
-      const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
-      const { data: types } = await supabase
-        .from("subscription_types")
-        .select("id, name, hours_count, price, type")
-        .in("id", typeIds);
+    setUserSubscriptions(await enrichSubscriptions(activeSubs || []));
 
-      const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
-      const enriched = subs.map((s: any) => ({
-        ...s,
-        subscription_type: typesMap.get(s.subscription_type_id),
-      }));
-      setUserSubscriptions(enriched);
-    } else {
-      setUserSubscriptions([]);
-    }
+    // History: inactive or expired
+    const { data: historySubs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .or(`active.eq.false,expires_at.lt.${new Date().toISOString()}`)
+      .order("expires_at", { ascending: false });
+
+    setHistorySubscriptions(await enrichSubscriptions(historySubs || []));
   };
 
   useEffect(() => {
