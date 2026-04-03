@@ -23,6 +23,7 @@ interface SubscriptionPlan {
 interface BuySubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  subscriptionType?: string;
 }
 
 const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProps) => {
