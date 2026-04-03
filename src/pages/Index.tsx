@@ -8,6 +8,7 @@ import Gallery from "@/components/Gallery";
 import Directions from "@/components/Directions";
 import Pricing from "@/components/Pricing";
 import CtaSection from "@/components/CtaSection";
+import Faq from "@/components/Faq";
 import Footer from "@/components/Footer";
 
 const Index = () => {
@@ -23,6 +24,7 @@ const Index = () => {
       <Directions />
       <Pricing />
       <CtaSection />
+      <Faq />
       <Footer />
     </>
   );
