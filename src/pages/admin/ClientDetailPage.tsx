@@ -135,6 +135,50 @@ export default function ClientDetailPage() {
                 </div>
               )}
             </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="Баллы"
+                className="w-24 bg-white border-admin-border"
+                value={bonusAmount}
+                onChange={e => setBonusAmount(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-admin-border gap-1"
+                onClick={async () => {
+                  const amt = parseInt(bonusAmount);
+                  if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
+                  const current = (profile as any).bonus_points ?? 0;
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current + amt } as any).eq("id", profile.id);
+                  if (error) { toast.error("Ошибка начисления"); return; }
+                  toast.success(`+${amt} баллов начислено`);
+                  setBonusAmount("");
+                  fetchData();
+                }}
+              >
+                <Plus className="h-4 w-4" /> Начислить
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-admin-border gap-1"
+                onClick={async () => {
+                  const amt = parseInt(bonusAmount);
+                  if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
+                  const current = (profile as any).bonus_points ?? 0;
+                  if (amt > current) { toast.error("Недостаточно баллов"); return; }
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current - amt } as any).eq("id", profile.id);
+                  if (error) { toast.error("Ошибка списания"); return; }
+                  toast.success(`-${amt} баллов списано`);
+                  setBonusAmount("");
+                  fetchData();
+                }}
+              >
+                <Minus className="h-4 w-4" /> Списать
+              </Button>
+            </div>
             <Button variant="outline" className="border-admin-border gap-1" onClick={openEdit}>
               <Edit className="h-4 w-4" /> Редактировать
             </Button>
