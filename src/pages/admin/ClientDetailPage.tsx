@@ -123,7 +123,7 @@ export default function ClientDetailPage() {
                 {profile.phone && <div>📞 <a href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline">{profile.phone}</a></div>}
                 {profile.birth_date && <div>🎂 {new Date(profile.birth_date).toLocaleDateString('ru-RU')}</div>}
                 {profile.notes && <div>📝 {profile.notes}</div>}
-              </div>
+                <div>⭐ Бонусные баллы: <span className="font-bold text-admin-foreground">{(profile as any).bonus_points ?? 0}</span></div>
               {(profile.preferred_directions || []).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {(profile.preferred_directions || []).map(dId => {
