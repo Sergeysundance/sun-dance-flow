@@ -950,9 +950,15 @@ const StudentDashboard = () => {
         <BuySubscriptionDialog
           open={buyDialogOpen}
           subscriptionType={buyDialogType}
-          onOpenChange={(open) => {
+          bonusPoints={bonusPoints}
+          onOpenChange={async (open) => {
             setBuyDialogOpen(open);
-            if (!open && userId) fetchSubscriptions(userId);
+            if (!open && userId) {
+              fetchSubscriptions(userId);
+              // Refresh bonus points
+              const { data: p } = await supabase.from("profiles").select("bonus_points").eq("user_id", userId).single();
+              if (p) setBonusPoints((p as any).bonus_points ?? 0);
+            }
           }}
         />
 
