@@ -20,6 +20,7 @@ const navItems = [
   { title: "Направления", path: "/admin/directions", icon: Sparkles },
   { title: "Заявки", path: "/admin/trial-requests", icon: Mail },
   { title: "Check-in", path: "/admin/check-in", icon: CheckSquare },
+  { title: "FAQ", path: "/admin/faq", icon: HelpCircle },
   { title: "Настройки", path: "/admin/settings", icon: Settings },
 ];
 
