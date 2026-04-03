@@ -294,7 +294,7 @@ const StudentDashboard = () => {
   // Active subscription summary for profile tab
   const activeSubscription = userSubscriptions.length > 0 ? userSubscriptions[0] : null;
   const groupSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type || 'group') === 'group');
-  const individualSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type) === 'individual');
+  const individualSubscriptions = userSubscriptions.filter(s => s.subscription_type?.type?.startsWith('individual'));
 
   if (loading) {
     return (

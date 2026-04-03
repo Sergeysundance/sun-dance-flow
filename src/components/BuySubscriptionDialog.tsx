@@ -36,12 +36,18 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" 
     if (!open) return;
     setSelected(null);
     setFetching(true);
-    supabase
+    const query = supabase
       .from("subscription_types")
-      .select("id, name, hours_count, price, old_price, description")
-      .eq("active", true)
-      .eq("type", subscriptionType)
-      .order("price", { ascending: true })
+      .select("id, name, hours_count, price, old_price, description, type")
+      .eq("active", true);
+
+    if (subscriptionType === "individual") {
+      query.in("type", ["individual_solo", "individual_duo"]);
+    } else {
+      query.eq("type", subscriptionType);
+    }
+
+    query.order("price", { ascending: true })
       .then(({ data }) => {
         setPlans(data || []);
         setFetching(false);
