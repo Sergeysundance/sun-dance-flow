@@ -877,6 +877,15 @@ const StudentDashboard = () => {
           </TabsContent>
         </Tabs>
 
+        <BuySubscriptionDialog
+          open={buyDialogOpen}
+          subscriptionType={buyDialogType}
+          onOpenChange={(open) => {
+            setBuyDialogOpen(open);
+            if (!open && userId) fetchSubscriptions(userId);
+          }}
+        />
+
         {/* Delete account section */}
         <div className="mt-12 border-t border-border pt-8">
           <div className="flex items-center justify-between">
