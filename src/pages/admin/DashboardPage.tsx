@@ -1,25 +1,133 @@
+import { useEffect, useState } from "react";
 import { CalendarDays, Mail, CreditCard, AlertTriangle, ArrowRight, UserPlus, CalendarPlus, CheckSquare } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate } from "react-router-dom";
-import {
-  scheduleClasses, trialRequests, subscriptions, subscriptionTypes,
-  getDirection, getTeacher, getRoom, getTrialStatusLabel,
-  directions,
-} from "@/data/mockData";
+import { supabase } from "@/integrations/supabase/client";
 
 const today = new Date().toISOString().split("T")[0];
 
+interface ScheduleClass {
+  id: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  direction_id: string;
+  teacher_id: string;
+  room_id: string;
+  max_spots: number;
+  cancelled: boolean;
+}
+
+interface Direction {
+  id: string;
+  name: string;
+  color: string;
+}
+
+interface Teacher {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
+interface Room {
+  id: string;
+  name: string;
+}
+
+interface TrialRequest {
+  id: string;
+  name: string;
+  phone: string;
+  status: string;
+  direction_id: string | null;
+  created_at: string;
+}
+
+interface UserSubscription {
+  id: string;
+  active: boolean;
+  expires_at: string;
+  user_id: string;
+}
+
+const trialStatusColor: Record<string, string> = {
+  new: "bg-yellow-100 text-yellow-800",
+  contacted: "bg-blue-100 text-blue-800",
+  enrolled: "bg-green-100 text-green-800",
+  declined: "bg-gray-100 text-gray-800",
+};
+
+const trialStatusLabel: Record<string, string> = {
+  new: "Новая",
+  contacted: "Связались",
+  enrolled: "Записан",
+  declined: "Отказ",
+};
+
 export default function DashboardPage() {
   const navigate = useNavigate();
-  const todayClasses = scheduleClasses.filter(c => c.date === today && !c.cancelled);
-  const totalEnrolled = todayClasses.reduce((s, c) => s + c.enrolledClientIds.length, 0);
+  const [loading, setLoading] = useState(true);
+  const [todayClasses, setTodayClasses] = useState<ScheduleClass[]>([]);
+  const [directions, setDirections] = useState<Direction[]>([]);
+  const [teachers, setTeachers] = useState<Teacher[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
+  const [trialRequests, setTrialRequests] = useState<TrialRequest[]>([]);
+  const [activeSubs, setActiveSubs] = useState<UserSubscription[]>([]);
+  const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+
+    const [classesRes, dirsRes, teachersRes, roomsRes, trialsRes, subsRes] = await Promise.all([
+      supabase.from("schedule_classes").select("*").eq("date", today).eq("cancelled", false).order("start_time", { ascending: true }),
+      supabase.from("directions").select("id, name, color"),
+      supabase.from("teachers").select("id, first_name, last_name"),
+      supabase.from("rooms").select("id, name"),
+      supabase.from("trial_requests").select("*").order("created_at", { ascending: false }).limit(10),
+      supabase.from("user_subscriptions").select("*").eq("active", true),
+    ]);
+
+    const classes = (classesRes.data || []) as ScheduleClass[];
+    setTodayClasses(classes);
+    setDirections((dirsRes.data || []) as Direction[]);
+    setTeachers((teachersRes.data || []) as Teacher[]);
+    setRooms((roomsRes.data || []) as Room[]);
+    setTrialRequests((trialsRes.data || []) as TrialRequest[]);
+    setActiveSubs((subsRes.data || []) as UserSubscription[]);
+
+    // Fetch booking counts for today's classes
+    if (classes.length > 0) {
+      const classIds = classes.map(c => c.id);
+      const { data: bookings } = await supabase
+        .from("bookings")
+        .select("class_id")
+        .in("class_id", classIds);
+
+      const counts: Record<string, number> = {};
+      (bookings || []).forEach((b: { class_id: string }) => {
+        counts[b.class_id] = (counts[b.class_id] || 0) + 1;
+      });
+      setBookingCounts(counts);
+    }
+
+    setLoading(false);
+  };
+
+  const getDirection = (id: string) => directions.find(d => d.id === id);
+  const getTeacher = (id: string) => teachers.find(t => t.id === id);
+  const getRoom = (id: string) => rooms.find(r => r.id === id);
+
+  const totalEnrolled = todayClasses.reduce((s, c) => s + (bookingCounts[c.id] || 0), 0);
   const newRequests = trialRequests.filter(r => r.status === "new");
-  const activeSubs = subscriptions.filter(s => s.status === "active");
-  const expiringSoon = subscriptions.filter(s => {
-    if (s.status !== "active") return false;
-    const diff = (new Date(s.expiresDate).getTime() - Date.now()) / 86400000;
+  const expiringSoon = activeSubs.filter(s => {
+    const diff = (new Date(s.expires_at).getTime() - Date.now()) / 86400000;
     return diff <= 7 && diff >= 0;
   });
 
@@ -30,7 +138,9 @@ export default function DashboardPage() {
     { label: "Истекают скоро", value: expiringSoon.length, sub: "в ближайшие 7 дней", icon: AlertTriangle, color: "text-red-500", badge: expiringSoon.length > 0 },
   ];
 
-  const trialStatusColor: Record<string, string> = { new: "bg-yellow-100 text-yellow-800", contacted: "bg-blue-100 text-blue-800", enrolled: "bg-green-100 text-green-800", declined: "bg-gray-100 text-gray-800" };
+  if (loading) {
+    return <div className="flex items-center justify-center py-12 text-admin-muted">Загрузка...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -77,16 +187,17 @@ export default function DashboardPage() {
                   <thead><tr className="border-b border-admin-border text-left text-xs text-admin-muted"><th className="px-4 py-2">Время</th><th className="px-4 py-2">Направление</th><th className="px-4 py-2">Преподаватель</th><th className="px-4 py-2">Зал</th><th className="px-4 py-2">Записано</th></tr></thead>
                   <tbody>
                     {todayClasses.map(c => {
-                      const dir = getDirection(c.directionId);
-                      const teacher = getTeacher(c.teacherId);
-                      const room = getRoom(c.roomId);
+                      const dir = getDirection(c.direction_id);
+                      const teacher = getTeacher(c.teacher_id);
+                      const room = getRoom(c.room_id);
+                      const enrolled = bookingCounts[c.id] || 0;
                       return (
                         <tr key={c.id} className="border-b border-admin-border last:border-0 hover:bg-gray-50">
-                          <td className="px-4 py-2.5 font-medium text-admin-foreground">{c.startTime}–{c.endTime}</td>
+                          <td className="px-4 py-2.5 font-medium text-admin-foreground">{c.start_time.slice(0, 5)}–{c.end_time.slice(0, 5)}</td>
                           <td className="px-4 py-2.5"><span className="inline-block h-2 w-2 rounded-full mr-1.5" style={{ backgroundColor: dir?.color }} />{dir?.name}</td>
-                          <td className="px-4 py-2.5 text-admin-muted">{teacher?.firstName} {teacher?.lastName?.[0]}.</td>
+                          <td className="px-4 py-2.5 text-admin-muted">{teacher?.first_name} {teacher?.last_name?.[0]}.</td>
                           <td className="px-4 py-2.5 text-admin-muted">{room?.name}</td>
-                          <td className="px-4 py-2.5">{c.enrolledClientIds.length}/{c.maxSpots}</td>
+                          <td className="px-4 py-2.5">{enrolled}/{c.max_spots}</td>
                         </tr>
                       );
                     })}
@@ -106,18 +217,22 @@ export default function DashboardPage() {
             </Button>
           </CardHeader>
           <CardContent className="space-y-2 pt-0">
-            {trialRequests.slice(0, 4).map(r => {
-              const dir = getDirection(r.directionId);
-              return (
-                <div key={r.id} className="flex items-center justify-between rounded-lg border border-admin-border p-3">
-                  <div>
-                    <div className="text-sm font-medium text-admin-foreground">{r.name}</div>
-                    <div className="text-xs text-admin-muted">{r.phone} · {dir?.name}</div>
+            {trialRequests.length === 0 ? (
+              <div className="text-sm text-admin-muted">Нет заявок</div>
+            ) : (
+              trialRequests.slice(0, 4).map(r => {
+                const dir = r.direction_id ? getDirection(r.direction_id) : null;
+                return (
+                  <div key={r.id} className="flex items-center justify-between rounded-lg border border-admin-border p-3">
+                    <div>
+                      <div className="text-sm font-medium text-admin-foreground">{r.name}</div>
+                      <div className="text-xs text-admin-muted">{r.phone}{dir ? ` · ${dir.name}` : ""}</div>
+                    </div>
+                    <Badge className={trialStatusColor[r.status] || "bg-gray-100 text-gray-800"}>{trialStatusLabel[r.status] || r.status}</Badge>
                   </div>
-                  <Badge className={trialStatusColor[r.status]}>{getTrialStatusLabel(r.status)}</Badge>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </CardContent>
         </Card>
       </div>
