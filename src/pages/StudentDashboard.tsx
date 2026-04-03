@@ -106,7 +106,7 @@ const StudentDashboard = () => {
       const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
       const { data: types } = await supabase
         .from("subscription_types")
-        .select("id, name, hours_count, price")
+        .select("id, name, hours_count, price, type")
         .in("id", typeIds);
 
       const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
