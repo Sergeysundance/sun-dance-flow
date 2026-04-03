@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Check, CreditCard, Loader2 } from "lucide-react";
+import { Check, CreditCard, Loader2, Minus, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -24,17 +25,20 @@ interface BuySubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   subscriptionType?: string;
+  bonusPoints?: number;
 }
 
-const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" }: BuySubscriptionDialogProps) => {
+const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group", bonusPoints = 0 }: BuySubscriptionDialogProps) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [bonusToUse, setBonusToUse] = useState(0);
 
   useEffect(() => {
     if (!open) return;
     setSelected(null);
+    setBonusToUse(0);
     setFetching(true);
     const query = supabase
       .from("subscription_types")
@@ -54,6 +58,19 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" 
       });
   }, [open, subscriptionType]);
 
+  // Reset bonus when plan changes
+  useEffect(() => {
+    setBonusToUse(0);
+  }, [selected]);
+
+  const selectedPlan = selected !== null ? plans[selected] : null;
+  const maxBonus = selectedPlan ? Math.min(bonusPoints, selectedPlan.price) : 0;
+  const finalPrice = selectedPlan ? selectedPlan.price - bonusToUse : 0;
+
+  const handleBonusChange = (value: number) => {
+    setBonusToUse(Math.max(0, Math.min(value, maxBonus)));
+  };
+
   const handlePurchase = async () => {
     if (selected === null) return;
     const plan = plans[selected];
@@ -71,6 +88,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" 
         body: {
           subscription_type_id: plan.id,
           returnUrl: window.location.origin + "/dashboard",
+          bonus_points_to_use: bonusToUse,
         },
       });
 
@@ -109,45 +127,110 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" 
           ) : plans.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">Нет доступных абонементов</div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 my-4">
-              {plans.map((plan, idx) => {
-                const pricePerHour = plan.hours_count ? Math.round(plan.price / plan.hours_count) : null;
-                return (
-                  <button
-                    key={plan.id}
-                    onClick={() => setSelected(idx)}
-                    className={`relative rounded-lg border-2 p-4 text-left transition-all ${
-                      selected === idx
-                        ? "border-sun bg-sun/10 shadow-md"
-                        : "border-border hover:border-sun/40"
-                    }`}
-                  >
-                    <div className="font-display text-lg font-bold text-foreground">{plan.name}</div>
-                    {plan.hours_count && (
-                      <div className="text-sm text-muted-foreground">{formatHours(plan.hours_count)}</div>
-                    )}
-                    <div className="font-display text-2xl font-black text-foreground mt-1">
-                      {plan.price.toLocaleString("ru-RU")} ₽
+            <>
+              <div className="grid grid-cols-2 gap-3 my-4">
+                {plans.map((plan, idx) => {
+                  const pricePerHour = plan.hours_count ? Math.round(plan.price / plan.hours_count) : null;
+                  return (
+                    <button
+                      key={plan.id}
+                      onClick={() => setSelected(idx)}
+                      className={`relative rounded-lg border-2 p-4 text-left transition-all ${
+                        selected === idx
+                          ? "border-sun bg-sun/10 shadow-md"
+                          : "border-border hover:border-sun/40"
+                      }`}
+                    >
+                      <div className="font-display text-lg font-bold text-foreground">{plan.name}</div>
+                      {plan.hours_count && (
+                        <div className="text-sm text-muted-foreground">{formatHours(plan.hours_count)}</div>
+                      )}
+                      <div className="font-display text-2xl font-black text-foreground mt-1">
+                        {plan.price.toLocaleString("ru-RU")} ₽
+                      </div>
+                      {plan.old_price && (
+                        <div className="text-xs text-muted-foreground line-through">
+                          {plan.old_price.toLocaleString("ru-RU")} ₽
+                        </div>
+                      )}
+                      {pricePerHour && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {pricePerHour} ₽ / час
+                        </div>
+                      )}
+                      {selected === idx && (
+                        <div className="absolute top-2 left-2">
+                          <Check className="h-5 w-5 text-sun" />
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Bonus points section */}
+              {selected !== null && bonusPoints > 0 && (
+                <div className="rounded-lg border border-sun/30 bg-sun/5 p-4 mb-2">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-sun text-lg">★</span>
+                    <span className="font-display text-sm font-bold text-foreground">Списать бонусные баллы</span>
+                    <span className="ml-auto text-xs text-muted-foreground">Доступно: {bonusPoints}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      disabled={bonusToUse <= 0}
+                      onClick={() => handleBonusChange(bonusToUse - 1)}
+                    >
+                      <Minus className="h-4 w-4" />
+                    </Button>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={maxBonus}
+                      value={bonusToUse}
+                      onChange={(e) => handleBonusChange(Number(e.target.value) || 0)}
+                      className="text-center font-display font-bold h-8"
+                    />
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 shrink-0"
+                      disabled={bonusToUse >= maxBonus}
+                      onClick={() => handleBonusChange(bonusToUse + 1)}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-xs shrink-0"
+                      onClick={() => handleBonusChange(maxBonus)}
+                    >
+                      Все
+                    </Button>
+                  </div>
+                  {bonusToUse > 0 && selectedPlan && (
+                    <div className="mt-3 text-sm">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>Стоимость:</span>
+                        <span>{selectedPlan.price.toLocaleString("ru-RU")} ₽</span>
+                      </div>
+                      <div className="flex justify-between text-sun font-medium">
+                        <span>Скидка (бонусы):</span>
+                        <span>−{bonusToUse.toLocaleString("ru-RU")} ₽</span>
+                      </div>
+                      <div className="flex justify-between font-display font-bold text-foreground border-t border-border mt-1 pt-1">
+                        <span>Итого:</span>
+                        <span>{finalPrice.toLocaleString("ru-RU")} ₽</span>
+                      </div>
                     </div>
-                    {plan.old_price && (
-                      <div className="text-xs text-muted-foreground line-through">
-                        {plan.old_price.toLocaleString("ru-RU")} ₽
-                      </div>
-                    )}
-                    {pricePerHour && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {pricePerHour} ₽ / час
-                      </div>
-                    )}
-                    {selected === idx && (
-                      <div className="absolute top-2 left-2">
-                        <Check className="h-5 w-5 text-sun" />
-                      </div>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
         </div>
 
@@ -159,7 +242,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" 
             onClick={handlePurchase}
           >
             <CreditCard className="h-4 w-4 mr-2" />
-            {loading ? "Создание платежа..." : "Перейти к оплате"}
+            {loading ? "Создание платежа..." : finalPrice > 0 ? `Оплатить ${finalPrice.toLocaleString("ru-RU")} ₽` : "Получить бесплатно"}
           </Button>
         </div>
       </DialogContent>

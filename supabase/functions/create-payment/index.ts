@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { subscription_type_id, returnUrl } = body;
+    const { subscription_type_id, returnUrl, bonus_points_to_use = 0 } = body;
 
     if (!subscription_type_id || !returnUrl) {
       return new Response(JSON.stringify({ error: "Неверные параметры" }), {
@@ -45,7 +45,6 @@ serve(async (req) => {
       });
     }
 
-    // Fetch the subscription type from DB
     const adminClient = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -53,7 +52,7 @@ serve(async (req) => {
 
     const { data: plan, error: planError } = await adminClient
       .from("subscription_types")
-      .select("id, name, price, hours_count, active")
+      .select("id, name, price, hours_count, active, duration_days")
       .eq("id", subscription_type_id)
       .eq("active", true)
       .single();
@@ -63,6 +62,69 @@ serve(async (req) => {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Validate bonus points
+    let validBonusPoints = Math.max(0, Math.floor(bonus_points_to_use));
+    if (validBonusPoints > 0) {
+      const { data: profile } = await adminClient
+        .from("profiles")
+        .select("bonus_points")
+        .eq("user_id", user.id)
+        .single();
+
+      if (!profile || profile.bonus_points < validBonusPoints) {
+        return new Response(JSON.stringify({ error: "Недостаточно бонусных баллов" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // Cap bonus at plan price
+      validBonusPoints = Math.min(validBonusPoints, plan.price);
+    }
+
+    const finalAmount = plan.price - validBonusPoints;
+
+    // If fully covered by bonus points, create subscription directly
+    if (finalAmount <= 0) {
+      // Deduct bonus points
+      if (validBonusPoints > 0) {
+        const { data: currentProfile } = await adminClient
+          .from("profiles")
+          .select("bonus_points")
+          .eq("user_id", user.id)
+          .single();
+        
+        await adminClient
+          .from("profiles")
+          .update({ bonus_points: (currentProfile?.bonus_points || 0) - validBonusPoints })
+          .eq("user_id", user.id);
+      }
+
+      // Create subscription
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + (plan.duration_days || 30));
+
+      await adminClient.from("user_subscriptions").insert({
+        user_id: user.id,
+        subscription_type_id: plan.id,
+        hours_remaining: plan.hours_count || 0,
+        hours_total: plan.hours_count || 0,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      return new Response(
+        JSON.stringify({
+          payment_id: null,
+          confirmation_url: returnUrl,
+          status: "succeeded",
+          bonus_used: true,
+        }),
+        {
+          status: 200,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        }
+      );
     }
 
     const shopId = Deno.env.get("YOKASSA_SHOP_ID");
@@ -85,7 +147,7 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         amount: {
-          value: plan.price.toFixed(2),
+          value: finalAmount.toFixed(2),
           currency: "RUB",
         },
         confirmation: {
@@ -93,12 +155,15 @@ serve(async (req) => {
           return_url: returnUrl,
         },
         capture: true,
-        description: plan.name,
+        description: validBonusPoints > 0
+          ? `${plan.name} (скидка ${validBonusPoints} бонусов)`
+          : plan.name,
         save_payment_method: true,
         metadata: {
           user_id: user.id,
           subscription_type_id: plan.id,
           hours: plan.hours_count,
+          bonus_points_used: validBonusPoints,
         },
       }),
     });
@@ -114,6 +179,20 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
+    }
+
+    // Deduct bonus points now (payment created successfully)
+    if (validBonusPoints > 0) {
+      const { data: currentProfile } = await adminClient
+        .from("profiles")
+        .select("bonus_points")
+        .eq("user_id", user.id)
+        .single();
+
+      await adminClient
+        .from("profiles")
+        .update({ bonus_points: (currentProfile?.bonus_points || 0) - validBonusPoints })
+        .eq("user_id", user.id);
     }
 
     return new Response(
