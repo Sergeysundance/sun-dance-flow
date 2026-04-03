@@ -171,13 +171,17 @@ export default function ClientsPage() {
               return (
                 <tr
                   key={p.id}
-                  className={`border-b border-admin-border last:border-0 hover:bg-gray-50 ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}
+                  className={`border-b border-admin-border last:border-0 hover:bg-gray-50 cursor-pointer ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}
+                  onClick={() => navigate(`/admin/clients/${p.id}`)}
                 >
                   <td className="px-4 py-3 font-medium text-admin-foreground">
                     {p.last_name} {p.first_name} {p.middle_name}
                   </td>
                   <td className="px-4 py-3">
                     <a href={`tel:${p.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{p.phone}</a>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span className="font-medium text-admin-foreground">{p.bonus_points ?? 0}</span>
                   </td>
                   <td className="px-4 py-3">
                     {sub ? <Badge className="bg-green-100 text-green-800">Активен</Badge> : <span className="text-admin-muted">—</span>}
