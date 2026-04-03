@@ -124,6 +124,7 @@ export default function ClientDetailPage() {
                 {profile.birth_date && <div>🎂 {new Date(profile.birth_date).toLocaleDateString('ru-RU')}</div>}
                 {profile.notes && <div>📝 {profile.notes}</div>}
                 <div>⭐ Бонусные баллы: <span className="font-bold text-admin-foreground">{(profile as any).bonus_points ?? 0}</span></div>
+              </div>
               {(profile.preferred_directions || []).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
                   {(profile.preferred_directions || []).map(dId => {
