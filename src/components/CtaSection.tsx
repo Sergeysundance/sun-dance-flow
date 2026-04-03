@@ -118,58 +118,21 @@ const CtaSection = () => {
           transition={{ duration: 0.5, delay: 0.2 }}
           className="mx-auto flex max-w-md flex-col gap-4"
         >
-          {!trialUsed && (
-            <>
-              <input
-                type="text"
-                placeholder="ВАШЕ ИМЯ"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground placeholder:text-primary-foreground/50 focus:border-primary-foreground focus:outline-none"
-              />
-              <input
-                type="tel"
-                placeholder="ТЕЛЕФОН"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground placeholder:text-primary-foreground/50 focus:border-primary-foreground focus:outline-none"
-              />
-              <select
-                value={direction}
-                onChange={(e) => setDirection(e.target.value)}
-                className="rounded-md border-2 border-primary-foreground/30 bg-primary-foreground/10 px-4 py-3 font-body text-sm font-semibold uppercase tracking-wide text-primary-foreground focus:border-primary-foreground focus:outline-none"
-              >
-                <option value="" className="bg-background text-foreground">НАПРАВЛЕНИЕ</option>
-                {directions.map((d) => (
-                  <option key={d.id} value={d.id} className="bg-background text-foreground">
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-            </>
-          )}
-
           <Button
             variant="sunInverse"
             size="lg"
             className="w-full py-6 text-base"
-            disabled={loading}
-            onClick={trialUsed ? () => window.location.href = "#pricing" : handleSubmit}
+            onClick={trialUsed ? () => window.location.href = "#pricing" : () => {
+              if (!user) { setAuthOpen(true); return; }
+              window.location.href = "#directions";
+            }}
           >
-            {loading
-              ? "ПЕРЕНАПРАВЛЕНИЕ..."
-              : trialUsed
-                ? "ВЫБРАТЬ АБОНЕМЕНТ"
-                : user
-                  ? "ОПЛАТИТЬ ПРОБНОЕ ЗАНЯТИЕ"
-                  : "ВОЙТИ И ЗАПИСАТЬСЯ"}
+            {trialUsed
+              ? "ВЫБРАТЬ АБОНЕМЕНТ"
+              : user
+                ? "ЗАПИСАТЬСЯ НА ПРОБНОЕ ЗАНЯТИЕ"
+                : "ВОЙТИ И ЗАПИСАТЬСЯ"}
           </Button>
-
-          {!trialUsed && (
-            <p className="font-body text-xs text-primary-foreground/60">
-              Нажимая кнопку, вы соглашаетесь с политикой конфиденциальности
-            </p>
-          )}
         </motion.div>
       </div>
 
