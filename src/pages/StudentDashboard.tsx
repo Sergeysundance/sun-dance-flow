@@ -672,15 +672,6 @@ const StudentDashboard = () => {
               </TabsContent>
             </Tabs>
 
-            <BuySubscriptionDialog
-              open={buyDialogOpen}
-              subscriptionType={buyDialogType}
-              onOpenChange={(open) => {
-                setBuyDialogOpen(open);
-                if (!open && userId) fetchSubscriptions(userId);
-              }}
-            />
-
             {/* Confirm booking dialog */}
             <Dialog open={!!confirmBookingClassId} onOpenChange={(open) => { if (!open) setConfirmBookingClassId(null); }}>
               <DialogContent className="sm:max-w-sm">
