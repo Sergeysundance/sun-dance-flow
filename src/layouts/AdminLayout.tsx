@@ -41,7 +41,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
           <div className="text-xs text-admin-muted">CRM</div>
         </div>
       </div>
-      <nav className="flex-1 space-y-1 px-2 py-3">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
         {navItems.map(item => (
           <NavLink
             key={item.path}
