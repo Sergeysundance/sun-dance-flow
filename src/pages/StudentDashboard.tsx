@@ -129,6 +129,37 @@ const StudentDashboard = () => {
     setHistorySubscriptions(await enrichSubscriptions(historySubs || []));
   };
 
+  const fetchMonthlyHours = async (uid: string) => {
+    // Get all user subscription IDs first
+    const { data: userSubs } = await supabase
+      .from("user_subscriptions")
+      .select("id")
+      .eq("user_id", uid);
+    if (!userSubs || userSubs.length === 0) { setMonthlyHours([]); return; }
+    const subIds = userSubs.map(s => s.id);
+    const { data: deductions } = await supabase
+      .from("subscription_deductions")
+      .select("hours_deducted, deducted_at")
+      .in("user_subscription_id", subIds)
+      .order("deducted_at", { ascending: false });
+    if (!deductions || deductions.length === 0) { setMonthlyHours([]); return; }
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const grouped: Record<string, number> = {};
+    for (const d of deductions) {
+      const dt = new Date(d.deducted_at);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2,'0')}`;
+      grouped[key] = (grouped[key] || 0) + Number(d.hours_deducted);
+    }
+    const sorted = Object.entries(grouped)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 6)
+      .map(([key, hours]) => {
+        const [y, m] = key.split('-');
+        return { month: `${monthNames[parseInt(m)]} ${y}`, hours };
+      });
+    setMonthlyHours(sorted);
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -142,6 +173,7 @@ const StudentDashboard = () => {
       if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); }
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
+      await fetchMonthlyHours(session.user.id);
       setLoading(false);
     };
     checkAuth();
