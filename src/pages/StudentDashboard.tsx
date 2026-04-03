@@ -678,6 +678,51 @@ const StudentDashboard = () => {
                   </CardContent>
                 </Card>
               </TabsContent>
+
+              {/* History */}
+              <TabsContent value="history">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>История абонементов</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {historySubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">Использованных абонементов пока нет.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {historySubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4 opacity-80">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">
+                                  {sub.subscription_type?.name || "Абонемент"}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Истёк: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-muted-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {sub.hours_remaining <= 0 ? "Исчерпан" : "Истёк"}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-muted-foreground/30 transition-all"
+                                style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
             </Tabs>
 
             {/* Confirm booking dialog */}
