@@ -60,6 +60,7 @@ function formatWeekLabel(monday: Date): string {
 const StudentDashboard = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [bonusPoints, setBonusPoints] = useState(0);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -137,7 +138,7 @@ const StudentDashboard = () => {
         supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
         supabase.from("directions").select("*").eq("active", true),
       ]);
-      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); }
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); }
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       setLoading(false);
@@ -476,6 +477,22 @@ const StudentDashboard = () => {
                 );
               })()}
             </div>
+
+            {/* Bonus points card */}
+            <Card className="border-sun/30 mb-4">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
+                    <span className="text-sun text-lg">★</span>
+                  </div>
+                  <div>
+                    <div className="font-display text-sm font-bold text-foreground">Бонусные баллы</div>
+                    <div className="text-xs text-muted-foreground">Используйте при оплате абонементов</div>
+                  </div>
+                  <span className="ml-auto font-display text-2xl font-black text-sun">{bonusPoints}</span>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">

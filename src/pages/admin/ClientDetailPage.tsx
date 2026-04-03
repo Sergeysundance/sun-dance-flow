@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export default function ClientDetailPage() {
   const [subscriptions, setSubscriptions] = useState<(UserSubscription & { type?: SubscriptionType })[]>([]);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [bonusAmount, setBonusAmount] = useState("");
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
@@ -122,6 +123,7 @@ export default function ClientDetailPage() {
                 {profile.phone && <div>📞 <a href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline">{profile.phone}</a></div>}
                 {profile.birth_date && <div>🎂 {new Date(profile.birth_date).toLocaleDateString('ru-RU')}</div>}
                 {profile.notes && <div>📝 {profile.notes}</div>}
+                <div>⭐ Бонусные баллы: <span className="font-bold text-admin-foreground">{(profile as any).bonus_points ?? 0}</span></div>
               </div>
               {(profile.preferred_directions || []).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -133,6 +135,50 @@ export default function ClientDetailPage() {
                   })}
                 </div>
               )}
+            </div>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                placeholder="Баллы"
+                className="w-24 bg-white border-admin-border"
+                value={bonusAmount}
+                onChange={e => setBonusAmount(e.target.value)}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-admin-border gap-1"
+                onClick={async () => {
+                  const amt = parseInt(bonusAmount);
+                  if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
+                  const current = (profile as any).bonus_points ?? 0;
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current + amt } as any).eq("id", profile.id);
+                  if (error) { toast.error("Ошибка начисления"); return; }
+                  toast.success(`+${amt} баллов начислено`);
+                  setBonusAmount("");
+                  fetchData();
+                }}
+              >
+                <Plus className="h-4 w-4" /> Начислить
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-admin-border gap-1"
+                onClick={async () => {
+                  const amt = parseInt(bonusAmount);
+                  if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
+                  const current = (profile as any).bonus_points ?? 0;
+                  if (amt > current) { toast.error("Недостаточно баллов"); return; }
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current - amt } as any).eq("id", profile.id);
+                  if (error) { toast.error("Ошибка списания"); return; }
+                  toast.success(`-${amt} баллов списано`);
+                  setBonusAmount("");
+                  fetchData();
+                }}
+              >
+                <Minus className="h-4 w-4" /> Списать
+              </Button>
             </div>
             <Button variant="outline" className="border-admin-border gap-1" onClick={openEdit}>
               <Edit className="h-4 w-4" /> Редактировать
