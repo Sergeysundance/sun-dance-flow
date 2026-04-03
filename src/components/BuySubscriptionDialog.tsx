@@ -23,9 +23,10 @@ interface SubscriptionPlan {
 interface BuySubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  subscriptionType?: string;
 }
 
-const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProps) => {
+const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group" }: BuySubscriptionDialogProps) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -39,12 +40,13 @@ const BuySubscriptionDialog = ({ open, onOpenChange }: BuySubscriptionDialogProp
       .from("subscription_types")
       .select("id, name, hours_count, price, old_price, description")
       .eq("active", true)
+      .eq("type", subscriptionType)
       .order("price", { ascending: true })
       .then(({ data }) => {
         setPlans(data || []);
         setFetching(false);
       });
-  }, [open]);
+  }, [open, subscriptionType]);
 
   const handlePurchase = async () => {
     if (selected === null) return;
