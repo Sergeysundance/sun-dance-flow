@@ -11,7 +11,7 @@ const navItems = [
   { label: "НАПРАВЛЕНИЯ", href: "#directions" },
   { label: "РАСПИСАНИЕ", href: "#schedule" },
   { label: "АБОНЕМЕНТЫ", href: "#pricing" },
-  { label: "ЧАСТО ЗАДАВАЕМЫЕ ВОПРОСЫ", href: "#faq" },
+  { label: "ВОПРОС/ОТВЕТ", href: "#faq" },
   { label: "КОНТАКТЫ", href: "#contacts" },
 ];
 
