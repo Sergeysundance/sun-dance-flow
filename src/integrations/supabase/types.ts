@@ -73,6 +73,33 @@ export type Database = {
         }
         Relationships: []
       }
+      faq: {
+        Row: {
+          active: boolean
+          answer: string
+          created_at: string
+          id: string
+          question: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          answer?: string
+          created_at?: string
+          id?: string
+          question: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          answer?: string
+          created_at?: string
+          id?: string
+          question?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       pending_teacher_registrations: {
         Row: {
           bio: string
