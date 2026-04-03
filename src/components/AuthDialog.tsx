@@ -24,7 +24,9 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   // Login fields
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   // Register fields
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
