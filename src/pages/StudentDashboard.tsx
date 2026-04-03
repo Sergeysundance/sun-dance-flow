@@ -671,6 +671,8 @@ const StudentDashboard = () => {
                   onClick={() => {
                     setNoSubDialogOpen(false);
                     setActiveTab("subscriptions");
+                    setSubTab("group");
+                    setBuyDialogType("group");
                     setBuyDialogOpen(true);
                   }}
                 >
