@@ -28,6 +28,16 @@ const Header = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isTeacher, setIsTeacher] = useState(false);
+  const [branches, setBranches] = useState<{ id: string; name: string; address: string }[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
+
+  useEffect(() => {
+    supabase.from("branches").select("id, name, address").eq("active", true).order("sort_order").then(({ data }) => {
+      const items = (data || []) as { id: string; name: string; address: string }[];
+      setBranches(items);
+      if (items.length > 0 && !selectedBranch) setSelectedBranch(items[0].id);
+    });
+  }, []);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
