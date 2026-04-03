@@ -584,6 +584,7 @@ const StudentDashboard = () => {
               <TabsList className="mb-4">
                 <TabsTrigger value="group">Групповые</TabsTrigger>
                 <TabsTrigger value="individual">Индивидуальные</TabsTrigger>
+                <TabsTrigger value="history">История</TabsTrigger>
               </TabsList>
 
               {/* Group subscriptions */}
