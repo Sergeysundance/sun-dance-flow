@@ -527,6 +527,33 @@ const StudentDashboard = () => {
               </CardContent>
             </Card>
 
+            {/* Monthly hours tracker */}
+            <Card className="border-border mb-4">
+              <CardContent className="py-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <Clock className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <div className="font-display text-sm font-bold text-foreground">Мои часы занятий</div>
+                    <div className="text-xs text-muted-foreground">Статистика по месяцам</div>
+                  </div>
+                </div>
+                {monthlyHours.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">Пока нет данных о посещениях</p>
+                ) : (
+                  <div className="space-y-2">
+                    {monthlyHours.map((item) => (
+                      <div key={item.month} className="flex items-center justify-between">
+                        <span className="text-sm text-foreground">{item.month}</span>
+                        <span className="font-display font-bold text-foreground">{item.hours} {item.hours === 1 ? 'час' : item.hours >= 2 && item.hours <= 4 ? 'часа' : 'часов'}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Мои данные</CardTitle>
