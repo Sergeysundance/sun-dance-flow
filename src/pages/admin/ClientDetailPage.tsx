@@ -168,9 +168,9 @@ export default function ClientDetailPage() {
                 onClick={async () => {
                   const amt = parseInt(bonusAmount);
                   if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
-                  const current = (profile as any).bonus_points ?? 0;
+                  const current = profile.bonus_points ?? 0;
                   if (amt > current) { toast.error("Недостаточно баллов"); return; }
-                  const { error } = await supabase.from("profiles").update({ bonus_points: current - amt } as any).eq("id", profile.id);
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current - amt }).eq("id", profile.id);
                   if (error) { toast.error("Ошибка списания"); return; }
                   toast.success(`-${amt} баллов списано`);
                   setBonusAmount("");
