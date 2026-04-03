@@ -67,6 +67,7 @@ const StudentDashboard = () => {
   const [userId, setUserId] = useState("");
   const [directions, setDirections] = useState<any[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<UserSubscription[]>([]);
+  const [historySubscriptions, setHistorySubscriptions] = useState<UserSubscription[]>([]);
 
   // Schedule state
   const [weekOffset, setWeekOffset] = useState(0);
