@@ -527,53 +527,113 @@ const StudentDashboard = () => {
 
           {/* Subscriptions tab */}
           <TabsContent value="subscriptions">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Мои абонементы</CardTitle>
-                <Button variant="sun" size="sm" onClick={() => setBuyDialogOpen(true)}>
-                  <CreditCard className="h-4 w-4 mr-1" /> Купить абонемент
-                </Button>
-              </CardHeader>
-              <CardContent>
-                {userSubscriptions.length === 0 ? (
-                  <p className="text-muted-foreground">У вас пока нет активных абонементов.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {userSubscriptions.map(sub => (
-                      <div key={sub.id} className="rounded-lg border border-border p-4">
-                        <div className="flex items-center justify-between flex-wrap gap-2">
-                          <div>
-                            <div className="font-display text-base font-bold text-foreground">
-                              {sub.subscription_type?.name || "Абонемент"}
-                            </div>
-                            <div className="text-xs text-muted-foreground mt-0.5">
-                              Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
-                            </div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-display text-xl font-black text-foreground">
-                              {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
-                          </div>
-                        </div>
-                        <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-sun transition-all"
-                            style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <Tabs value={subTab} onValueChange={setSubTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="group">Групповые</TabsTrigger>
+                <TabsTrigger value="individual">Индивидуальные</TabsTrigger>
+              </TabsList>
 
-            <BuySubscriptionDialog open={buyDialogOpen} onOpenChange={(open) => {
-              setBuyDialogOpen(open);
-              if (!open && userId) fetchSubscriptions(userId);
-            }} />
+              {/* Group subscriptions */}
+              <TabsContent value="group">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Групповые абонементы</CardTitle>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Купить
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {groupSubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">У вас нет активных групповых абонементов.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {groupSubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">
+                                  {sub.subscription_type?.name || "Абонемент"}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-sun transition-all"
+                                style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Individual subscriptions */}
+              <TabsContent value="individual">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Индивидуальные абонементы</CardTitle>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("individual"); setBuyDialogOpen(true); }}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Купить
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {individualSubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">У вас нет активных индивидуальных абонементов.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {individualSubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">
+                                  {sub.subscription_type?.name || "Абонемент"}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-sun transition-all"
+                                style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+
+            <BuySubscriptionDialog
+              open={buyDialogOpen}
+              subscriptionType={buyDialogType}
+              onOpenChange={(open) => {
+                setBuyDialogOpen(open);
+                if (!open && userId) fetchSubscriptions(userId);
+              }}
+            />
 
             {/* Confirm booking dialog */}
             <Dialog open={!!confirmBookingClassId} onOpenChange={(open) => { if (!open) setConfirmBookingClassId(null); }}>
