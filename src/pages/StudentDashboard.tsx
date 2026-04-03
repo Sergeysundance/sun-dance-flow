@@ -672,15 +672,6 @@ const StudentDashboard = () => {
               </TabsContent>
             </Tabs>
 
-            <BuySubscriptionDialog
-              open={buyDialogOpen}
-              subscriptionType={buyDialogType}
-              onOpenChange={(open) => {
-                setBuyDialogOpen(open);
-                if (!open && userId) fetchSubscriptions(userId);
-              }}
-            />
-
             {/* Confirm booking dialog */}
             <Dialog open={!!confirmBookingClassId} onOpenChange={(open) => { if (!open) setConfirmBookingClassId(null); }}>
               <DialogContent className="sm:max-w-sm">
@@ -885,6 +876,15 @@ const StudentDashboard = () => {
             </Card>
           </TabsContent>
         </Tabs>
+
+        <BuySubscriptionDialog
+          open={buyDialogOpen}
+          subscriptionType={buyDialogType}
+          onOpenChange={(open) => {
+            setBuyDialogOpen(open);
+            if (!open && userId) fetchSubscriptions(userId);
+          }}
+        />
 
         {/* Delete account section */}
         <div className="mt-12 border-t border-border pt-8">
