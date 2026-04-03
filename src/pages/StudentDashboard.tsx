@@ -339,90 +339,136 @@ const StudentDashboard = () => {
 
           {/* Profile tab */}
           <TabsContent value="profile">
-            {/* Active subscription card on profile */}
-            {activeSubscription && (
-              <Card className="mb-4 border-sun/30">
-                <CardContent className="py-4">
-                  <div className="flex items-center justify-between flex-wrap gap-3">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
-                        <CreditCard className="h-5 w-5 text-sun" />
-                      </div>
-                      <div>
-                        <div className="font-display text-sm font-bold text-foreground">
-                          {activeSubscription.subscription_type?.name || "Абонемент"}
+            {/* Subscription cards on profile */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              {/* Group subscription */}
+              {(() => {
+                const groupSub = groupSubscriptions[0];
+                if (groupSub) {
+                  return (
+                    <Card className="border-sun/30">
+                      <CardContent className="py-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
+                            <CreditCard className="h-5 w-5 text-sun" />
+                          </div>
+                          <div>
+                            <div className="font-display text-sm font-bold text-foreground">
+                              {groupSub.subscription_type?.name || "Групповой абонемент"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              до {new Date(groupSub.expires_at).toLocaleDateString("ru-RU")}
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          до {new Date(activeSubscription.expires_at).toLocaleDateString("ru-RU")}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="h-4 w-4 text-sun" />
+                          <span className="font-display text-lg font-black text-foreground">
+                            {groupSub.hours_remaining}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            / {groupSub.hours_total} {formatHours(groupSub.hours_total)}
+                          </span>
                         </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-sun transition-all"
+                            style={{ width: `${Math.max(0, (groupSub.hours_remaining / groupSub.hours_total) * 100)}%` }}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+                return (
+                  <Card className="border-border">
+                    <CardContent className="py-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="font-display text-sm font-bold text-foreground">Групповой</div>
+                            <div className="text-xs text-muted-foreground">не активен</div>
+                          </div>
+                        </div>
+                        <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
+                          Купить
+                        </Button>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-sun" />
-                      <span className="font-display text-lg font-black text-foreground">
-                        {activeSubscription.hours_remaining}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        / {activeSubscription.hours_total} {formatHours(activeSubscription.hours_total)}
-                      </span>
-                    </div>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-sun transition-all"
-                      style={{ width: `${Math.max(0, (activeSubscription.hours_remaining / activeSubscription.hours_total) * 100)}%` }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {!activeSubscription && (
-              <div className="mb-4 rounded-xl bg-card border border-border shadow-sm p-5 relative overflow-hidden">
-                {/* Decorative circles */}
-                <div className="absolute -top-6 -right-6 h-24 w-24 rounded-full bg-sun/5" />
-                <div className="absolute -bottom-4 -left-4 h-16 w-16 rounded-full bg-sun/5" />
-
-                <div className="relative flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
-                        <CreditCard className="h-4 w-4 text-muted-foreground" />
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full rounded-full bg-muted-foreground/20 w-0" />
                       </div>
-                      <div>
-                        <div className="font-display text-sm font-bold text-foreground">Абонемент</div>
-                        <div className="text-xs text-muted-foreground">не активен</div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+
+              {/* Individual subscription */}
+              {(() => {
+                const indSub = individualSubscriptions[0];
+                if (indSub) {
+                  return (
+                    <Card className="border-sun/30">
+                      <CardContent className="py-4">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
+                            <CreditCard className="h-5 w-5 text-sun" />
+                          </div>
+                          <div>
+                            <div className="font-display text-sm font-bold text-foreground">
+                              {indSub.subscription_type?.name || "Индивидуальный абонемент"}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              до {new Date(indSub.expires_at).toLocaleDateString("ru-RU")}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="h-4 w-4 text-sun" />
+                          <span className="font-display text-lg font-black text-foreground">
+                            {indSub.hours_remaining}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            / {indSub.hours_total} {formatHours(indSub.hours_total)}
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-muted overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-sun transition-all"
+                            style={{ width: `${Math.max(0, (indSub.hours_remaining / indSub.hours_total) * 100)}%` }}
+                          />
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+                return (
+                  <Card className="border-border">
+                    <CardContent className="py-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-muted">
+                            <CreditCard className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div>
+                            <div className="font-display text-sm font-bold text-foreground">Индивидуальный</div>
+                            <div className="text-xs text-muted-foreground">не активен</div>
+                          </div>
+                        </div>
+                        <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("individual"); setBuyDialogOpen(true); }}>
+                          Купить
+                        </Button>
                       </div>
-                    </div>
-                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
-                      Купить
-                    </Button>
-                  </div>
-
-                  {/* Hours grid */}
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-2">Доступные варианты часов:</div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[4, 8, 12, 16, 20, 24].map(h => (
-                        <span key={h} className="inline-flex items-center justify-center rounded-md border border-border bg-muted/50 px-2.5 py-1 text-xs font-medium text-muted-foreground">
-                          {h} ч
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Empty progress bar */}
-                  <div className="h-2 rounded-full bg-muted overflow-hidden">
-                    <div className="h-full rounded-full bg-muted-foreground/20 w-0" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">0 часов</span>
-                    <span className="text-xs text-muted-foreground">—</span>
-                  </div>
-                </div>
-              </div>
-            )}
+                      <div className="h-2 rounded-full bg-muted overflow-hidden">
+                        <div className="h-full rounded-full bg-muted-foreground/20 w-0" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })()}
+            </div>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
