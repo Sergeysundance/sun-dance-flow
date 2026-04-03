@@ -123,7 +123,7 @@ export default function ClientDetailPage() {
                 {profile.phone && <div>📞 <a href={`tel:${profile.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline">{profile.phone}</a></div>}
                 {profile.birth_date && <div>🎂 {new Date(profile.birth_date).toLocaleDateString('ru-RU')}</div>}
                 {profile.notes && <div>📝 {profile.notes}</div>}
-                <div>⭐ Бонусные баллы: <span className="font-bold text-admin-foreground">{(profile as any).bonus_points ?? 0}</span></div>
+                <div>⭐ Бонусные баллы: <span className="font-bold text-admin-foreground">{profile.bonus_points ?? 0}</span></div>
               </div>
               {(profile.preferred_directions || []).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -151,8 +151,8 @@ export default function ClientDetailPage() {
                 onClick={async () => {
                   const amt = parseInt(bonusAmount);
                   if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
-                  const current = (profile as any).bonus_points ?? 0;
-                  const { error } = await supabase.from("profiles").update({ bonus_points: current + amt } as any).eq("id", profile.id);
+                  const current = profile.bonus_points ?? 0;
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current + amt }).eq("id", profile.id);
                   if (error) { toast.error("Ошибка начисления"); return; }
                   toast.success(`+${amt} баллов начислено`);
                   setBonusAmount("");
@@ -168,9 +168,9 @@ export default function ClientDetailPage() {
                 onClick={async () => {
                   const amt = parseInt(bonusAmount);
                   if (!amt || amt <= 0) { toast.error("Введите положительное число"); return; }
-                  const current = (profile as any).bonus_points ?? 0;
+                  const current = profile.bonus_points ?? 0;
                   if (amt > current) { toast.error("Недостаточно баллов"); return; }
-                  const { error } = await supabase.from("profiles").update({ bonus_points: current - amt } as any).eq("id", profile.id);
+                  const { error } = await supabase.from("profiles").update({ bonus_points: current - amt }).eq("id", profile.id);
                   if (error) { toast.error("Ошибка списания"); return; }
                   toast.success(`-${amt} баллов списано`);
                   setBonusAmount("");

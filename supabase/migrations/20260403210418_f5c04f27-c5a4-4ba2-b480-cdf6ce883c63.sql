@@ -1,0 +1,1 @@
+CREATE POLICY "Anon can update all profiles" ON public.profiles FOR UPDATE TO anon USING (true) WITH CHECK (true);
