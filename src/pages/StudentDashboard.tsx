@@ -67,6 +67,7 @@ const StudentDashboard = () => {
   const [userId, setUserId] = useState("");
   const [directions, setDirections] = useState<any[]>([]);
   const [userSubscriptions, setUserSubscriptions] = useState<UserSubscription[]>([]);
+  const [historySubscriptions, setHistorySubscriptions] = useState<UserSubscription[]>([]);
 
   // Schedule state
   const [weekOffset, setWeekOffset] = useState(0);
@@ -92,8 +93,20 @@ const StudentDashboard = () => {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
 
+  const enrichSubscriptions = async (subs: any[]) => {
+    if (!subs || subs.length === 0) return [];
+    const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
+    const { data: types } = await supabase
+      .from("subscription_types")
+      .select("id, name, hours_count, price, type")
+      .in("id", typeIds);
+    const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
+    return subs.map((s: any) => ({ ...s, subscription_type: typesMap.get(s.subscription_type_id) }));
+  };
+
   const fetchSubscriptions = async (uid: string) => {
-    const { data: subs } = await supabase
+    // Active subscriptions
+    const { data: activeSubs } = await supabase
       .from("user_subscriptions")
       .select("*")
       .eq("user_id", uid)
@@ -101,23 +114,17 @@ const StudentDashboard = () => {
       .gte("expires_at", new Date().toISOString())
       .order("expires_at", { ascending: true });
 
-    if (subs && subs.length > 0) {
-      // Fetch subscription type names
-      const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
-      const { data: types } = await supabase
-        .from("subscription_types")
-        .select("id, name, hours_count, price, type")
-        .in("id", typeIds);
+    setUserSubscriptions(await enrichSubscriptions(activeSubs || []));
 
-      const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
-      const enriched = subs.map((s: any) => ({
-        ...s,
-        subscription_type: typesMap.get(s.subscription_type_id),
-      }));
-      setUserSubscriptions(enriched);
-    } else {
-      setUserSubscriptions([]);
-    }
+    // History: inactive or expired
+    const { data: historySubs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .or(`active.eq.false,expires_at.lt.${new Date().toISOString()}`)
+      .order("expires_at", { ascending: false });
+
+    setHistorySubscriptions(await enrichSubscriptions(historySubs || []));
   };
 
   useEffect(() => {
@@ -577,6 +584,7 @@ const StudentDashboard = () => {
               <TabsList className="mb-4">
                 <TabsTrigger value="group">Групповые</TabsTrigger>
                 <TabsTrigger value="individual">Индивидуальные</TabsTrigger>
+                <TabsTrigger value="history">История</TabsTrigger>
               </TabsList>
 
               {/* Group subscriptions */}
@@ -660,6 +668,51 @@ const StudentDashboard = () => {
                             <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
                               <div
                                 className="h-full rounded-full bg-sun transition-all"
+                                style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* History */}
+              <TabsContent value="history">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>История абонементов</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {historySubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">Использованных абонементов пока нет.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {historySubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4 opacity-80">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">
+                                  {sub.subscription_type?.name || "Абонемент"}
+                                </div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Истёк: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-muted-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {sub.hours_remaining <= 0 ? "Исчерпан" : "Истёк"}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div
+                                className="h-full rounded-full bg-muted-foreground/30 transition-all"
                                 style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }}
                               />
                             </div>
