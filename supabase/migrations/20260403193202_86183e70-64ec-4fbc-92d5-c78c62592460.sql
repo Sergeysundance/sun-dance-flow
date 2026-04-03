@@ -1,0 +1,1 @@
+CREATE POLICY "Anon can view all profiles" ON public.profiles FOR SELECT TO anon USING (true);
