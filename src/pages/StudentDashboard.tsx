@@ -138,7 +138,7 @@ const StudentDashboard = () => {
         supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
         supabase.from("directions").select("*").eq("active", true),
       ]);
-      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); }
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); }
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       setLoading(false);
