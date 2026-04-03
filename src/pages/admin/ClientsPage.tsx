@@ -159,6 +159,7 @@ export default function ClientsPage() {
             <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
               <th className="px-4 py-3">Имя</th>
               <th className="px-4 py-3">Телефон</th>
+              <th className="px-4 py-3">Бонусы</th>
               <th className="px-4 py-3">Абонемент</th>
               <th className="px-4 py-3">Регистрация</th>
               <th className="px-4 py-3 w-20"></th>
