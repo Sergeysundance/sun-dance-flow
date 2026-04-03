@@ -604,6 +604,7 @@ const StudentDashboard = () => {
                   className="w-full mt-2"
                   onClick={() => {
                     setNoSubDialogOpen(false);
+                    setActiveTab("subscriptions");
                     setBuyDialogOpen(true);
                   }}
                 >
