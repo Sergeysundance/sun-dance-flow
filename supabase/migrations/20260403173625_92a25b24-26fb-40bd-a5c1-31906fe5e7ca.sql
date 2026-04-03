@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN bonus_points integer NOT NULL DEFAULT 0;
