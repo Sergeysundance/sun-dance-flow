@@ -76,9 +76,11 @@ const StudentDashboard = () => {
   const [bookings, setBookings] = useState<Set<string>>(new Set());
   const [bookingLoading, setBookingLoading] = useState<string | null>(null);
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyDialogType, setBuyDialogType] = useState<string>("group");
   const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
   const [confirmBookingClassId, setConfirmBookingClassId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
+  const [subTab, setSubTab] = useState("group");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
