@@ -91,6 +91,14 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       toast.error("Заполните все обязательные поля (Имя, Фамилия, Отчество, Телефон, Email, Пароль)");
       return;
     }
+    if (password !== confirmPassword) {
+      toast.error("Пароли не совпадают");
+      return;
+    }
+    if (password.length < 6) {
+      toast.error("Пароль должен содержать минимум 6 символов");
+      return;
+    }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
