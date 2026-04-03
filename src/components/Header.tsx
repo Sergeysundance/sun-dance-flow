@@ -74,10 +74,35 @@ const Header = () => {
       }`}
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        {/* Logo */}
-        <a href="#" className="font-display text-lg font-black tracking-tight text-foreground">
-          <span className="text-sun">SUN</span> DANCE SCHOOL
-        </a>
+        {/* Logo + Branch */}
+        <div className="flex items-center gap-3">
+          <a href="#" className="font-display text-lg font-black tracking-tight text-foreground">
+            <span className="text-sun">SUN</span> DANCE SCHOOL
+          </a>
+          {branches.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
+                  <MapPin className="h-3.5 w-3.5 text-sun" />
+                  <span className="hidden sm:inline">{branches.find(b => b.id === selectedBranch)?.name || "Филиал"}</span>
+                  <ChevronDown className="h-3 w-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="bg-background border-border">
+                {branches.map(b => (
+                  <DropdownMenuItem
+                    key={b.id}
+                    onClick={() => setSelectedBranch(b.id)}
+                    className={`flex flex-col items-start gap-0 ${selectedBranch === b.id ? "bg-accent" : ""}`}
+                  >
+                    <span className="font-medium text-foreground">{b.name}</span>
+                    {b.address && <span className="text-xs text-muted-foreground">{b.address}</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
 
         {/* Desktop Nav */}
         <nav className="hidden items-center gap-6 lg:flex">
