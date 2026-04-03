@@ -34,7 +34,7 @@ const Faq = () => {
     <section id="faq" className="bg-background py-20">
       <div className="container mx-auto px-4">
         <h2 className="mb-10 text-center font-display text-3xl font-black uppercase tracking-tight text-foreground md:text-4xl">
-          ЧАСТО ЗАДАВАЕМЫЕ <span className="text-sun">ВОПРОСЫ</span>
+          ВОПРОС / <span className="text-sun">ОТВЕТ</span>
         </h2>
         <div className="mx-auto max-w-2xl">
           <Accordion type="single" collapsible className="w-full">
