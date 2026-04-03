@@ -34,6 +34,7 @@ interface UserSubscription {
     name: string;
     hours_count: number | null;
     price: number;
+    type: string;
   };
 }
 
