@@ -65,7 +65,7 @@ export default function TeachersPage() {
   const getDirection = (id: string) => directions.find(d => d.id === id);
 
   const resetForm = () => {
-    setFirstName(""); setLastName(""); setPhone(""); setEmail(""); setBio(""); setTelegramId(""); setSelectedDirections([]);
+    setFirstName(""); setLastName(""); setPhone(""); setEmail(""); setBio(""); setTelegramId(""); setSelectedDirections([]); setDiscountPercent(20);
     setPhotoFile(null); setPhotoPreview("");
   };
 
