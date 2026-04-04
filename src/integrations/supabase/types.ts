@@ -73,6 +73,7 @@ export type Database = {
       directions: {
         Row: {
           active: boolean
+          branch_id: string | null
           color: string
           created_at: string
           description: string
@@ -82,6 +83,7 @@ export type Database = {
         }
         Insert: {
           active?: boolean
+          branch_id?: string | null
           color?: string
           created_at?: string
           description?: string
@@ -91,6 +93,7 @@ export type Database = {
         }
         Update: {
           active?: boolean
+          branch_id?: string | null
           color?: string
           created_at?: string
           description?: string
@@ -98,7 +101,15 @@ export type Database = {
           name?: string
           sort_order?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "directions_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       faq: {
         Row: {
@@ -215,6 +226,7 @@ export type Database = {
         Row: {
           active: boolean
           area: number
+          branch_id: string | null
           capacity: number
           color: string
           created_at: string
@@ -224,6 +236,7 @@ export type Database = {
         Insert: {
           active?: boolean
           area?: number
+          branch_id?: string | null
           capacity?: number
           color?: string
           created_at?: string
@@ -233,16 +246,26 @@ export type Database = {
         Update: {
           active?: boolean
           area?: number
+          branch_id?: string | null
           capacity?: number
           color?: string
           created_at?: string
           id?: string
           name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "rooms_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       schedule_classes: {
         Row: {
+          branch_id: string | null
           cancelled: boolean
           created_at: string
           date: string
@@ -255,6 +278,7 @@ export type Database = {
           teacher_id: string
         }
         Insert: {
+          branch_id?: string | null
           cancelled?: boolean
           created_at?: string
           date: string
@@ -267,6 +291,7 @@ export type Database = {
           teacher_id: string
         }
         Update: {
+          branch_id?: string | null
           cancelled?: boolean
           created_at?: string
           date?: string
@@ -279,6 +304,13 @@ export type Database = {
           teacher_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "schedule_classes_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "schedule_classes_direction_id_fkey"
             columns: ["direction_id"]
@@ -390,6 +422,7 @@ export type Database = {
         Row: {
           active: boolean
           bio: string
+          branch_ids: string[]
           created_at: string
           direction_ids: string[]
           email: string
@@ -403,6 +436,7 @@ export type Database = {
         Insert: {
           active?: boolean
           bio?: string
+          branch_ids?: string[]
           created_at?: string
           direction_ids?: string[]
           email?: string
@@ -416,6 +450,7 @@ export type Database = {
         Update: {
           active?: boolean
           bio?: string
+          branch_ids?: string[]
           created_at?: string
           direction_ids?: string[]
           email?: string
@@ -430,6 +465,7 @@ export type Database = {
       }
       trial_requests: {
         Row: {
+          branch_id: string | null
           comment: string | null
           created_at: string
           direction_id: string | null
@@ -441,6 +477,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          branch_id?: string | null
           comment?: string | null
           created_at?: string
           direction_id?: string | null
@@ -452,6 +489,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          branch_id?: string | null
           comment?: string | null
           created_at?: string
           direction_id?: string | null
@@ -463,6 +501,13 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "trial_requests_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "trial_requests_direction_id_fkey"
             columns: ["direction_id"]

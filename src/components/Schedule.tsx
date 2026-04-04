@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "./AuthDialog";
+import { useBranch } from "@/contexts/BranchContext";
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -28,6 +29,7 @@ function formatWeekLabel(monday: Date): string {
 }
 
 const Schedule = () => {
+  const { selectedBranchId } = useBranch();
   const [scheduleData, setScheduleData] = useState<any[]>([]);
   const [directions, setDirections] = useState<any[]>([]);
   const [teachers, setTeachers] = useState<any[]>([]);
@@ -65,11 +67,20 @@ const Schedule = () => {
       const sunday = new Date(monday);
       sunday.setDate(sunday.getDate() + 6);
 
+      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday)).eq("cancelled", false).order("date").order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
+
+      let dirsQuery = supabase.from("directions").select("*").eq("active", true);
+      if (selectedBranchId) dirsQuery = dirsQuery.eq("branch_id", selectedBranchId);
+
+      let roomsQuery = supabase.from("rooms").select("*").eq("active", true);
+      if (selectedBranchId) roomsQuery = roomsQuery.eq("branch_id", selectedBranchId);
+
       const [classesRes, dirsRes, teachersRes, roomsRes] = await Promise.all([
-        supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday)).eq("cancelled", false).order("date").order("start_time"),
-        supabase.from("directions").select("*").eq("active", true),
+        clsQuery,
+        dirsQuery,
         supabase.from("teachers").select("*").eq("active", true),
-        supabase.from("rooms").select("*").eq("active", true),
+        roomsQuery,
       ]);
 
       setScheduleData(classesRes.data || []);
@@ -79,7 +90,7 @@ const Schedule = () => {
       setLoading(false);
     };
     fetchData();
-  }, [monday]);
+  }, [monday, selectedBranchId]);
 
   const getDir = (id: string) => directions.find((d: any) => d.id === id);
   const getTeacher = (id: string) => teachers.find((t: any) => t.id === id);
@@ -102,7 +113,6 @@ const Schedule = () => {
       setAuthOpen(true);
       return;
     }
-    // User is logged in — scroll to CTA or pricing
     document.getElementById("cta")?.scrollIntoView({ behavior: "smooth" });
   };
 

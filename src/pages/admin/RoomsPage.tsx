@@ -10,30 +10,31 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import { useBranch } from "@/contexts/BranchContext";
 
 const presetColors = ['#3B82F6', '#10B981', '#EF4444', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4'];
-
-type Room = Tables<"rooms">;
 
 const emptyForm = { name: "", capacity: 20, area: 0, color: "#3B82F6", active: true };
 
 export default function RoomsPage() {
-  const [rooms, setRooms] = useState<Room[]>([]);
+  const { selectedBranchId } = useBranch();
+  const [rooms, setRooms] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Room | null>(null);
+  const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const fetchRooms = async () => {
-    const { data } = await supabase.from("rooms").select("*").order("name");
+    let query = supabase.from("rooms").select("*").order("name");
+    if (selectedBranchId) query = query.eq("branch_id", selectedBranchId);
+    const { data } = await query;
     if (data) setRooms(data);
   };
 
-  useEffect(() => { fetchRooms(); }, []);
+  useEffect(() => { fetchRooms(); }, [selectedBranchId]);
 
   const openCreate = () => { setEditing(null); setForm(emptyForm); setDialogOpen(true); };
-  const openEdit = (r: Room) => {
+  const openEdit = (r: any) => {
     setEditing(r);
     setForm({ name: r.name, capacity: r.capacity, area: r.area, color: r.color, active: r.active });
     setDialogOpen(true);
@@ -42,11 +43,12 @@ export default function RoomsPage() {
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Введите название"); return; }
     setSaving(true);
+    const payload = { ...form, branch_id: selectedBranchId };
     if (editing) {
-      const { error } = await supabase.from("rooms").update(form).eq("id", editing.id);
+      const { error } = await supabase.from("rooms").update(payload).eq("id", editing.id);
       if (error) { toast.error("Ошибка сохранения"); } else { toast.success("Зал обновлён"); }
     } else {
-      const { error } = await supabase.from("rooms").insert(form);
+      const { error } = await supabase.from("rooms").insert(payload);
       if (error) { toast.error("Ошибка создания"); } else { toast.success("Зал создан"); }
     }
     setSaving(false);
@@ -59,6 +61,10 @@ export default function RoomsPage() {
       <div className="flex items-center justify-end">
         <Button onClick={openCreate} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый зал</Button>
       </div>
+
+      {rooms.length === 0 && (
+        <p className="text-admin-muted text-sm py-8 text-center">Нет залов в этом филиале</p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {rooms.map(r => (

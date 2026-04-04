@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { BranchProvider, useBranch } from "@/contexts/BranchContext";
+import BranchSelector from "@/components/BranchSelector";
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -25,7 +27,8 @@ function formatWeekLabel(monday: Date): string {
   return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
-export default function TeacherDashboard() {
+function TeacherDashboardInner() {
+  const { selectedBranchId } = useBranch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [teacher, setTeacher] = useState<any>(null);
@@ -90,7 +93,7 @@ export default function TeacherDashboard() {
     if (!teacher) return;
     const fetchSchedule = async () => {
       const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
-      const { data: cls } = await supabase
+      let clsQuery = supabase
         .from("schedule_classes")
         .select("*")
         .eq("teacher_id", teacher.id)
@@ -99,7 +102,9 @@ export default function TeacherDashboard() {
         .eq("cancelled", false)
         .order("date")
         .order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
 
+      const { data: cls } = await clsQuery;
       const classesData = cls || [];
       setClasses(classesData);
 
@@ -138,7 +143,7 @@ export default function TeacherDashboard() {
       }
     };
     fetchSchedule();
-  }, [monday, teacher]);
+  }, [monday, teacher, selectedBranchId]);
 
   const getDir = (id: string) => directions.find(d => d.id === id);
   const getRoom = (id: string) => rooms.find(r => r.id === id);
@@ -196,6 +201,7 @@ export default function TeacherDashboard() {
           <a href="/" className="font-display text-lg font-black tracking-tight text-foreground">
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
+          <BranchSelector variant="dashboard" />
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -398,5 +404,13 @@ export default function TeacherDashboard() {
         </Dialog>
       </div>
     </div>
+  );
+}
+
+export default function TeacherDashboard() {
+  return (
+    <BranchProvider>
+      <TeacherDashboardInner />
+    </BranchProvider>
   );
 }

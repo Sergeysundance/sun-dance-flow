@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
+import { BranchProvider, useBranch } from "@/contexts/BranchContext";
+import BranchSelector from "@/components/BranchSelector";
 
 interface Profile {
   first_name: string;
@@ -57,7 +59,8 @@ function formatWeekLabel(monday: Date): string {
   return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
-const StudentDashboard = () => {
+const StudentDashboardInner = () => {
+  const { selectedBranchId } = useBranch();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bonusPoints, setBonusPoints] = useState(0);
@@ -187,8 +190,10 @@ const StudentDashboard = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
       const [clsRes, tchRes, rmRes] = await Promise.all([
-        supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time"),
+        clsQuery,
         supabase.from("teachers").select("*").eq("active", true),
         supabase.from("rooms").select("*").eq("active", true),
       ]);
@@ -209,7 +214,7 @@ const StudentDashboard = () => {
       }
     };
     if (userId) fetchSchedule();
-  }, [monday, userId]);
+  }, [monday, userId, selectedBranchId]);
 
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
@@ -353,6 +358,7 @@ const StudentDashboard = () => {
           <a href="/" className="font-display text-lg font-black tracking-tight text-foreground">
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
+          <BranchSelector variant="dashboard" />
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
@@ -1066,5 +1072,11 @@ const StudentDashboard = () => {
     </div>
   );
 };
+
+const StudentDashboard = () => (
+  <BranchProvider>
+    <StudentDashboardInner />
+  </BranchProvider>
+);
 
 export default StudentDashboard;

@@ -4,6 +4,7 @@ import { Menu, X, User, MapPin, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "./AuthDialog";
+import { useBranch } from "@/contexts/BranchContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,16 +29,7 @@ const Header = () => {
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [isTeacher, setIsTeacher] = useState(false);
-  const [branches, setBranches] = useState<{ id: string; name: string; address: string }[]>([]);
-  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
-
-  useEffect(() => {
-    supabase.from("branches").select("id, name, address").eq("active", true).order("sort_order").then(({ data }) => {
-      const items = (data || []) as { id: string; name: string; address: string }[];
-      setBranches(items);
-      if (items.length > 0 && !selectedBranch) setSelectedBranch(items[0].id);
-    });
-  }, []);
+  const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -84,7 +76,7 @@ const Header = () => {
               <DropdownMenuTrigger asChild>
                 <button className="flex items-center gap-1 rounded-md px-2 py-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground">
                   <MapPin className="h-3.5 w-3.5 text-sun" />
-                  <span className="hidden sm:inline">{branches.find(b => b.id === selectedBranch)?.name || "Филиал"}</span>
+                  <span className="hidden sm:inline">{branches.find(b => b.id === selectedBranchId)?.name || "Филиал"}</span>
                   <ChevronDown className="h-3 w-3" />
                 </button>
               </DropdownMenuTrigger>
@@ -92,8 +84,8 @@ const Header = () => {
                 {branches.map(b => (
                   <DropdownMenuItem
                     key={b.id}
-                    onClick={() => setSelectedBranch(b.id)}
-                    className={`flex flex-col items-start gap-0 ${selectedBranch === b.id ? "bg-accent" : ""}`}
+                    onClick={() => setSelectedBranchId(b.id)}
+                    className={`flex flex-col items-start gap-0 ${selectedBranchId === b.id ? "bg-accent" : ""}`}
                   >
                     <span className="font-medium text-foreground">{b.name}</span>
                     {b.address && <span className="text-xs text-muted-foreground">{b.address}</span>}
