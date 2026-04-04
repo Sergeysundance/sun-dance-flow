@@ -212,6 +212,7 @@ export type Database = {
           birth_date: string | null
           bonus_points: number
           created_at: string
+          discount_percent: number
           first_name: string
           id: string
           last_name: string
@@ -226,6 +227,7 @@ export type Database = {
           birth_date?: string | null
           bonus_points?: number
           created_at?: string
+          discount_percent?: number
           first_name?: string
           id?: string
           last_name?: string
@@ -240,6 +242,7 @@ export type Database = {
           birth_date?: string | null
           bonus_points?: number
           created_at?: string
+          discount_percent?: number
           first_name?: string
           id?: string
           last_name?: string
