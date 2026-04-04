@@ -323,6 +323,9 @@ function TeacherDashboardInner() {
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
             </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="gap-1">
+              <CreditCard className="h-4 w-4" /> Абонементы
+            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
               <Calendar className="h-4 w-4" /> Мои занятия
             </TabsTrigger>
