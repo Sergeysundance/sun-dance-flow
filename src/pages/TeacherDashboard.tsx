@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2 } from "lucide-react";
+import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -43,6 +43,8 @@ function TeacherDashboardInner() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [cancellingClassId, setCancellingClassId] = useState<string | null>(null);
+  const [cancelDialogClassId, setCancelDialogClassId] = useState<string | null>(null);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -162,6 +164,39 @@ function TeacherDashboardInner() {
     await supabase.auth.signOut();
     toast.success("Вы вышли из системы");
     navigate("/");
+  };
+
+  const handleCancelClass = async (classId: string) => {
+    setCancellingClassId(classId);
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-class', {
+        body: { classId },
+      });
+      if (error) throw error;
+      toast.success(`Занятие отменено. Уведомлено учеников: ${data?.cancelledBookings || 0}`);
+      setCancelDialogClassId(null);
+      // Refresh schedule
+      setWeekOffset(w => w); // trigger re-fetch
+      // Re-fetch classes
+      const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      let clsQuery = supabase
+        .from("schedule_classes")
+        .select("*")
+        .eq("teacher_id", teacher.id)
+        .gte("date", fmtDate(monday))
+        .lte("date", fmtDate(sunday))
+        .eq("cancelled", false)
+        .order("date")
+        .order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
+      const { data: cls } = await clsQuery;
+      setClasses(cls || []);
+      setBookingsMap({});
+    } catch {
+      toast.error("Ошибка при отмене занятия");
+    } finally {
+      setCancellingClassId(null);
+    }
   };
 
   const handleDeleteAccount = async () => {
@@ -350,6 +385,19 @@ function TeacherDashboardInner() {
                                 ) : (
                                   <p className="mt-2 text-xs text-muted-foreground italic">Пока нет записей</p>
                                 )}
+
+                                <div className="mt-3 pt-3 border-t border-border">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-destructive border-destructive/30 hover:bg-destructive/10 w-full"
+                                    onClick={() => setCancelDialogClassId(cls.id)}
+                                    disabled={cancellingClassId === cls.id}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    {cancellingClassId === cls.id ? "Отмена..." : "Отменить занятие"}
+                                  </Button>
+                                </div>
                               </CardContent>
                             </Card>
                           );
@@ -362,6 +410,28 @@ function TeacherDashboardInner() {
             )}
           </TabsContent>
         </Tabs>
+
+        {/* Cancel class confirmation dialog */}
+        <Dialog open={!!cancelDialogClassId} onOpenChange={(o) => { if (!o) setCancelDialogClassId(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Отмена занятия</DialogTitle>
+              <DialogDescription>
+                Вы уверены, что хотите отменить это занятие? Все записи учеников будут удалены, и они получат уведомление об отмене.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCancelDialogClassId(null)}>Назад</Button>
+              <Button
+                variant="destructive"
+                disabled={!!cancellingClassId}
+                onClick={() => cancelDialogClassId && handleCancelClass(cancelDialogClassId)}
+              >
+                {cancellingClassId ? "Отмена..." : "Подтвердить отмену"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Delete account section */}
         <div className="mt-12 border-t border-border pt-8">

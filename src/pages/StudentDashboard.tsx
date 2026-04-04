@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2 } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -90,6 +90,8 @@ const StudentDashboardInner = () => {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
   const [monthlyHours, setMonthlyHours] = useState<{ month: string; hours: number }[]>([]);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -177,6 +179,17 @@ const StudentDashboardInner = () => {
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       await fetchMonthlyHours(session.user.id);
+      // Fetch notifications
+      const { data: notifs } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (notifs) {
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter((n: any) => !n.read).length);
+      }
       setLoading(false);
     };
     checkAuth();
@@ -381,6 +394,14 @@ const StudentDashboardInner = () => {
             </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
               <Calendar className="h-4 w-4" /> Расписание
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-1 relative">
+              <Bell className="h-4 w-4" /> Уведомления
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {unreadCount}
+                </span>
+              )}
             </TabsTrigger>
           </TabsList>
 
@@ -1008,6 +1029,64 @@ const StudentDashboardInner = () => {
                     <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
                   )}
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          {/* Notifications tab */}
+          <TabsContent value="notifications">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Уведомления</CardTitle>
+                {unreadCount > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+                      for (const id of unreadIds) {
+                        await supabase.from("notifications").update({ read: true }).eq("id", id);
+                      }
+                      setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                      setUnreadCount(0);
+                    }}
+                  >
+                    Прочитать все
+                  </Button>
+                )}
+              </CardHeader>
+              <CardContent>
+                {notifications.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-8">Нет уведомлений</p>
+                ) : (
+                  <div className="space-y-3">
+                    {notifications.map(n => (
+                      <div
+                        key={n.id}
+                        className={`p-3 rounded-lg border ${!n.read ? 'bg-sun/5 border-sun/20' : 'border-border'}`}
+                        onClick={async () => {
+                          if (!n.read) {
+                            await supabase.from("notifications").update({ read: true }).eq("id", n.id);
+                            setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x));
+                            setUnreadCount(prev => Math.max(0, prev - 1));
+                          }
+                        }}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-2">
+                            {!n.read && <span className="mt-1.5 h-2 w-2 rounded-full bg-sun flex-shrink-0" />}
+                            <div>
+                              <p className="font-semibold text-sm text-foreground">{n.title}</p>
+                              <p className="text-sm text-muted-foreground mt-1">{n.message}</p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                            {new Date(n.created_at).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
