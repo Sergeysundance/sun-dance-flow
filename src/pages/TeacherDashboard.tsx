@@ -375,6 +375,135 @@ function TeacherDashboardInner() {
             </Card>
           </TabsContent>
 
+          {/* Subscriptions tab */}
+          <TabsContent value="subscriptions">
+            <div className="mb-4 rounded-lg border border-sun/30 bg-sun/5 p-3">
+              <p className="text-sm text-foreground font-medium">🎓 Скидка преподавателя: <span className="text-sun font-bold">20%</span> на все абонементы</p>
+            </div>
+            <Tabs value={subTab} onValueChange={setSubTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="group">Групповые</TabsTrigger>
+                <TabsTrigger value="individual">Индивидуальные</TabsTrigger>
+                <TabsTrigger value="history">История</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="group">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Групповые абонементы</CardTitle>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Купить
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {groupSubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">У вас нет активных групповых абонементов.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {groupSubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">{sub.subscription_type?.name || "Абонемент"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-sun transition-all" style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="individual">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Индивидуальные абонементы</CardTitle>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("individual"); setBuyDialogOpen(true); }}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Купить
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {individualSubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">У вас нет активных индивидуальных абонементов.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {individualSubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">{sub.subscription_type?.name || "Абонемент"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-sun transition-all" style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="history">
+                <Card>
+                  <CardHeader><CardTitle>История абонементов</CardTitle></CardHeader>
+                  <CardContent>
+                    {historySubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">Использованных абонементов пока нет.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {historySubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4 opacity-80">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">{sub.subscription_type?.name || "Абонемент"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Истёк: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-muted-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{sub.hours_remaining <= 0 ? "Исчерпан" : "Истёк"}</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-muted-foreground/30 transition-all" style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
+
           {/* Schedule tab */}
           <TabsContent value="schedule">
             {/* Week nav */}
