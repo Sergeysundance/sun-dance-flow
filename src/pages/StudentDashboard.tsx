@@ -555,7 +555,24 @@ const StudentDashboardInner = () => {
               </CardContent>
             </Card>
 
-            {/* Monthly hours tracker */}
+            {/* Discount card */}
+            {discountPercent > 0 && (
+              <Card className="border-sun/30 mb-4">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
+                      <span className="text-sun text-lg">🏷️</span>
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-bold text-foreground">Постоянная скидка</div>
+                      <div className="text-xs text-muted-foreground">Применяется при покупке абонементов</div>
+                    </div>
+                    <span className="ml-auto font-display text-2xl font-black text-sun">{discountPercent}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-border mb-4">
               <CardContent className="py-4">
                 <div className="flex items-center gap-3 mb-3">
