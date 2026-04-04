@@ -43,6 +43,8 @@ function TeacherDashboardInner() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deleting, setDeleting] = useState(false);
+  const [cancellingClassId, setCancellingClassId] = useState<string | null>(null);
+  const [cancelDialogClassId, setCancelDialogClassId] = useState<string | null>(null);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
