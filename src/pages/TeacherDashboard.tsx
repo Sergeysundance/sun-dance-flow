@@ -143,7 +143,7 @@ function TeacherDashboardInner() {
       }
     };
     fetchSchedule();
-  }, [monday, teacher]);
+  }, [monday, teacher, selectedBranchId]);
 
   const getDir = (id: string) => directions.find(d => d.id === id);
   const getRoom = (id: string) => rooms.find(r => r.id === id);
