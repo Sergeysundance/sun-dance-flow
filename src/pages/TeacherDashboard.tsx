@@ -93,7 +93,7 @@ function TeacherDashboardInner() {
     if (!teacher) return;
     const fetchSchedule = async () => {
       const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
-      const { data: cls } = await supabase
+      let clsQuery = supabase
         .from("schedule_classes")
         .select("*")
         .eq("teacher_id", teacher.id)
@@ -102,6 +102,7 @@ function TeacherDashboardInner() {
         .eq("cancelled", false)
         .order("date")
         .order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
 
       const classesData = cls || [];
       setClasses(classesData);
