@@ -130,14 +130,16 @@ function TeacherDashboardInner() {
 
       setTeacher(teacherData);
 
-      const [dirsRes, rmsRes, profileRes] = await Promise.all([
+      const [dirsRes, rmsRes, profileRes, scheduleCheck] = await Promise.all([
         supabase.from("directions").select("*").eq("active", true),
         supabase.from("rooms").select("*").eq("active", true),
         supabase.from("profiles").select("bonus_points").eq("user_id", session.user.id).single(),
+        supabase.from("schedule_classes").select("id").eq("teacher_id", teacherData.id).limit(1),
       ]);
       if (dirsRes.data) setDirections(dirsRes.data);
       if (rmsRes.data) setRooms(rmsRes.data);
       if (profileRes.data) setBonusPoints((profileRes.data as any).bonus_points ?? 0);
+      setHasSchedule((scheduleCheck.data?.length || 0) > 0);
 
       await fetchSubscriptions(session.user.id);
 
