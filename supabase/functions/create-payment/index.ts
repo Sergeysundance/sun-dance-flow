@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { subscription_type_id, returnUrl, bonus_points_to_use = 0, apply_teacher_discount = false } = body;
+    const { subscription_type_id, returnUrl, bonus_points_to_use = 0, apply_teacher_discount = false, apply_student_discount = false } = body;
 
     if (!subscription_type_id || !returnUrl) {
       return new Response(JSON.stringify({ error: "Неверные параметры" }), {
