@@ -339,7 +339,7 @@ export default function SchedulePage() {
                   <Label>Зал</Label>
                   <Select value={editRoom} onValueChange={setEditRoom}>
                     <SelectTrigger className="bg-white border-admin-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+                    <SelectContent position="popper" className="max-h-60 overflow-y-auto">{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label>Дата</Label><Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="bg-white border-admin-border" /></div>
