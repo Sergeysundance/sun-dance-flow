@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { subscription_type_id, returnUrl, bonus_points_to_use = 0, apply_teacher_discount = false } = body;
+    const { subscription_type_id, returnUrl, bonus_points_to_use = 0, apply_teacher_discount = false, apply_student_discount = false } = body;
 
     if (!subscription_type_id || !returnUrl) {
       return new Response(JSON.stringify({ error: "Неверные параметры" }), {
@@ -87,7 +87,22 @@ serve(async (req) => {
       }
     }
 
-    const priceAfterTeacherDiscount = plan.price - teacherDiscount;
+    // Check student/client discount from profile
+    let studentDiscount = 0;
+    if (apply_student_discount) {
+      const { data: profileRecord } = await adminClient
+        .from("profiles")
+        .select("discount_percent")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileRecord && (profileRecord as any).discount_percent > 0) {
+        studentDiscount = Math.round(plan.price * ((profileRecord as any).discount_percent / 100));
+      }
+    }
+
+    const totalDiscount = teacherDiscount + studentDiscount;
+    const priceAfterTeacherDiscount = Math.max(0, plan.price - totalDiscount);
 
     // Validate bonus points
     let validBonusPoints = Math.max(0, Math.floor(bonus_points_to_use));
@@ -161,6 +176,7 @@ serve(async (req) => {
 
     const descParts = [plan.name];
     if (teacherDiscount > 0) descParts.push(`скидка преподавателя ${teacherDiscount}₽`);
+    if (studentDiscount > 0) descParts.push(`скидка клиента ${studentDiscount}₽`);
     if (validBonusPoints > 0) descParts.push(`скидка ${validBonusPoints} бонусов`);
 
     const idempotenceKey = crypto.randomUUID();

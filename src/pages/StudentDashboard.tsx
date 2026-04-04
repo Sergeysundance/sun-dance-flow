@@ -64,6 +64,7 @@ const StudentDashboardInner = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bonusPoints, setBonusPoints] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -175,7 +176,7 @@ const StudentDashboardInner = () => {
         supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
         supabase.from("directions").select("*").eq("active", true),
       ]);
-      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); }
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); setDiscountPercent((profileRes.data as any).discount_percent ?? 0); }
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       await fetchMonthlyHours(session.user.id);
@@ -554,7 +555,24 @@ const StudentDashboardInner = () => {
               </CardContent>
             </Card>
 
-            {/* Monthly hours tracker */}
+            {/* Discount card */}
+            {discountPercent > 0 && (
+              <Card className="border-sun/30 mb-4">
+                <CardContent className="py-4">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
+                      <span className="text-sun text-lg">🏷️</span>
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-bold text-foreground">Постоянная скидка</div>
+                      <div className="text-xs text-muted-foreground">Применяется при покупке абонементов</div>
+                    </div>
+                    <span className="ml-auto font-display text-2xl font-black text-sun">{discountPercent}%</span>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             <Card className="border-border mb-4">
               <CardContent className="py-4">
                 <div className="flex items-center gap-3 mb-3">
@@ -1096,13 +1114,17 @@ const StudentDashboardInner = () => {
           open={buyDialogOpen}
           subscriptionType={buyDialogType}
           bonusPoints={bonusPoints}
+          discountPercent={discountPercent}
           onOpenChange={async (open) => {
             setBuyDialogOpen(open);
             if (!open && userId) {
               fetchSubscriptions(userId);
-              // Refresh bonus points
-              const { data: p } = await supabase.from("profiles").select("bonus_points").eq("user_id", userId).single();
-              if (p) setBonusPoints((p as any).bonus_points ?? 0);
+              // Refresh bonus points and discount
+              const { data: p } = await supabase.from("profiles").select("bonus_points, discount_percent").eq("user_id", userId).single();
+              if (p) {
+                setBonusPoints((p as any).bonus_points ?? 0);
+                setDiscountPercent((p as any).discount_percent ?? 0);
+              }
             }
           }}
         />

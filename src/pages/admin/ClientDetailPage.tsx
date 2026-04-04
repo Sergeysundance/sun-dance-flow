@@ -29,6 +29,7 @@ export default function ClientDetailPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bonusAmount, setBonusAmount] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(0);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
@@ -70,6 +71,7 @@ export default function ClientDetailPage() {
     setBirthDate(profile.birth_date || "");
     setNotes(profile.notes || "");
     setSelectedDirections(profile.preferred_directions || []);
+    setDiscountPercent((profile as any).discount_percent ?? 0);
     setEditOpen(true);
   };
 
@@ -87,6 +89,7 @@ export default function ClientDetailPage() {
       birth_date: birthDate || null,
       notes: notes.trim() || null,
       preferred_directions: selectedDirections,
+      discount_percent: discountPercent,
     }).eq("id", profile.id);
 
     if (error) { toast.error("Ошибка при сохранении"); return; }
@@ -124,6 +127,9 @@ export default function ClientDetailPage() {
                 {profile.birth_date && <div>🎂 {new Date(profile.birth_date).toLocaleDateString('ru-RU')}</div>}
                 {profile.notes && <div>📝 {profile.notes}</div>}
                 <div>⭐ Бонусные баллы: <span className="font-bold text-admin-foreground">{profile.bonus_points ?? 0}</span></div>
+                {((profile as any).discount_percent ?? 0) > 0 && (
+                  <div>🏷️ Скидка на абонементы: <span className="font-bold text-admin-foreground">{(profile as any).discount_percent}%</span></div>
+                )}
               </div>
               {(profile.preferred_directions || []).length > 0 && (
                 <div className="mt-2 flex flex-wrap gap-1">
@@ -298,6 +304,10 @@ export default function ClientDetailPage() {
                   </label>
                 ))}
               </div>
+            </div>
+            <div>
+              <Label>Скидка на абонементы (%)</Label>
+              <Input type="number" min={0} max={100} className="bg-white border-admin-border" value={discountPercent} onChange={e => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))} />
             </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" value={notes} onChange={e => setNotes(e.target.value)} /></div>
           </div>

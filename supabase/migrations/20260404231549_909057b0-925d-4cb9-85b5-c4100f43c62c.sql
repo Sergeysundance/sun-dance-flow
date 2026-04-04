@@ -1,0 +1,1 @@
+ALTER TABLE public.profiles ADD COLUMN discount_percent integer NOT NULL DEFAULT 0;

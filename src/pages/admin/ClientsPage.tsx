@@ -35,6 +35,7 @@ export default function ClientsPage() {
   const [phone, setPhone] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
 
   const isEditing = !!editProfile;
@@ -61,6 +62,7 @@ export default function ClientsPage() {
     setBirthDate("");
     setNotes("");
     setSelectedDirections([]);
+    setDiscountPercent(0);
     setEditProfile(null);
   };
 
@@ -78,6 +80,7 @@ export default function ClientsPage() {
     setBirthDate(p.birth_date || "");
     setNotes(p.notes || "");
     setSelectedDirections(p.preferred_directions || []);
+    setDiscountPercent((p as any).discount_percent ?? 0);
     setDialogOpen(true);
   };
 
@@ -95,6 +98,7 @@ export default function ClientsPage() {
       birth_date: birthDate || null,
       notes: notes.trim() || null,
       preferred_directions: selectedDirections,
+      discount_percent: discountPercent,
     };
 
     if (isEditing && editProfile) {
@@ -230,6 +234,10 @@ export default function ClientsPage() {
                   </label>
                 ))}
               </div>
+            </div>
+            <div>
+              <Label>Скидка на абонементы (%)</Label>
+              <Input type="number" min={0} max={100} className="bg-white border-admin-border" value={discountPercent} onChange={e => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))} />
             </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" value={notes} onChange={e => setNotes(e.target.value)} /></div>
           </div>

@@ -92,6 +92,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
           returnUrl: window.location.origin + "/dashboard",
           bonus_points_to_use: bonusToUse,
           apply_teacher_discount: discountPercent > 0,
+          apply_student_discount: discountPercent > 0,
         },
       });
 
