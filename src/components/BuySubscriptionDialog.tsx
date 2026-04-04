@@ -26,9 +26,10 @@ interface BuySubscriptionDialogProps {
   onOpenChange: (open: boolean) => void;
   subscriptionType?: string;
   bonusPoints?: number;
+  discountPercent?: number;
 }
 
-const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group", bonusPoints = 0 }: BuySubscriptionDialogProps) => {
+const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group", bonusPoints = 0, discountPercent = 0 }: BuySubscriptionDialogProps) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -64,8 +65,9 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
   }, [selected]);
 
   const selectedPlan = selected !== null ? plans[selected] : null;
-  const maxBonus = selectedPlan ? Math.min(bonusPoints, selectedPlan.price) : 0;
-  const finalPrice = selectedPlan ? selectedPlan.price - bonusToUse : 0;
+  const discountedPrice = selectedPlan ? Math.round(selectedPlan.price * (1 - discountPercent / 100)) : 0;
+  const maxBonus = selectedPlan ? Math.min(bonusPoints, discountedPrice) : 0;
+  const finalPrice = selectedPlan ? discountedPrice - bonusToUse : 0;
 
   const handleBonusChange = (value: number) => {
     setBonusToUse(Math.max(0, Math.min(value, maxBonus)));
@@ -89,6 +91,7 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
           subscription_type_id: plan.id,
           returnUrl: window.location.origin + "/dashboard",
           bonus_points_to_use: bonusToUse,
+          apply_teacher_discount: discountPercent > 0,
         },
       });
 
@@ -146,16 +149,23 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
                         <div className="text-sm text-muted-foreground">{formatHours(plan.hours_count)}</div>
                       )}
                       <div className="font-display text-2xl font-black text-foreground mt-1">
-                        {plan.price.toLocaleString("ru-RU")} ₽
+                        {discountPercent > 0 ? (
+                          <>
+                            <span className="line-through text-muted-foreground text-base mr-2">{plan.price.toLocaleString("ru-RU")} ₽</span>
+                            {Math.round(plan.price * (1 - discountPercent / 100)).toLocaleString("ru-RU")} ₽
+                          </>
+                        ) : (
+                          <>{plan.price.toLocaleString("ru-RU")} ₽</>
+                        )}
                       </div>
-                      {plan.old_price && (
+                      {!discountPercent && plan.old_price && (
                         <div className="text-xs text-muted-foreground line-through">
                           {plan.old_price.toLocaleString("ru-RU")} ₽
                         </div>
                       )}
                       {pricePerHour && (
                         <div className="text-xs text-muted-foreground mt-1">
-                          {pricePerHour} ₽ / час
+                          {discountPercent > 0 ? Math.round(Math.round(plan.price * (1 - discountPercent / 100)) / plan.hours_count!) : pricePerHour} ₽ / час
                         </div>
                       )}
                       {selected === idx && (
@@ -215,8 +225,8 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
                   {bonusToUse > 0 && selectedPlan && (
                     <div className="mt-3 text-sm">
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Стоимость:</span>
-                        <span>{selectedPlan.price.toLocaleString("ru-RU")} ₽</span>
+                        <span>Стоимость{discountPercent > 0 ? ' со скидкой' : ''}:</span>
+                        <span>{discountedPrice.toLocaleString("ru-RU")} ₽</span>
                       </div>
                       <div className="flex justify-between text-sun font-medium">
                         <span>Скидка (бонусы):</span>

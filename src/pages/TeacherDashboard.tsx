@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle } from "lucide-react";
+import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
+import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -27,6 +28,22 @@ function formatWeekLabel(monday: Date): string {
   return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
+interface UserSubscription {
+  id: string;
+  hours_remaining: number;
+  hours_total: number;
+  purchased_at: string;
+  expires_at: string;
+  active: boolean;
+  subscription_type_id: string;
+  subscription_type?: {
+    name: string;
+    hours_count: number | null;
+    price: number;
+    type: string;
+  };
+}
+
 function TeacherDashboardInner() {
   const { selectedBranchId } = useBranch();
   const navigate = useNavigate();
@@ -34,6 +51,15 @@ function TeacherDashboardInner() {
   const [teacher, setTeacher] = useState<any>(null);
   const [directions, setDirections] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState("");
+  const [userId, setUserId] = useState("");
+  const [bonusPoints, setBonusPoints] = useState(0);
+
+  // Subscriptions
+  const [userSubscriptions, setUserSubscriptions] = useState<UserSubscription[]>([]);
+  const [historySubscriptions, setHistorySubscriptions] = useState<UserSubscription[]>([]);
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyDialogType, setBuyDialogType] = useState<string>("group");
+  const [subTab, setSubTab] = useState("group");
 
   // Schedule
   const [weekOffset, setWeekOffset] = useState(0);
@@ -53,13 +79,43 @@ function TeacherDashboardInner() {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
 
+  const enrichSubscriptions = async (subs: any[]) => {
+    if (!subs || subs.length === 0) return [];
+    const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
+    const { data: types } = await supabase
+      .from("subscription_types")
+      .select("id, name, hours_count, price, type")
+      .in("id", typeIds);
+    const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
+    return subs.map((s: any) => ({ ...s, subscription_type: typesMap.get(s.subscription_type_id) }));
+  };
+
+  const fetchSubscriptions = async (uid: string) => {
+    const { data: activeSubs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .eq("active", true)
+      .gte("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: true });
+    setUserSubscriptions(await enrichSubscriptions(activeSubs || []));
+
+    const { data: historySubs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .or(`active.eq.false,expires_at.lt.${new Date().toISOString()}`)
+      .order("expires_at", { ascending: false });
+    setHistorySubscriptions(await enrichSubscriptions(historySubs || []));
+  };
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/"); return; }
       setUserEmail(session.user.email || "");
+      setUserId(session.user.id);
 
-      // Find teacher record for this user
       const { data: teacherData } = await supabase
         .from("teachers")
         .select("*")
@@ -67,18 +123,22 @@ function TeacherDashboardInner() {
         .maybeSingle();
 
       if (!teacherData) {
-        // Not a teacher, redirect to student dashboard
         navigate("/dashboard");
         return;
       }
 
       setTeacher(teacherData);
 
-      const { data: dirs } = await supabase.from("directions").select("*").eq("active", true);
-      if (dirs) setDirections(dirs);
+      const [dirsRes, rmsRes, profileRes] = await Promise.all([
+        supabase.from("directions").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+        supabase.from("profiles").select("bonus_points").eq("user_id", session.user.id).single(),
+      ]);
+      if (dirsRes.data) setDirections(dirsRes.data);
+      if (rmsRes.data) setRooms(rmsRes.data);
+      if (profileRes.data) setBonusPoints((profileRes.data as any).bonus_points ?? 0);
 
-      const { data: rms } = await supabase.from("rooms").select("*").eq("active", true);
-      if (rms) setRooms(rms);
+      await fetchSubscriptions(session.user.id);
 
       setLoading(false);
     };
@@ -150,6 +210,15 @@ function TeacherDashboardInner() {
   const getDir = (id: string) => directions.find(d => d.id === id);
   const getRoom = (id: string) => rooms.find(r => r.id === id);
   const todayStr = fmtDate(new Date());
+
+  const formatHours = (n: number) => {
+    if (n === 1) return "1 час";
+    if (n >= 2 && n <= 4) return `${n} часа`;
+    return `${n} часов`;
+  };
+
+  const groupSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type || 'group') === 'group');
+  const individualSubscriptions = userSubscriptions.filter(s => s.subscription_type?.type?.startsWith('individual'));
 
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
@@ -254,6 +323,9 @@ function TeacherDashboardInner() {
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
             </TabsTrigger>
+            <TabsTrigger value="subscriptions" className="gap-1">
+              <CreditCard className="h-4 w-4" /> Абонементы
+            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
               <Calendar className="h-4 w-4" /> Мои занятия
             </TabsTrigger>
@@ -301,6 +373,135 @@ function TeacherDashboardInner() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Subscriptions tab */}
+          <TabsContent value="subscriptions">
+            <div className="mb-4 rounded-lg border border-sun/30 bg-sun/5 p-3">
+              <p className="text-sm text-foreground font-medium">🎓 Скидка преподавателя: <span className="text-sun font-bold">20%</span> на все абонементы</p>
+            </div>
+            <Tabs value={subTab} onValueChange={setSubTab}>
+              <TabsList className="mb-4">
+                <TabsTrigger value="group">Групповые</TabsTrigger>
+                <TabsTrigger value="individual">Индивидуальные</TabsTrigger>
+                <TabsTrigger value="history">История</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="group">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Групповые абонементы</CardTitle>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Купить
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {groupSubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">У вас нет активных групповых абонементов.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {groupSubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">{sub.subscription_type?.name || "Абонемент"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-sun transition-all" style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="individual">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Индивидуальные абонементы</CardTitle>
+                    <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("individual"); setBuyDialogOpen(true); }}>
+                      <CreditCard className="h-4 w-4 mr-1" /> Купить
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    {individualSubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">У вас нет активных индивидуальных абонементов.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {individualSubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">{sub.subscription_type?.name || "Абонемент"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal text-muted-foreground">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{formatHours(sub.hours_remaining)} осталось</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-sun transition-all" style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              <TabsContent value="history">
+                <Card>
+                  <CardHeader><CardTitle>История абонементов</CardTitle></CardHeader>
+                  <CardContent>
+                    {historySubscriptions.length === 0 ? (
+                      <p className="text-muted-foreground">Использованных абонементов пока нет.</p>
+                    ) : (
+                      <div className="space-y-3">
+                        {historySubscriptions.map(sub => (
+                          <div key={sub.id} className="rounded-lg border border-border p-4 opacity-80">
+                            <div className="flex items-center justify-between flex-wrap gap-2">
+                              <div>
+                                <div className="font-display text-base font-bold text-foreground">{sub.subscription_type?.name || "Абонемент"}</div>
+                                <div className="text-xs text-muted-foreground mt-0.5">
+                                  Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Истёк: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-display text-xl font-black text-muted-foreground">
+                                  {sub.hours_remaining} <span className="text-sm font-normal">/ {sub.hours_total}</span>
+                                </div>
+                                <div className="text-xs text-muted-foreground">{sub.hours_remaining <= 0 ? "Исчерпан" : "Истёк"}</div>
+                              </div>
+                            </div>
+                            <div className="mt-3 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-muted-foreground/30 transition-all" style={{ width: `${Math.max(0, (sub.hours_remaining / sub.hours_total) * 100)}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
 
           {/* Schedule tab */}
@@ -473,6 +674,14 @@ function TeacherDashboardInner() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <BuySubscriptionDialog
+        open={buyDialogOpen}
+        onOpenChange={setBuyDialogOpen}
+        subscriptionType={buyDialogType}
+        bonusPoints={bonusPoints}
+        discountPercent={20}
+      />
     </div>
   );
 }
