@@ -26,9 +26,10 @@ interface BuySubscriptionDialogProps {
   onOpenChange: (open: boolean) => void;
   subscriptionType?: string;
   bonusPoints?: number;
+  discountPercent?: number;
 }
 
-const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group", bonusPoints = 0 }: BuySubscriptionDialogProps) => {
+const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group", bonusPoints = 0, discountPercent = 0 }: BuySubscriptionDialogProps) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [selected, setSelected] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);

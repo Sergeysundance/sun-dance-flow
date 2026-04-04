@@ -36,7 +36,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { subscription_type_id, returnUrl, bonus_points_to_use = 0 } = body;
+    const { subscription_type_id, returnUrl, bonus_points_to_use = 0, apply_teacher_discount = false } = body;
 
     if (!subscription_type_id || !returnUrl) {
       return new Response(JSON.stringify({ error: "Неверные параметры" }), {
@@ -64,6 +64,23 @@ serve(async (req) => {
       });
     }
 
+    // Verify teacher discount eligibility
+    let teacherDiscount = 0;
+    if (apply_teacher_discount) {
+      const { data: teacherRecord } = await adminClient
+        .from("teachers")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .maybeSingle();
+
+      if (teacherRecord) {
+        teacherDiscount = Math.round(plan.price * 0.2);
+      }
+    }
+
+    const priceAfterTeacherDiscount = plan.price - teacherDiscount;
+
     // Validate bonus points
     let validBonusPoints = Math.max(0, Math.floor(bonus_points_to_use));
     if (validBonusPoints > 0) {
@@ -79,15 +96,13 @@ serve(async (req) => {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      // Cap bonus at plan price
-      validBonusPoints = Math.min(validBonusPoints, plan.price);
+      validBonusPoints = Math.min(validBonusPoints, priceAfterTeacherDiscount);
     }
 
-    const finalAmount = plan.price - validBonusPoints;
+    const finalAmount = priceAfterTeacherDiscount - validBonusPoints;
 
-    // If fully covered by bonus points, create subscription directly
+    // If fully covered by discount + bonus points, create subscription directly
     if (finalAmount <= 0) {
-      // Deduct bonus points
       if (validBonusPoints > 0) {
         const { data: currentProfile } = await adminClient
           .from("profiles")
@@ -101,7 +116,6 @@ serve(async (req) => {
           .eq("user_id", user.id);
       }
 
-      // Create subscription
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (plan.duration_days || 30));
 
@@ -137,6 +151,10 @@ serve(async (req) => {
       });
     }
 
+    const descParts = [plan.name];
+    if (teacherDiscount > 0) descParts.push(`скидка преподавателя ${teacherDiscount}₽`);
+    if (validBonusPoints > 0) descParts.push(`скидка ${validBonusPoints} бонусов`);
+
     const idempotenceKey = crypto.randomUUID();
     const paymentResponse = await fetch("https://api.yookassa.ru/v3/payments", {
       method: "POST",
@@ -155,15 +173,14 @@ serve(async (req) => {
           return_url: returnUrl,
         },
         capture: true,
-        description: validBonusPoints > 0
-          ? `${plan.name} (скидка ${validBonusPoints} бонусов)`
-          : plan.name,
+        description: descParts.length > 1 ? `${descParts[0]} (${descParts.slice(1).join(', ')})` : descParts[0],
         save_payment_method: true,
         metadata: {
           user_id: user.id,
           subscription_type_id: plan.id,
           hours: plan.hours_count,
           bonus_points_used: validBonusPoints,
+          teacher_discount: teacherDiscount,
         },
       }),
     });
@@ -181,7 +198,6 @@ serve(async (req) => {
       );
     }
 
-    // Deduct bonus points now (payment created successfully)
     if (validBonusPoints > 0) {
       const { data: currentProfile } = await adminClient
         .from("profiles")
