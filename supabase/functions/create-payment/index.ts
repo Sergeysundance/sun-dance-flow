@@ -87,7 +87,22 @@ serve(async (req) => {
       }
     }
 
-    const priceAfterTeacherDiscount = plan.price - teacherDiscount;
+    // Check student/client discount from profile
+    let studentDiscount = 0;
+    if (apply_student_discount) {
+      const { data: profileRecord } = await adminClient
+        .from("profiles")
+        .select("discount_percent")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (profileRecord && (profileRecord as any).discount_percent > 0) {
+        studentDiscount = Math.round(plan.price * ((profileRecord as any).discount_percent / 100));
+      }
+    }
+
+    const totalDiscount = teacherDiscount + studentDiscount;
+    const priceAfterTeacherDiscount = Math.max(0, plan.price - totalDiscount);
 
     // Validate bonus points
     let validBonusPoints = Math.max(0, Math.floor(bonus_points_to_use));
