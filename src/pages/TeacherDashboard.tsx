@@ -697,7 +697,7 @@ function TeacherDashboardInner() {
 
       <BuySubscriptionDialog
         open={buyDialogOpen}
-        onOpenChange={setBuyDialogOpen}
+        onOpenChange={(open) => { setBuyDialogOpen(open); if (!open) { refreshTeacherData(); if (userId) fetchSubscriptions(userId); } }}
         subscriptionType={buyDialogType}
         bonusPoints={bonusPoints}
         discountPercent={hasSchedule ? (teacher?.discount_percent ?? 20) : 0}
