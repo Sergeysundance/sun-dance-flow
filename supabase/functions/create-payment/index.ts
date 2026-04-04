@@ -176,6 +176,7 @@ serve(async (req) => {
 
     const descParts = [plan.name];
     if (teacherDiscount > 0) descParts.push(`скидка преподавателя ${teacherDiscount}₽`);
+    if (studentDiscount > 0) descParts.push(`скидка клиента ${studentDiscount}₽`);
     if (validBonusPoints > 0) descParts.push(`скидка ${validBonusPoints} бонусов`);
 
     const idempotenceKey = crypto.randomUUID();
