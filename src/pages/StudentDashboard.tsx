@@ -179,6 +179,17 @@ const StudentDashboardInner = () => {
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       await fetchMonthlyHours(session.user.id);
+      // Fetch notifications
+      const { data: notifs } = await supabase
+        .from("notifications")
+        .select("*")
+        .eq("user_id", session.user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+      if (notifs) {
+        setNotifications(notifs);
+        setUnreadCount(notifs.filter((n: any) => !n.read).length);
+      }
       setLoading(false);
     };
     checkAuth();
