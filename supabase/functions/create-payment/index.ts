@@ -69,12 +69,12 @@ serve(async (req) => {
     if (apply_teacher_discount) {
       const { data: teacherRecord } = await adminClient
         .from("teachers")
-        .select("id")
+        .select("id, discount_percent")
         .eq("user_id", user.id)
         .eq("active", true)
         .maybeSingle();
 
-      if (teacherRecord) {
+      if (teacherRecord && (teacherRecord as any).discount_percent > 0) {
         const { data: scheduleEntry } = await adminClient
           .from("schedule_classes")
           .select("id")
@@ -82,7 +82,7 @@ serve(async (req) => {
           .limit(1);
 
         if (scheduleEntry && scheduleEntry.length > 0) {
-          teacherDiscount = Math.round(plan.price * 0.2);
+          teacherDiscount = Math.round(plan.price * ((teacherRecord as any).discount_percent / 100));
         }
       }
     }

@@ -33,6 +33,7 @@ export default function TeachersPage() {
   const [bio, setBio] = useState("");
   const [telegramId, setTelegramId] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+  const [discountPercent, setDiscountPercent] = useState(20);
 
   // Photo state
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -64,14 +65,14 @@ export default function TeachersPage() {
   const getDirection = (id: string) => directions.find(d => d.id === id);
 
   const resetForm = () => {
-    setFirstName(""); setLastName(""); setPhone(""); setEmail(""); setBio(""); setTelegramId(""); setSelectedDirections([]);
+    setFirstName(""); setLastName(""); setPhone(""); setEmail(""); setBio(""); setTelegramId(""); setSelectedDirections([]); setDiscountPercent(20);
     setPhotoFile(null); setPhotoPreview("");
   };
 
   const openNew = () => { setEditTeacher(null); resetForm(); setDialogOpen(true); };
 
   const openEdit = (t: any) => {
-    setEditTeacher(t); setFirstName(t.first_name); setLastName(t.last_name); setPhone(t.phone); setEmail(t.email); setBio(t.bio); setTelegramId(t.telegram_id); setSelectedDirections([...t.direction_ids]);
+    setEditTeacher(t); setFirstName(t.first_name); setLastName(t.last_name); setPhone(t.phone); setEmail(t.email); setBio(t.bio); setTelegramId(t.telegram_id); setSelectedDirections([...t.direction_ids]); setDiscountPercent(t.discount_percent ?? 20);
     setPhotoFile(null);
     setPhotoPreview(t.photo_url || "");
     setDialogOpen(true);
@@ -106,7 +107,7 @@ export default function TeachersPage() {
     if (!firstName.trim()) { toast.error("Введите имя преподавателя"); return; }
     setUploading(true);
     try {
-      const payload: any = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections };
+      const payload: any = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections, discount_percent: discountPercent };
 
       if (isEditing && editTeacher) {
         let branchIds = [...(editTeacher.branch_ids || [])];
@@ -206,6 +207,11 @@ export default function TeachersPage() {
           })}
         </div>
         <p className="mt-2 text-xs text-admin-muted line-clamp-2">{t.bio}</p>
+        {(t.discount_percent != null && t.discount_percent !== 20) ? (
+          <p className="mt-1 text-xs font-medium text-admin-accent">Скидка: {t.discount_percent}%</p>
+        ) : (
+          <p className="mt-1 text-xs text-admin-muted">Скидка: {t.discount_percent ?? 20}%</p>
+        )}
       </CardContent>
     </Card>
   );
@@ -288,6 +294,11 @@ export default function TeachersPage() {
               </div>
             </div>
             <div><Label>Telegram ID</Label><Input className="bg-white border-admin-border" value={telegramId} onChange={e => setTelegramId(e.target.value)} /></div>
+            <div>
+              <Label>Скидка на абонементы (%)</Label>
+              <Input type="number" min={0} max={100} className="bg-white border-admin-border" value={discountPercent} onChange={e => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))} />
+              <p className="text-xs text-admin-muted mt-1">Применяется при покупке абонемента через личный кабинет преподавателя</p>
+            </div>
           </div>
           <DialogFooter className="flex-shrink-0">
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-admin-border">Отмена</Button>
