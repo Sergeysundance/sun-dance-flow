@@ -99,8 +99,17 @@ export default function TeachersPage() {
   };
 
   const handleDelete = async (t: any) => {
+    // First get all schedule classes for this teacher
+    const { data: classes } = await supabase.from("schedule_classes").select("id").eq("teacher_id", t.id);
+    if (classes && classes.length > 0) {
+      const classIds = classes.map(c => c.id);
+      // Delete bookings for those classes
+      await supabase.from("bookings").delete().in("class_id", classIds);
+      // Delete the schedule classes
+      await supabase.from("schedule_classes").delete().eq("teacher_id", t.id);
+    }
     const { error } = await supabase.from("teachers").delete().eq("id", t.id);
-    if (error) { toast.error("Ошибка при удалении"); return; }
+    if (error) { toast.error("Ошибка при удалении: " + error.message); return; }
     toast.success("Преподаватель удалён");
     fetchData();
   };
