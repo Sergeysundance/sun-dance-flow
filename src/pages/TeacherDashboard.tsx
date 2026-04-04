@@ -411,6 +411,28 @@ function TeacherDashboardInner() {
           </TabsContent>
         </Tabs>
 
+        {/* Cancel class confirmation dialog */}
+        <Dialog open={!!cancelDialogClassId} onOpenChange={(o) => { if (!o) setCancelDialogClassId(null); }}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="text-destructive">Отмена занятия</DialogTitle>
+              <DialogDescription>
+                Вы уверены, что хотите отменить это занятие? Все записи учеников будут удалены, и они получат уведомление об отмене.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCancelDialogClassId(null)}>Назад</Button>
+              <Button
+                variant="destructive"
+                disabled={!!cancellingClassId}
+                onClick={() => cancelDialogClassId && handleCancelClass(cancelDialogClassId)}
+              >
+                {cancellingClassId ? "Отмена..." : "Подтвердить отмену"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* Delete account section */}
         <div className="mt-12 border-t border-border pt-8">
           <div className="flex items-center justify-between">
