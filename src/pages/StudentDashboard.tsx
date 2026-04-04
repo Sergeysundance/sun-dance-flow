@@ -190,8 +190,10 @@ const StudentDashboardInner = () => {
   useEffect(() => {
     const fetchSchedule = async () => {
       const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
       const [clsRes, tchRes, rmRes] = await Promise.all([
-        supabase.from("schedule_classes").select("*").gte("date", fmtDate(monday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time"),
+        clsQuery,
         supabase.from("teachers").select("*").eq("active", true),
         supabase.from("rooms").select("*").eq("active", true),
       ]);
