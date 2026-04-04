@@ -395,6 +395,14 @@ const StudentDashboardInner = () => {
             <TabsTrigger value="schedule" className="gap-1">
               <Calendar className="h-4 w-4" /> Расписание
             </TabsTrigger>
+            <TabsTrigger value="notifications" className="gap-1 relative">
+              <Bell className="h-4 w-4" /> Уведомления
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
+                  {unreadCount}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           {/* Profile tab */}
