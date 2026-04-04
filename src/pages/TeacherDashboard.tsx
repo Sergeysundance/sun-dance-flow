@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { BranchProvider, useBranch } from "@/contexts/BranchContext";
+import BranchSelector from "@/components/BranchSelector";
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
