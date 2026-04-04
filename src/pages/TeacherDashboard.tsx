@@ -153,6 +153,17 @@ function TeacherDashboardInner() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Refresh teacher data (discount, etc.) from DB
+  const refreshTeacherData = async () => {
+    if (!userId) return;
+    const [teacherRes, scheduleRes] = await Promise.all([
+      supabase.from("teachers").select("*").eq("user_id", userId).maybeSingle(),
+      teacher ? supabase.from("schedule_classes").select("id").eq("teacher_id", teacher.id).limit(1) : Promise.resolve({ data: [] }),
+    ]);
+    if (teacherRes.data) setTeacher(teacherRes.data);
+    setHasSchedule((scheduleRes.data?.length || 0) > 0);
+  };
+
   // Fetch classes and bookings for the week
   useEffect(() => {
     if (!teacher) return;
@@ -321,7 +332,7 @@ function TeacherDashboardInner() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="font-display text-2xl font-bold mb-6">Кабинет преподавателя</h1>
 
-        <Tabs defaultValue="schedule">
+        <Tabs defaultValue="schedule" onValueChange={(v) => { if (v === "subscriptions") refreshTeacherData(); }}>
           <TabsList className="mb-6">
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
@@ -686,7 +697,7 @@ function TeacherDashboardInner() {
 
       <BuySubscriptionDialog
         open={buyDialogOpen}
-        onOpenChange={setBuyDialogOpen}
+        onOpenChange={(open) => { setBuyDialogOpen(open); if (!open) { refreshTeacherData(); if (userId) fetchSubscriptions(userId); } }}
         subscriptionType={buyDialogType}
         bonusPoints={bonusPoints}
         discountPercent={hasSchedule ? (teacher?.discount_percent ?? 20) : 0}
