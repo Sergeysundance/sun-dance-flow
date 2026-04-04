@@ -214,7 +214,7 @@ const StudentDashboardInner = () => {
       }
     };
     if (userId) fetchSchedule();
-  }, [monday, userId]);
+  }, [monday, userId, selectedBranchId]);
 
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
