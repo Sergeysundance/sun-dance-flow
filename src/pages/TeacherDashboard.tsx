@@ -332,7 +332,7 @@ function TeacherDashboardInner() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="font-display text-2xl font-bold mb-6">Кабинет преподавателя</h1>
 
-        <Tabs defaultValue="schedule">
+        <Tabs defaultValue="schedule" onValueChange={(v) => { if (v === "subscriptions") refreshTeacherData(); }}>
           <TabsList className="mb-6">
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
