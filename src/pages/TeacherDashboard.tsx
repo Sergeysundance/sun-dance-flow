@@ -27,7 +27,8 @@ function formatWeekLabel(monday: Date): string {
   return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
-export default function TeacherDashboard() {
+function TeacherDashboardInner() {
+  const { selectedBranchId } = useBranch();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [teacher, setTeacher] = useState<any>(null);
