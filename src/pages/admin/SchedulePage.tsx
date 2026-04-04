@@ -374,7 +374,7 @@ export default function SchedulePage() {
               <Label>Преподаватель</Label>
               <Select value={newTeacher} onValueChange={setNewTeacher}>
                 <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper" className="max-h-60 overflow-y-auto">{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
