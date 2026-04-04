@@ -166,6 +166,39 @@ function TeacherDashboardInner() {
     navigate("/");
   };
 
+  const handleCancelClass = async (classId: string) => {
+    setCancellingClassId(classId);
+    try {
+      const { data, error } = await supabase.functions.invoke('cancel-class', {
+        body: { classId },
+      });
+      if (error) throw error;
+      toast.success(`Занятие отменено. Уведомлено учеников: ${data?.cancelledBookings || 0}`);
+      setCancelDialogClassId(null);
+      // Refresh schedule
+      setWeekOffset(w => w); // trigger re-fetch
+      // Re-fetch classes
+      const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+      let clsQuery = supabase
+        .from("schedule_classes")
+        .select("*")
+        .eq("teacher_id", teacher.id)
+        .gte("date", fmtDate(monday))
+        .lte("date", fmtDate(sunday))
+        .eq("cancelled", false)
+        .order("date")
+        .order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
+      const { data: cls } = await clsQuery;
+      setClasses(cls || []);
+      setBookingsMap({});
+    } catch {
+      toast.error("Ошибка при отмене занятия");
+    } finally {
+      setCancellingClassId(null);
+    }
+  };
+
   const handleDeleteAccount = async () => {
     if (deleteConfirmText !== "УДАЛИТЬ") return;
     setDeleting(true);
