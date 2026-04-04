@@ -201,6 +201,7 @@ function TeacherDashboardInner() {
           <a href="/" className="font-display text-lg font-black tracking-tight text-foreground">
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
+          <BranchSelector variant="dashboard" />
           <div className="flex items-center gap-3">
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
