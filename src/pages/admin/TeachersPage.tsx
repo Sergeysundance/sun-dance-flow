@@ -72,7 +72,7 @@ export default function TeachersPage() {
   const openNew = () => { setEditTeacher(null); resetForm(); setDialogOpen(true); };
 
   const openEdit = (t: any) => {
-    setEditTeacher(t); setFirstName(t.first_name); setLastName(t.last_name); setPhone(t.phone); setEmail(t.email); setBio(t.bio); setTelegramId(t.telegram_id); setSelectedDirections([...t.direction_ids]);
+    setEditTeacher(t); setFirstName(t.first_name); setLastName(t.last_name); setPhone(t.phone); setEmail(t.email); setBio(t.bio); setTelegramId(t.telegram_id); setSelectedDirections([...t.direction_ids]); setDiscountPercent(t.discount_percent ?? 20);
     setPhotoFile(null);
     setPhotoPreview(t.photo_url || "");
     setDialogOpen(true);
