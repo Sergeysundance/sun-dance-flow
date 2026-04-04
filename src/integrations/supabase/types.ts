@@ -455,6 +455,7 @@ export type Database = {
           branch_ids: string[]
           created_at: string
           direction_ids: string[]
+          discount_percent: number
           email: string
           first_name: string
           id: string
@@ -470,6 +471,7 @@ export type Database = {
           branch_ids?: string[]
           created_at?: string
           direction_ids?: string[]
+          discount_percent?: number
           email?: string
           first_name: string
           id?: string
@@ -485,6 +487,7 @@ export type Database = {
           branch_ids?: string[]
           created_at?: string
           direction_ids?: string[]
+          discount_percent?: number
           email?: string
           first_name?: string
           id?: string

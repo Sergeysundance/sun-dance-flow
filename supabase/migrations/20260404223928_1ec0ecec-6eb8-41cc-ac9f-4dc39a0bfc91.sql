@@ -1,0 +1,1 @@
+ALTER TABLE public.teachers ADD COLUMN discount_percent integer NOT NULL DEFAULT 20;
