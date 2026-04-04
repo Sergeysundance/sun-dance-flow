@@ -325,21 +325,21 @@ export default function SchedulePage() {
                   <Label>Направление</Label>
                   <Select value={editDirection} onValueChange={setEditDirection}>
                     <SelectTrigger className="bg-white border-admin-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                    <SelectContent position="popper" className="max-h-60 overflow-y-auto">{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Преподаватель</Label>
                   <Select value={editTeacher} onValueChange={setEditTeacher}>
                     <SelectTrigger className="bg-white border-admin-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
+                    <SelectContent position="popper" className="max-h-60 overflow-y-auto">{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div>
                   <Label>Зал</Label>
                   <Select value={editRoom} onValueChange={setEditRoom}>
                     <SelectTrigger className="bg-white border-admin-border"><SelectValue /></SelectTrigger>
-                    <SelectContent>{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+                    <SelectContent position="popper" className="max-h-60 overflow-y-auto">{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
                 <div><Label>Дата</Label><Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} className="bg-white border-admin-border" /></div>
@@ -367,21 +367,21 @@ export default function SchedulePage() {
               <Label>Направление</Label>
               <Select value={newDirection} onValueChange={setNewDirection}>
                 <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper" className="max-h-60 overflow-y-auto">{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
               <Label>Преподаватель</Label>
               <Select value={newTeacher} onValueChange={setNewTeacher}>
                 <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper" className="max-h-60 overflow-y-auto">{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
               <Label>Зал</Label>
               <Select value={newRoom} onValueChange={setNewRoom}>
                 <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper" className="max-h-60 overflow-y-auto">{rooms.map(r => <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div><Label>Дата</Label><Input type="date" value={newDate} onChange={e => setNewDate(e.target.value)} className="bg-white border-admin-border" /></div>
