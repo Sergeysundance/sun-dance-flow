@@ -79,13 +79,43 @@ function TeacherDashboardInner() {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
 
+  const enrichSubscriptions = async (subs: any[]) => {
+    if (!subs || subs.length === 0) return [];
+    const typeIds = [...new Set(subs.map((s: any) => s.subscription_type_id))];
+    const { data: types } = await supabase
+      .from("subscription_types")
+      .select("id, name, hours_count, price, type")
+      .in("id", typeIds);
+    const typesMap = new Map((types || []).map((t: any) => [t.id, t]));
+    return subs.map((s: any) => ({ ...s, subscription_type: typesMap.get(s.subscription_type_id) }));
+  };
+
+  const fetchSubscriptions = async (uid: string) => {
+    const { data: activeSubs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .eq("active", true)
+      .gte("expires_at", new Date().toISOString())
+      .order("expires_at", { ascending: true });
+    setUserSubscriptions(await enrichSubscriptions(activeSubs || []));
+
+    const { data: historySubs } = await supabase
+      .from("user_subscriptions")
+      .select("*")
+      .eq("user_id", uid)
+      .or(`active.eq.false,expires_at.lt.${new Date().toISOString()}`)
+      .order("expires_at", { ascending: false });
+    setHistorySubscriptions(await enrichSubscriptions(historySubs || []));
+  };
+
   useEffect(() => {
     const init = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/"); return; }
       setUserEmail(session.user.email || "");
+      setUserId(session.user.id);
 
-      // Find teacher record for this user
       const { data: teacherData } = await supabase
         .from("teachers")
         .select("*")
@@ -93,18 +123,22 @@ function TeacherDashboardInner() {
         .maybeSingle();
 
       if (!teacherData) {
-        // Not a teacher, redirect to student dashboard
         navigate("/dashboard");
         return;
       }
 
       setTeacher(teacherData);
 
-      const { data: dirs } = await supabase.from("directions").select("*").eq("active", true);
-      if (dirs) setDirections(dirs);
+      const [dirsRes, rmsRes, profileRes] = await Promise.all([
+        supabase.from("directions").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+        supabase.from("profiles").select("bonus_points").eq("user_id", session.user.id).single(),
+      ]);
+      if (dirsRes.data) setDirections(dirsRes.data);
+      if (rmsRes.data) setRooms(rmsRes.data);
+      if (profileRes.data) setBonusPoints((profileRes.data as any).bonus_points ?? 0);
 
-      const { data: rms } = await supabase.from("rooms").select("*").eq("active", true);
-      if (rms) setRooms(rms);
+      await fetchSubscriptions(session.user.id);
 
       setLoading(false);
     };
