@@ -97,30 +97,30 @@ const Header = () => {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-3 xl:gap-4 lg:flex">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="font-body text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+              className="font-body text-[10px] xl:text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
             >
               {item.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-1.5">
           <a href="#cta">
-            <Button variant="sun" size="sm">
+            <Button variant="sun" size="sm" className="text-[11px] px-3 h-8">
               ПРОБНЫЙ УРОК
             </Button>
           </a>
           {user ? (
-            <Button variant="sunInverse" size="sm" onClick={goToDashboard}>
-              <User className="h-4 w-4 mr-1" /> КАБИНЕТ
+            <Button variant="sunInverse" size="sm" className="text-[11px] px-3 h-8" onClick={goToDashboard}>
+              <User className="h-3.5 w-3.5 mr-1" /> КАБИНЕТ
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setAuthOpen(true)}>
+            <Button variant="outline" size="sm" className="text-[11px] px-3 h-8" onClick={() => setAuthOpen(true)}>
               ВОЙТИ
             </Button>
           )}
