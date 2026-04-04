@@ -64,6 +64,7 @@ const StudentDashboardInner = () => {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bonusPoints, setBonusPoints] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [editing, setEditing] = useState(false);
   const [editData, setEditData] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
