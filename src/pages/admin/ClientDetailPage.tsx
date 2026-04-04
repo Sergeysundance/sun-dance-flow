@@ -71,6 +71,7 @@ export default function ClientDetailPage() {
     setBirthDate(profile.birth_date || "");
     setNotes(profile.notes || "");
     setSelectedDirections(profile.preferred_directions || []);
+    setDiscountPercent((profile as any).discount_percent ?? 0);
     setEditOpen(true);
   };
 
