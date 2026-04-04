@@ -367,7 +367,7 @@ export default function SchedulePage() {
               <Label>Направление</Label>
               <Select value={newDirection} onValueChange={setNewDirection}>
                 <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Выберите" /></SelectTrigger>
-                <SelectContent>{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
+                <SelectContent position="popper" className="max-h-60 overflow-y-auto">{directions.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div>
