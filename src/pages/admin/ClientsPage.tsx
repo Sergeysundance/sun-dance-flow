@@ -80,6 +80,7 @@ export default function ClientsPage() {
     setBirthDate(p.birth_date || "");
     setNotes(p.notes || "");
     setSelectedDirections(p.preferred_directions || []);
+    setDiscountPercent((p as any).discount_percent ?? 0);
     setDialogOpen(true);
   };
 
