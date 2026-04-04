@@ -225,8 +225,8 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
                   {bonusToUse > 0 && selectedPlan && (
                     <div className="mt-3 text-sm">
                       <div className="flex justify-between text-muted-foreground">
-                        <span>Стоимость:</span>
-                        <span>{selectedPlan.price.toLocaleString("ru-RU")} ₽</span>
+                        <span>Стоимость{discountPercent > 0 ? ' со скидкой' : ''}:</span>
+                        <span>{discountedPrice.toLocaleString("ru-RU")} ₽</span>
                       </div>
                       <div className="flex justify-between text-sun font-medium">
                         <span>Скидка (бонусы):</span>
