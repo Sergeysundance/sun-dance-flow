@@ -207,6 +207,11 @@ export default function TeachersPage() {
           })}
         </div>
         <p className="mt-2 text-xs text-admin-muted line-clamp-2">{t.bio}</p>
+        {(t.discount_percent != null && t.discount_percent !== 20) ? (
+          <p className="mt-1 text-xs font-medium text-admin-accent">Скидка: {t.discount_percent}%</p>
+        ) : (
+          <p className="mt-1 text-xs text-admin-muted">Скидка: {t.discount_percent ?? 20}%</p>
+        )}
       </CardContent>
     </Card>
   );
