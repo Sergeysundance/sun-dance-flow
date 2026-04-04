@@ -149,16 +149,23 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
                         <div className="text-sm text-muted-foreground">{formatHours(plan.hours_count)}</div>
                       )}
                       <div className="font-display text-2xl font-black text-foreground mt-1">
-                        {plan.price.toLocaleString("ru-RU")} ₽
+                        {discountPercent > 0 ? (
+                          <>
+                            <span className="line-through text-muted-foreground text-base mr-2">{plan.price.toLocaleString("ru-RU")} ₽</span>
+                            {Math.round(plan.price * (1 - discountPercent / 100)).toLocaleString("ru-RU")} ₽
+                          </>
+                        ) : (
+                          <>{plan.price.toLocaleString("ru-RU")} ₽</>
+                        )}
                       </div>
-                      {plan.old_price && (
+                      {!discountPercent && plan.old_price && (
                         <div className="text-xs text-muted-foreground line-through">
                           {plan.old_price.toLocaleString("ru-RU")} ₽
                         </div>
                       )}
                       {pricePerHour && (
                         <div className="text-xs text-muted-foreground mt-1">
-                          {pricePerHour} ₽ / час
+                          {discountPercent > 0 ? Math.round(Math.round(plan.price * (1 - discountPercent / 100)) / plan.hours_count!) : pricePerHour} ₽ / час
                         </div>
                       )}
                       {selected === idx && (
