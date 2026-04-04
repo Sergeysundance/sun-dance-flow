@@ -674,6 +674,14 @@ function TeacherDashboardInner() {
           </DialogContent>
         </Dialog>
       </div>
+
+      <BuySubscriptionDialog
+        open={buyDialogOpen}
+        onOpenChange={setBuyDialogOpen}
+        subscriptionType={buyDialogType}
+        bonusPoints={bonusPoints}
+        discountPercent={20}
+      />
     </div>
   );
 }
