@@ -153,6 +153,17 @@ function TeacherDashboardInner() {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
+  // Refresh teacher data (discount, etc.) from DB
+  const refreshTeacherData = async () => {
+    if (!userId) return;
+    const [teacherRes, scheduleRes] = await Promise.all([
+      supabase.from("teachers").select("*").eq("user_id", userId).maybeSingle(),
+      teacher ? supabase.from("schedule_classes").select("id").eq("teacher_id", teacher.id).limit(1) : Promise.resolve({ data: [] }),
+    ]);
+    if (teacherRes.data) setTeacher(teacherRes.data);
+    setHasSchedule((scheduleRes.data?.length || 0) > 0);
+  };
+
   // Fetch classes and bookings for the week
   useEffect(() => {
     if (!teacher) return;
