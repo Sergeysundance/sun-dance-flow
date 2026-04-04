@@ -28,6 +28,22 @@ function formatWeekLabel(monday: Date): string {
   return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
+interface UserSubscription {
+  id: string;
+  hours_remaining: number;
+  hours_total: number;
+  purchased_at: string;
+  expires_at: string;
+  active: boolean;
+  subscription_type_id: string;
+  subscription_type?: {
+    name: string;
+    hours_count: number | null;
+    price: number;
+    type: string;
+  };
+}
+
 function TeacherDashboardInner() {
   const { selectedBranchId } = useBranch();
   const navigate = useNavigate();
@@ -35,6 +51,15 @@ function TeacherDashboardInner() {
   const [teacher, setTeacher] = useState<any>(null);
   const [directions, setDirections] = useState<any[]>([]);
   const [userEmail, setUserEmail] = useState("");
+  const [userId, setUserId] = useState("");
+  const [bonusPoints, setBonusPoints] = useState(0);
+
+  // Subscriptions
+  const [userSubscriptions, setUserSubscriptions] = useState<UserSubscription[]>([]);
+  const [historySubscriptions, setHistorySubscriptions] = useState<UserSubscription[]>([]);
+  const [buyDialogOpen, setBuyDialogOpen] = useState(false);
+  const [buyDialogType, setBuyDialogType] = useState<string>("group");
+  const [subTab, setSubTab] = useState("group");
 
   // Schedule
   const [weekOffset, setWeekOffset] = useState(0);
