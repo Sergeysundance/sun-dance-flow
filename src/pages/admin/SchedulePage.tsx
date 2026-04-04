@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { useBranch } from "@/contexts/BranchContext";
 
 const DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
@@ -39,9 +40,11 @@ type Room = { id: string; name: string };
 type ScheduleClass = {
   id: string; direction_id: string; teacher_id: string; room_id: string;
   date: string; start_time: string; end_time: string; max_spots: number; cancelled: boolean;
+  branch_id: string | null;
 };
 
 export default function SchedulePage() {
+  const { selectedBranchId } = useBranch();
   const [weekOffset, setWeekOffset] = useState(0);
   const [newClassOpen, setNewClassOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
@@ -83,19 +86,29 @@ export default function SchedulePage() {
   const fetchData = async () => {
     const sunday = new Date(monday);
     sunday.setDate(sunday.getDate() + 6);
+
+    let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday));
+    if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
+
+    let dirQuery = supabase.from("directions").select("id, name, color").eq("active", true);
+    if (selectedBranchId) dirQuery = dirQuery.eq("branch_id", selectedBranchId);
+
+    let rmQuery = supabase.from("rooms").select("id, name").eq("active", true);
+    if (selectedBranchId) rmQuery = rmQuery.eq("branch_id", selectedBranchId);
+
     const [clsRes, dirRes, tchRes, rmRes] = await Promise.all([
-      supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday)),
-      supabase.from("directions").select("id, name, color").eq("active", true),
+      clsQuery,
+      dirQuery,
       supabase.from("teachers").select("id, first_name, last_name").eq("active", true),
-      supabase.from("rooms").select("id, name").eq("active", true),
+      rmQuery,
     ]);
-    if (clsRes.data) setClasses(clsRes.data);
+    if (clsRes.data) setClasses(clsRes.data as ScheduleClass[]);
     if (dirRes.data) setDirections(dirRes.data);
     if (tchRes.data) setTeachers(tchRes.data);
     if (rmRes.data) setRooms(rmRes.data);
   };
 
-  useEffect(() => { fetchData(); }, [monday]);
+  useEffect(() => { fetchData(); }, [monday, selectedBranchId]);
 
   const classesByDate = useMemo(() => {
     const map: Record<string, ScheduleClass[]> = {};
@@ -103,7 +116,6 @@ export default function SchedulePage() {
     for (const c of classes) {
       if (map[c.date]) map[c.date].push(c);
     }
-    // Sort each day by start_time
     for (const date of weekDates) {
       map[date].sort((a, b) => a.start_time.localeCompare(b.start_time));
     }
@@ -155,6 +167,7 @@ export default function SchedulePage() {
     const { error } = await supabase.from("schedule_classes").insert({
       direction_id: newDirection, teacher_id: newTeacher, room_id: newRoom,
       date: newDate, start_time: newStart, end_time: newEnd, max_spots: newMaxSpots,
+      branch_id: selectedBranchId,
     });
     if (error) { toast.error("Ошибка создания"); return; }
     toast.success("Занятие создано");
@@ -181,6 +194,7 @@ export default function SchedulePage() {
           start_time: cls.start_time,
           end_time: cls.end_time,
           max_spots: cls.max_spots,
+          branch_id: cls.branch_id,
         });
       }
     }
@@ -200,8 +214,10 @@ export default function SchedulePage() {
             <TabsTrigger value="calendar">Календарь</TabsTrigger>
             <TabsTrigger value="templates">Шаблоны</TabsTrigger>
           </TabsList>
-          <Button onClick={() => setNewClassOpen(true)} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Занятие</Button>
-          <Button variant="outline" onClick={copyWeekForward} className="border-admin-border gap-1"><Copy className="h-4 w-4" /> Повторить на месяц</Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setNewClassOpen(true)} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Занятие</Button>
+            <Button variant="outline" onClick={copyWeekForward} className="border-admin-border gap-1"><Copy className="h-4 w-4" /> Повторить на месяц</Button>
+          </div>
         </div>
 
         <TabsContent value="calendar" className="mt-4 space-y-4">
@@ -212,9 +228,7 @@ export default function SchedulePage() {
             <Button variant="ghost" size="sm" onClick={() => setWeekOffset(0)} className="text-admin-muted">Сегодня</Button>
           </div>
 
-          {/* Weekly table view */}
           <div className="rounded-lg border border-admin-border bg-white overflow-hidden">
-            {/* Header */}
             <div className="grid grid-cols-7 border-b border-admin-border">
               {DAYS.map((day, i) => {
                 const date = weekDates[i];
@@ -228,7 +242,6 @@ export default function SchedulePage() {
                 );
               })}
             </div>
-            {/* Body rows */}
             {Array.from({ length: maxClasses }).map((_, rowIdx) => (
               <div key={rowIdx} className="grid grid-cols-7 border-b border-admin-border last:border-b-0">
                 {weekDates.map((date, colIdx) => {

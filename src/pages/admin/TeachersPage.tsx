@@ -13,19 +13,17 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
-
-type Teacher = Tables<"teachers">;
-type Direction = Tables<"directions">;
+import { useBranch } from "@/contexts/BranchContext";
 
 export default function TeachersPage() {
-  const [teachers, setTeachers] = useState<Teacher[]>([]);
-  const [directions, setDirections] = useState<Direction[]>([]);
+  const { selectedBranchId } = useBranch();
+  const [teachers, setTeachers] = useState<any[]>([]);
+  const [directions, setDirections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTeacher, setEditTeacher] = useState<Teacher | null>(null);
-  const [deactivateTeacher, setDeactivateTeacher] = useState<Teacher | null>(null);
-  const [deleteTeacher, setDeleteTeacher] = useState<Teacher | null>(null);
+  const [editTeacher, setEditTeacher] = useState<any | null>(null);
+  const [deactivateTeacher, setDeactivateTeacher] = useState<any | null>(null);
+  const [deleteTeacher, setDeleteTeacher] = useState<any | null>(null);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -42,12 +40,17 @@ export default function TeachersPage() {
       supabase.from("teachers").select("*").order("created_at", { ascending: false }),
       supabase.from("directions").select("*").order("sort_order"),
     ]);
-    if (tRes.data) setTeachers(tRes.data);
+    let allTeachers = tRes.data || [];
+    // Filter teachers by branch (teachers have branch_ids array)
+    if (selectedBranchId) {
+      allTeachers = allTeachers.filter((t: any) => t.branch_ids && t.branch_ids.includes(selectedBranchId));
+    }
+    setTeachers(allTeachers);
     if (dRes.data) setDirections(dRes.data);
     setLoading(false);
   };
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { fetchData(); }, [selectedBranchId]);
 
   const activeTeachers = teachers.filter(t => t.active);
   const inactiveTeachers = teachers.filter(t => !t.active);
@@ -60,18 +63,27 @@ export default function TeachersPage() {
 
   const openNew = () => { setEditTeacher(null); resetForm(); setDialogOpen(true); };
 
-  const openEdit = (t: Teacher) => {
+  const openEdit = (t: any) => {
     setEditTeacher(t); setFirstName(t.first_name); setLastName(t.last_name); setPhone(t.phone); setEmail(t.email); setBio(t.bio); setTelegramId(t.telegram_id); setSelectedDirections([...t.direction_ids]); setDialogOpen(true);
   };
 
   const handleSave = async () => {
     if (!firstName.trim()) { toast.error("Введите имя преподавателя"); return; }
-    const payload = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections };
+    const payload: any = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections };
+    
     if (isEditing && editTeacher) {
+      // When editing, add current branch to branch_ids if not already there
+      let branchIds = [...(editTeacher.branch_ids || [])];
+      if (selectedBranchId && !branchIds.includes(selectedBranchId)) {
+        branchIds.push(selectedBranchId);
+      }
+      payload.branch_ids = branchIds;
       const { error } = await supabase.from("teachers").update(payload).eq("id", editTeacher.id);
       if (error) { toast.error("Ошибка при обновлении"); return; }
       toast.success("Преподаватель обновлён");
     } else {
+      // New teacher — assign to current branch
+      payload.branch_ids = selectedBranchId ? [selectedBranchId] : [];
       const { error } = await supabase.from("teachers").insert(payload);
       if (error) { toast.error("Ошибка при создании"); return; }
       toast.success("Преподаватель создан");
@@ -79,14 +91,14 @@ export default function TeachersPage() {
     setDialogOpen(false); resetForm(); setEditTeacher(null); fetchData();
   };
 
-  const handleDeactivate = async (t: Teacher) => {
+  const handleDeactivate = async (t: any) => {
     const { error } = await supabase.from("teachers").update({ active: !t.active }).eq("id", t.id);
     if (error) { toast.error("Ошибка"); return; }
     toast.success(t.active ? "Преподаватель деактивирован" : "Преподаватель активирован");
     fetchData();
   };
 
-  const handleDelete = async (t: Teacher) => {
+  const handleDelete = async (t: any) => {
     const { error } = await supabase.from("teachers").delete().eq("id", t.id);
     if (error) { toast.error("Ошибка при удалении"); return; }
     toast.success("Преподаватель удалён");
@@ -97,7 +109,7 @@ export default function TeachersPage() {
     setSelectedDirections(prev => prev.includes(dirId) ? prev.filter(id => id !== dirId) : [...prev, dirId]);
   };
 
-  const renderTeacherCard = (t: Teacher) => (
+  const renderTeacherCard = (t: any) => (
     <Card key={t.id} className="bg-white border-admin-border shadow-sm">
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
@@ -125,7 +137,7 @@ export default function TeachersPage() {
           </DropdownMenu>
         </div>
         <div className="mt-3 flex flex-wrap gap-1">
-          {t.direction_ids.map(dId => {
+          {t.direction_ids.map((dId: string) => {
             const dir = getDirection(dId);
             return dir ? <Badge key={dId} variant="outline" style={{ borderColor: dir.color, color: dir.color }} className="text-xs">{dir.name}</Badge> : null;
           })}
@@ -151,7 +163,7 @@ export default function TeachersPage() {
         </TabsList>
         <TabsContent value="active">
           {activeTeachers.length === 0 ? (
-            <p className="text-admin-muted text-sm py-8 text-center">Нет активных преподавателей</p>
+            <p className="text-admin-muted text-sm py-8 text-center">Нет активных преподавателей в этом филиале</p>
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">{activeTeachers.map(renderTeacherCard)}</div>
           )}

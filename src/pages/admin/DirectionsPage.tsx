@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Tables } from "@/integrations/supabase/types";
+import { useBranch } from "@/contexts/BranchContext";
 
 const presetColors = [
   '#EF4444', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4', '#10B981', '#3B82F6',
@@ -19,31 +19,27 @@ const presetColors = [
   '#FACC15', '#64748B', '#FB923C', '#2DD4BF', '#818CF8', '#F43F5E',
 ];
 
-type Direction = Tables<"directions">;
-
 const emptyForm = { name: "", description: "", color: "#3B82F6", sort_order: 0, active: true };
 
 export default function DirectionsPage() {
-  const [directions, setDirections] = useState<Direction[]>([]);
+  const { selectedBranchId } = useBranch();
+  const [directions, setDirections] = useState<any[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editing, setEditing] = useState<Direction | null>(null);
+  const [editing, setEditing] = useState<any | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
 
   const fetchDirections = async () => {
-    const { data } = await supabase.from("directions").select("*").order("sort_order");
+    let query = supabase.from("directions").select("*").order("sort_order");
+    if (selectedBranchId) query = query.eq("branch_id", selectedBranchId);
+    const { data } = await query;
     if (data) setDirections(data);
   };
 
-  useEffect(() => { fetchDirections(); }, []);
+  useEffect(() => { fetchDirections(); }, [selectedBranchId]);
 
-  const openCreate = () => {
-    setEditing(null);
-    setForm(emptyForm);
-    setDialogOpen(true);
-  };
-
-  const openEdit = (d: Direction) => {
+  const openCreate = () => { setEditing(null); setForm(emptyForm); setDialogOpen(true); };
+  const openEdit = (d: any) => {
     setEditing(d);
     setForm({ name: d.name, description: d.description, color: d.color, sort_order: d.sort_order, active: d.active });
     setDialogOpen(true);
@@ -52,12 +48,13 @@ export default function DirectionsPage() {
   const handleSave = async () => {
     if (!form.name.trim()) { toast.error("Введите название"); return; }
     setSaving(true);
+    const payload = { ...form, branch_id: selectedBranchId };
     if (editing) {
-      const { error } = await supabase.from("directions").update(form).eq("id", editing.id);
+      const { error } = await supabase.from("directions").update(payload).eq("id", editing.id);
       if (error) toast.error("Ошибка сохранения");
       else toast.success("Направление обновлено");
     } else {
-      const { error } = await supabase.from("directions").insert(form);
+      const { error } = await supabase.from("directions").insert(payload);
       if (error) toast.error("Ошибка создания");
       else toast.success("Направление создано");
     }
@@ -73,6 +70,10 @@ export default function DirectionsPage() {
           <Plus className="h-4 w-4" /> Новое направление
         </Button>
       </div>
+
+      {directions.length === 0 && (
+        <p className="text-admin-muted text-sm py-8 text-center">Нет направлений в этом филиале</p>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {directions.map(d => (
@@ -103,41 +104,20 @@ export default function DirectionsPage() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-3">
-            <div>
-              <Label>Название *</Label>
-              <Input className="bg-white border-admin-border" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Описание</Label>
-              <Textarea className="bg-white border-admin-border" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-            </div>
-            <div>
-              <Label>Цвет</Label>
+            <div><Label>Название *</Label><Input className="bg-white border-admin-border" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} /></div>
+            <div><Label>Описание</Label><Textarea className="bg-white border-admin-border" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} /></div>
+            <div><Label>Цвет</Label>
               <Select value={form.color} onValueChange={v => setForm(f => ({ ...f, color: v }))}>
                 <SelectTrigger className="bg-white border-admin-border"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {presetColors.map(c => (
-                    <SelectItem key={c} value={c}>
-                      <span className="inline-block h-3 w-3 rounded-full mr-2" style={{ backgroundColor: c }} />{c}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
+                <SelectContent>{presetColors.map(c => <SelectItem key={c} value={c}><span className="inline-block h-3 w-3 rounded-full mr-2" style={{ backgroundColor: c }} />{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div>
-              <Label>Порядок отображения</Label>
-              <Input type="number" className="bg-white border-admin-border" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))} />
-            </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} />
-              <Label>Активно</Label>
-            </div>
+            <div><Label>Порядок отображения</Label><Input type="number" className="bg-white border-admin-border" value={form.sort_order} onChange={e => setForm(f => ({ ...f, sort_order: Number(e.target.value) }))} /></div>
+            <div className="flex items-center gap-2"><Switch checked={form.active} onCheckedChange={v => setForm(f => ({ ...f, active: v }))} /><Label>Активно</Label></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-admin-border">Отмена</Button>
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave} disabled={saving}>
-              {saving ? "Сохранение..." : "Сохранить"}
-            </Button>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave} disabled={saving}>{saving ? "Сохранение..." : "Сохранить"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
