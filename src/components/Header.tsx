@@ -109,18 +109,18 @@ const Header = () => {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-2">
+        <div className="hidden lg:flex items-center gap-1.5">
           <a href="#cta">
-            <Button variant="sun" size="sm">
+            <Button variant="sun" size="sm" className="text-[11px] px-3 h-8">
               ПРОБНЫЙ УРОК
             </Button>
           </a>
           {user ? (
-            <Button variant="sunInverse" size="sm" onClick={goToDashboard}>
-              <User className="h-4 w-4 mr-1" /> КАБИНЕТ
+            <Button variant="sunInverse" size="sm" className="text-[11px] px-3 h-8" onClick={goToDashboard}>
+              <User className="h-3.5 w-3.5 mr-1" /> КАБИНЕТ
             </Button>
           ) : (
-            <Button variant="outline" size="sm" onClick={() => setAuthOpen(true)}>
+            <Button variant="outline" size="sm" className="text-[11px] px-3 h-8" onClick={() => setAuthOpen(true)}>
               ВОЙТИ
             </Button>
           )}
