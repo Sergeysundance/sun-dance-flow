@@ -43,8 +43,17 @@ const Team = () => {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className="flex flex-col gap-4"
             >
-              <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-card">
-                <span className="font-body text-sm text-muted-foreground">фото</span>
+              <div className="flex aspect-[3/4] items-center justify-center rounded-lg bg-card overflow-hidden">
+                {member.photo_url ? (
+                  <img
+                    src={member.photo_url}
+                    alt={`${member.first_name} ${member.last_name}`}
+                    className="h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span className="font-body text-sm text-muted-foreground">фото</span>
+                )}
               </div>
               <div className="flex flex-wrap gap-2">
                 {(member.direction_ids || []).map((dirId: string) => {
