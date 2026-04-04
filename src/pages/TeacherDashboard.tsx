@@ -689,7 +689,7 @@ function TeacherDashboardInner() {
         onOpenChange={setBuyDialogOpen}
         subscriptionType={buyDialogType}
         bonusPoints={bonusPoints}
-        discountPercent={20}
+        discountPercent={hasSchedule ? 20 : 0}
       />
     </div>
   );
