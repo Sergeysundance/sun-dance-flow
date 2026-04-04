@@ -380,9 +380,15 @@ function TeacherDashboardInner() {
 
           {/* Subscriptions tab */}
           <TabsContent value="subscriptions">
-            <div className="mb-4 rounded-lg border border-sun/30 bg-sun/5 p-3">
-              <p className="text-sm text-foreground font-medium">🎓 Скидка преподавателя: <span className="text-sun font-bold">20%</span> на все абонементы</p>
-            </div>
+            {hasSchedule ? (
+              <div className="mb-4 rounded-lg border border-sun/30 bg-sun/5 p-3">
+                <p className="text-sm text-foreground font-medium">🎓 Скидка преподавателя: <span className="text-sun font-bold">20%</span> на все абонементы</p>
+              </div>
+            ) : (
+              <div className="mb-4 rounded-lg border border-border bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">Скидка 20% станет доступна после того, как администратор добавит вас в расписание занятий.</p>
+              </div>
+            )}
             <Tabs value={subTab} onValueChange={setSubTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="group">Групповые</TabsTrigger>
