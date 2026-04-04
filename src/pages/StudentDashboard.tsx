@@ -59,7 +59,8 @@ function formatWeekLabel(monday: Date): string {
   return `${monday.getDate()}–${sunday.getDate()} ${m[sunday.getMonth()]} ${sunday.getFullYear()}`;
 }
 
-const StudentDashboard = () => {
+const StudentDashboardInner = () => {
+  const { selectedBranchId } = useBranch();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [bonusPoints, setBonusPoints] = useState(0);
