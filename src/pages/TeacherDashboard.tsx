@@ -60,6 +60,7 @@ function TeacherDashboardInner() {
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [buyDialogType, setBuyDialogType] = useState<string>("group");
   const [subTab, setSubTab] = useState("group");
+  const [hasSchedule, setHasSchedule] = useState(false);
 
   // Schedule
   const [weekOffset, setWeekOffset] = useState(0);
