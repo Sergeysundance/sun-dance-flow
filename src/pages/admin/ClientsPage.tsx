@@ -62,6 +62,7 @@ export default function ClientsPage() {
     setBirthDate("");
     setNotes("");
     setSelectedDirections([]);
+    setDiscountPercent(0);
     setEditProfile(null);
   };
 
