@@ -406,3 +406,11 @@ function TeacherDashboardInner() {
     </div>
   );
 }
+
+export default function TeacherDashboard() {
+  return (
+    <BranchProvider>
+      <TeacherDashboardInner />
+    </BranchProvider>
+  );
+}
