@@ -1073,4 +1073,10 @@ const StudentDashboardInner = () => {
   );
 };
 
+const StudentDashboard = () => (
+  <BranchProvider>
+    <StudentDashboardInner />
+  </BranchProvider>
+);
+
 export default StudentDashboard;
