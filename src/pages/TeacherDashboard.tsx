@@ -60,6 +60,7 @@ function TeacherDashboardInner() {
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [buyDialogType, setBuyDialogType] = useState<string>("group");
   const [subTab, setSubTab] = useState("group");
+  const [hasSchedule, setHasSchedule] = useState(false);
 
   // Schedule
   const [weekOffset, setWeekOffset] = useState(0);
@@ -129,14 +130,16 @@ function TeacherDashboardInner() {
 
       setTeacher(teacherData);
 
-      const [dirsRes, rmsRes, profileRes] = await Promise.all([
+      const [dirsRes, rmsRes, profileRes, scheduleCheck] = await Promise.all([
         supabase.from("directions").select("*").eq("active", true),
         supabase.from("rooms").select("*").eq("active", true),
         supabase.from("profiles").select("bonus_points").eq("user_id", session.user.id).single(),
+        supabase.from("schedule_classes").select("id").eq("teacher_id", teacherData.id).limit(1),
       ]);
       if (dirsRes.data) setDirections(dirsRes.data);
       if (rmsRes.data) setRooms(rmsRes.data);
       if (profileRes.data) setBonusPoints((profileRes.data as any).bonus_points ?? 0);
+      setHasSchedule((scheduleCheck.data?.length || 0) > 0);
 
       await fetchSubscriptions(session.user.id);
 
@@ -377,9 +380,15 @@ function TeacherDashboardInner() {
 
           {/* Subscriptions tab */}
           <TabsContent value="subscriptions">
-            <div className="mb-4 rounded-lg border border-sun/30 bg-sun/5 p-3">
-              <p className="text-sm text-foreground font-medium">🎓 Скидка преподавателя: <span className="text-sun font-bold">20%</span> на все абонементы</p>
-            </div>
+            {hasSchedule ? (
+              <div className="mb-4 rounded-lg border border-sun/30 bg-sun/5 p-3">
+                <p className="text-sm text-foreground font-medium">🎓 Скидка преподавателя: <span className="text-sun font-bold">20%</span> на все абонементы</p>
+              </div>
+            ) : (
+              <div className="mb-4 rounded-lg border border-border bg-muted/50 p-3">
+                <p className="text-sm text-muted-foreground">Скидка 20% станет доступна после того, как администратор добавит вас в расписание занятий.</p>
+              </div>
+            )}
             <Tabs value={subTab} onValueChange={setSubTab}>
               <TabsList className="mb-4">
                 <TabsTrigger value="group">Групповые</TabsTrigger>
@@ -680,7 +689,7 @@ function TeacherDashboardInner() {
         onOpenChange={setBuyDialogOpen}
         subscriptionType={buyDialogType}
         bonusPoints={bonusPoints}
-        discountPercent={20}
+        discountPercent={hasSchedule ? 20 : 0}
       />
     </div>
   );

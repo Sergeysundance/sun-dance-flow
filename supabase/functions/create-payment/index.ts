@@ -64,7 +64,7 @@ serve(async (req) => {
       });
     }
 
-    // Verify teacher discount eligibility
+    // Verify teacher discount eligibility: must be active teacher WITH schedule entries
     let teacherDiscount = 0;
     if (apply_teacher_discount) {
       const { data: teacherRecord } = await adminClient
@@ -75,7 +75,15 @@ serve(async (req) => {
         .maybeSingle();
 
       if (teacherRecord) {
-        teacherDiscount = Math.round(plan.price * 0.2);
+        const { data: scheduleEntry } = await adminClient
+          .from("schedule_classes")
+          .select("id")
+          .eq("teacher_id", teacherRecord.id)
+          .limit(1);
+
+        if (scheduleEntry && scheduleEntry.length > 0) {
+          teacherDiscount = Math.round(plan.price * 0.2);
+        }
       }
     }
 
