@@ -10,10 +10,11 @@ import Pricing from "@/components/Pricing";
 import CtaSection from "@/components/CtaSection";
 import Faq from "@/components/Faq";
 import Footer from "@/components/Footer";
+import { BranchProvider } from "@/contexts/BranchContext";
 
 const Index = () => {
   return (
-    <>
+    <BranchProvider>
       <Header />
       <Hero />
       <Marquee />
@@ -26,7 +27,7 @@ const Index = () => {
       <CtaSection />
       <Faq />
       <Footer />
-    </>
+    </BranchProvider>
   );
 };
 
