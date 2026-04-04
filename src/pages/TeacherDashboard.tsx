@@ -104,6 +104,7 @@ function TeacherDashboardInner() {
         .order("start_time");
       if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
 
+      const { data: cls } = await clsQuery;
       const classesData = cls || [];
       setClasses(classesData);
 
