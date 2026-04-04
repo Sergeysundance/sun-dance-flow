@@ -211,6 +211,15 @@ function TeacherDashboardInner() {
   const getRoom = (id: string) => rooms.find(r => r.id === id);
   const todayStr = fmtDate(new Date());
 
+  const formatHours = (n: number) => {
+    if (n === 1) return "1 час";
+    if (n >= 2 && n <= 4) return `${n} часа`;
+    return `${n} часов`;
+  };
+
+  const groupSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type || 'group') === 'group');
+  const individualSubscriptions = userSubscriptions.filter(s => s.subscription_type?.type?.startsWith('individual'));
+
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
     for (const date of weekDates) map[date] = [];
