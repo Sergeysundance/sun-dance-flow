@@ -89,6 +89,7 @@ export default function ClientDetailPage() {
       birth_date: birthDate || null,
       notes: notes.trim() || null,
       preferred_directions: selectedDirections,
+      discount_percent: discountPercent,
     }).eq("id", profile.id);
 
     if (error) { toast.error("Ошибка при сохранении"); return; }
