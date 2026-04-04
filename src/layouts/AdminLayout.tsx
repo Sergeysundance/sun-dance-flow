@@ -3,11 +3,12 @@ import { Outlet, useLocation } from "react-router-dom";
 import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
 import {
   LayoutDashboard, Users, GraduationCap, CalendarDays, CreditCard,
   Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin,
 } from "lucide-react";
+import { BranchProvider } from "@/contexts/BranchContext";
+import BranchSelector from "@/components/BranchSelector";
 
 const navItems = [
   { title: "Обзор", path: "/admin", icon: LayoutDashboard },
@@ -66,43 +67,46 @@ export default function AdminLayout() {
   const pageTitle = getPageTitle(location.pathname);
 
   return (
-    <div className="admin-theme flex h-screen bg-admin-bg">
-      {/* Desktop sidebar */}
-      <aside className="hidden w-60 flex-shrink-0 border-r border-admin-border bg-white lg:block">
-        <SidebarContent />
-      </aside>
+    <BranchProvider>
+      <div className="admin-theme flex h-screen bg-admin-bg">
+        {/* Desktop sidebar */}
+        <aside className="hidden w-60 flex-shrink-0 border-r border-admin-border bg-white lg:block">
+          <SidebarContent />
+        </aside>
 
-      <div className="flex flex-1 flex-col overflow-hidden">
-        {/* Top bar */}
-        <header className="flex h-14 items-center justify-between border-b border-admin-border bg-white px-4">
-          <div className="flex items-center gap-3">
-            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon" className="lg:hidden text-admin-foreground">
-                  <Menu className="h-5 w-5" />
-                </Button>
-              </SheetTrigger>
-              <SheetContent side="left" className="w-60 p-0 bg-white border-admin-border">
-                <SidebarContent onNavigate={() => setMobileOpen(false)} />
-              </SheetContent>
-            </Sheet>
-            <h1 className="text-lg font-semibold text-admin-foreground">{pageTitle}</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="text-admin-muted">
-              <Bell className="h-5 w-5" />
-            </Button>
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-accent text-sm font-semibold text-black">
-              А
+        <div className="flex flex-1 flex-col overflow-hidden">
+          {/* Top bar */}
+          <header className="flex h-14 items-center justify-between border-b border-admin-border bg-white px-4">
+            <div className="flex items-center gap-3">
+              <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="lg:hidden text-admin-foreground">
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="left" className="w-60 p-0 bg-white border-admin-border">
+                  <SidebarContent onNavigate={() => setMobileOpen(false)} />
+                </SheetContent>
+              </Sheet>
+              <h1 className="text-lg font-semibold text-admin-foreground">{pageTitle}</h1>
+              <BranchSelector variant="admin" />
             </div>
-          </div>
-        </header>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="text-admin-muted">
+                <Bell className="h-5 w-5" />
+              </Button>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-accent text-sm font-semibold text-black">
+                А
+              </div>
+            </div>
+          </header>
 
-        {/* Page content */}
-        <main className="flex-1 overflow-y-auto bg-admin-bg p-4 md:p-6">
-          <Outlet />
-        </main>
+          {/* Page content */}
+          <main className="flex-1 overflow-y-auto bg-admin-bg p-4 md:p-6">
+            <Outlet />
+          </main>
+        </div>
       </div>
-    </div>
+    </BranchProvider>
   );
 }
