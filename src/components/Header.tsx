@@ -97,12 +97,12 @@ const Header = () => {
         </div>
 
         {/* Desktop Nav */}
-        <nav className="hidden items-center gap-6 lg:flex">
+        <nav className="hidden items-center gap-3 xl:gap-4 lg:flex">
           {navItems.map((item) => (
             <a
               key={item.href}
               href={item.href}
-              className="font-body text-xs font-semibold uppercase tracking-widest text-muted-foreground transition-colors hover:text-foreground"
+              className="font-body text-[10px] xl:text-xs font-semibold uppercase tracking-wider text-muted-foreground transition-colors hover:text-foreground whitespace-nowrap"
             >
               {item.label}
             </a>
