@@ -29,6 +29,7 @@ export default function ClientDetailPage() {
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [bonusAmount, setBonusAmount] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(0);
 
   // Edit dialog
   const [editOpen, setEditOpen] = useState(false);
