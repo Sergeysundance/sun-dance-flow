@@ -430,6 +430,7 @@ export type Database = {
           id: string
           last_name: string
           phone: string
+          photo_url: string
           telegram_id: string
           user_id: string | null
         }
@@ -444,6 +445,7 @@ export type Database = {
           id?: string
           last_name?: string
           phone?: string
+          photo_url?: string
           telegram_id?: string
           user_id?: string | null
         }
@@ -458,6 +460,7 @@ export type Database = {
           id?: string
           last_name?: string
           phone?: string
+          photo_url?: string
           telegram_id?: string
           user_id?: string | null
         }
