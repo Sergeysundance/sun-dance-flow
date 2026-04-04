@@ -33,6 +33,7 @@ export default function TeachersPage() {
   const [bio, setBio] = useState("");
   const [telegramId, setTelegramId] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+  const [discountPercent, setDiscountPercent] = useState(20);
 
   // Photo state
   const [photoFile, setPhotoFile] = useState<File | null>(null);
