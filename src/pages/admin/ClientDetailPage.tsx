@@ -305,6 +305,10 @@ export default function ClientDetailPage() {
                 ))}
               </div>
             </div>
+            <div>
+              <Label>Скидка на абонементы (%)</Label>
+              <Input type="number" min={0} max={100} className="bg-white border-admin-border" value={discountPercent} onChange={e => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))} />
+            </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" value={notes} onChange={e => setNotes(e.target.value)} /></div>
           </div>
           <DialogFooter>
