@@ -35,6 +35,7 @@ export default function ClientsPage() {
   const [phone, setPhone] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
 
   const isEditing = !!editProfile;
