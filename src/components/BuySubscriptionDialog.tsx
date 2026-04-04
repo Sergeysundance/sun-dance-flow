@@ -65,8 +65,9 @@ const BuySubscriptionDialog = ({ open, onOpenChange, subscriptionType = "group",
   }, [selected]);
 
   const selectedPlan = selected !== null ? plans[selected] : null;
-  const maxBonus = selectedPlan ? Math.min(bonusPoints, selectedPlan.price) : 0;
-  const finalPrice = selectedPlan ? selectedPlan.price - bonusToUse : 0;
+  const discountedPrice = selectedPlan ? Math.round(selectedPlan.price * (1 - discountPercent / 100)) : 0;
+  const maxBonus = selectedPlan ? Math.min(bonusPoints, discountedPrice) : 0;
+  const finalPrice = selectedPlan ? discountedPrice - bonusToUse : 0;
 
   const handleBonusChange = (value: number) => {
     setBonusToUse(Math.max(0, Math.min(value, maxBonus)));
