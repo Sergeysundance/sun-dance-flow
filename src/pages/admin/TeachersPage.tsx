@@ -289,6 +289,11 @@ export default function TeachersPage() {
               </div>
             </div>
             <div><Label>Telegram ID</Label><Input className="bg-white border-admin-border" value={telegramId} onChange={e => setTelegramId(e.target.value)} /></div>
+            <div>
+              <Label>Скидка на абонементы (%)</Label>
+              <Input type="number" min={0} max={100} className="bg-white border-admin-border" value={discountPercent} onChange={e => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))} />
+              <p className="text-xs text-admin-muted mt-1">Применяется при покупке абонемента через личный кабинет преподавателя</p>
+            </div>
           </div>
           <DialogFooter className="flex-shrink-0">
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-admin-border">Отмена</Button>
