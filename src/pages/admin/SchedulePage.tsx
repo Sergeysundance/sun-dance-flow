@@ -287,24 +287,24 @@ export default function SchedulePage() {
 
       {/* Class detail / edit dialog */}
       <Dialog open={!!selectedClass} onOpenChange={() => { setSelectedClass(null); setEditing(false); }}>
-        <DialogContent className="bg-white text-admin-foreground sm:max-w-lg">
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-lg max-h-[90vh] flex flex-col">
           {selClass && !editing && (
             <>
-              <DialogHeader>
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="flex items-center gap-2 text-admin-foreground">
                   <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: selDir?.color }} />
                   {selDir?.name}
                   {selClass.cancelled && <Badge variant="destructive">Отменено</Badge>}
                 </DialogTitle>
               </DialogHeader>
-              <div className="space-y-2 text-sm text-admin-foreground">
+              <div className="space-y-2 text-sm text-admin-foreground overflow-y-auto flex-1">
                 <div><strong>Дата:</strong> {new Date(selClass.date + 'T00:00').toLocaleDateString('ru-RU')}</div>
                 <div><strong>Время:</strong> {selClass.start_time.slice(0,5)}–{selClass.end_time.slice(0,5)}</div>
                 <div><strong>Преподаватель:</strong> {selTeacher?.first_name} {selTeacher?.last_name}</div>
                 <div><strong>Зал:</strong> {selRoom?.name}</div>
                 <div><strong>Макс. мест:</strong> {selClass.max_spots}</div>
               </div>
-              <DialogFooter className="gap-2 sm:gap-2">
+              <DialogFooter className="gap-2 sm:gap-2 flex-shrink-0">
                 <Button variant="destructive" onClick={cancelClass} className="gap-1">
                   <X className="h-4 w-4" />
                   {selClass.cancelled ? "Восстановить" : "Отменить занятие"}
@@ -317,10 +317,10 @@ export default function SchedulePage() {
           )}
           {selClass && editing && (
             <>
-              <DialogHeader>
+              <DialogHeader className="flex-shrink-0">
                 <DialogTitle className="text-admin-foreground">Редактировать занятие</DialogTitle>
               </DialogHeader>
-              <div className="grid gap-3">
+              <div className="grid gap-3 overflow-y-auto flex-1 pr-1">
                 <div>
                   <Label>Направление</Label>
                   <Select value={editDirection} onValueChange={setEditDirection}>
@@ -349,7 +349,7 @@ export default function SchedulePage() {
                 </div>
                 <div><Label>Макс. мест</Label><Input type="number" value={editMaxSpots} onChange={e => setEditMaxSpots(Number(e.target.value))} className="bg-white border-admin-border" /></div>
               </div>
-              <DialogFooter className="gap-2 sm:gap-2">
+              <DialogFooter className="gap-2 sm:gap-2 flex-shrink-0">
                 <Button variant="outline" onClick={() => setEditing(false)} className="border-admin-border">Отмена</Button>
                 <Button onClick={saveEdit} className="bg-admin-accent text-black hover:bg-yellow-400">Сохранить</Button>
               </DialogFooter>
