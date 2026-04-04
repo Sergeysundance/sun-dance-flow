@@ -107,7 +107,7 @@ export default function TeachersPage() {
     if (!firstName.trim()) { toast.error("Введите имя преподавателя"); return; }
     setUploading(true);
     try {
-      const payload: any = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections };
+      const payload: any = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections, discount_percent: discountPercent };
 
       if (isEditing && editTeacher) {
         let branchIds = [...(editTeacher.branch_ids || [])];
