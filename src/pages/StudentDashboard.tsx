@@ -1096,13 +1096,17 @@ const StudentDashboardInner = () => {
           open={buyDialogOpen}
           subscriptionType={buyDialogType}
           bonusPoints={bonusPoints}
+          discountPercent={discountPercent}
           onOpenChange={async (open) => {
             setBuyDialogOpen(open);
             if (!open && userId) {
               fetchSubscriptions(userId);
-              // Refresh bonus points
-              const { data: p } = await supabase.from("profiles").select("bonus_points").eq("user_id", userId).single();
-              if (p) setBonusPoints((p as any).bonus_points ?? 0);
+              // Refresh bonus points and discount
+              const { data: p } = await supabase.from("profiles").select("bonus_points, discount_percent").eq("user_id", userId).single();
+              if (p) {
+                setBonusPoints((p as any).bonus_points ?? 0);
+                setDiscountPercent((p as any).discount_percent ?? 0);
+              }
             }
           }}
         />
