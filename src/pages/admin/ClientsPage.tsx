@@ -98,6 +98,7 @@ export default function ClientsPage() {
       birth_date: birthDate || null,
       notes: notes.trim() || null,
       preferred_directions: selectedDirections,
+      discount_percent: discountPercent,
     };
 
     if (isEditing && editProfile) {
