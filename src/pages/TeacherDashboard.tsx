@@ -385,6 +385,19 @@ function TeacherDashboardInner() {
                                 ) : (
                                   <p className="mt-2 text-xs text-muted-foreground italic">Пока нет записей</p>
                                 )}
+
+                                <div className="mt-3 pt-3 border-t border-border">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="text-destructive border-destructive/30 hover:bg-destructive/10 w-full"
+                                    onClick={() => setCancelDialogClassId(cls.id)}
+                                    disabled={cancellingClassId === cls.id}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    {cancellingClassId === cls.id ? "Отмена..." : "Отменить занятие"}
+                                  </Button>
+                                </div>
                               </CardContent>
                             </Card>
                           );
