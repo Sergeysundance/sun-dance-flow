@@ -261,37 +261,93 @@ export default function ClientDetailPage() {
         <TabsContent value="bookings" className="mt-4">
           {bookings.length === 0 ? (
             <div className="rounded-lg border border-admin-border bg-white p-8 text-center text-admin-muted">Нет записей</div>
-          ) : (
-            <div className="overflow-x-auto rounded-lg border border-admin-border bg-white shadow-sm">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-admin-border bg-gray-50 text-left text-xs text-admin-muted">
-                    <th className="px-4 py-3">Дата</th>
-                    <th className="px-4 py-3">Направление</th>
-                    <th className="px-4 py-3">Время</th>
-                    <th className="px-4 py-3">Преподаватель</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((b: any) => {
-                    const cls = b.schedule_classes;
-                    const dir = cls?.directions;
-                    const teacher = cls?.teachers;
-                    return (
-                      <tr key={b.id} className="border-b border-admin-border last:border-0 hover:bg-gray-50">
-                        <td className="px-4 py-3">{cls?.date ? new Date(cls.date).toLocaleDateString('ru-RU') : "—"}</td>
-                        <td className="px-4 py-3">
-                          {dir && <><span className="inline-block h-2 w-2 rounded-full mr-1.5" style={{ backgroundColor: dir.color }} />{dir.name}</>}
-                        </td>
-                        <td className="px-4 py-3">{cls ? `${cls.start_time?.slice(0, 5)}–${cls.end_time?.slice(0, 5)}` : "—"}</td>
-                        <td className="px-4 py-3 text-admin-muted">{teacher ? `${teacher.first_name} ${teacher.last_name}` : "—"}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+          ) : (() => {
+            const now = new Date();
+            const upcoming = bookings.filter((b: any) => {
+              const cls = b.schedule_classes;
+              if (!cls) return false;
+              return new Date(`${cls.date}T${cls.end_time}`) > now;
+            });
+            const past = bookings.filter((b: any) => {
+              const cls = b.schedule_classes;
+              if (!cls) return true;
+              return new Date(`${cls.date}T${cls.end_time}`) <= now;
+            });
+
+            const handleAdminCancel = async (bookingId: string) => {
+              const { error } = await supabase.from("bookings").delete().eq("id", bookingId);
+              if (error) { toast.error("Ошибка при отмене записи"); return; }
+              toast.success("Запись отменена");
+              fetchData();
+            };
+
+            const renderTable = (items: any[], showCancel: boolean) => (
+              <div className="overflow-x-auto rounded-lg border border-admin-border bg-white shadow-sm">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-admin-border bg-gray-50 text-left text-xs text-admin-muted">
+                      <th className="px-4 py-3">Дата</th>
+                      <th className="px-4 py-3">Направление</th>
+                      <th className="px-4 py-3">Время</th>
+                      <th className="px-4 py-3">Преподаватель</th>
+                      <th className="px-4 py-3">Зал</th>
+                      {showCancel && <th className="px-4 py-3">Действие</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {items.map((b: any) => {
+                      const cls = b.schedule_classes;
+                      const dir = cls?.directions;
+                      const teacher = cls?.teachers;
+                      const room = cls?.rooms;
+                      return (
+                        <tr key={b.id} className="border-b border-admin-border last:border-0 hover:bg-gray-50">
+                          <td className="px-4 py-3">{cls?.date ? new Date(cls.date).toLocaleDateString('ru-RU') : "—"}</td>
+                          <td className="px-4 py-3">
+                            {dir && <><span className="inline-block h-2 w-2 rounded-full mr-1.5" style={{ backgroundColor: dir.color }} />{dir.name}</>}
+                          </td>
+                          <td className="px-4 py-3">{cls ? `${cls.start_time?.slice(0, 5)}–${cls.end_time?.slice(0, 5)}` : "—"}</td>
+                          <td className="px-4 py-3 text-admin-muted">{teacher ? `${teacher.first_name} ${teacher.last_name}` : "—"}</td>
+                          <td className="px-4 py-3 text-admin-muted">{room?.name || "—"}</td>
+                          {showCancel && (
+                            <td className="px-4 py-3">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="text-xs h-7"
+                                onClick={() => handleAdminCancel(b.id)}
+                              >
+                                Отменить
+                              </Button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            );
+
+            return (
+              <div className="space-y-6">
+                <div>
+                  <h3 className="text-sm font-semibold text-admin-foreground mb-2">Предстоящие ({upcoming.length})</h3>
+                  {upcoming.length === 0
+                    ? <div className="rounded-lg border border-admin-border bg-white p-4 text-center text-admin-muted text-sm">Нет предстоящих записей</div>
+                    : renderTable(upcoming, true)
+                  }
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-admin-foreground mb-2">Прошедшие ({past.length})</h3>
+                  {past.length === 0
+                    ? <div className="rounded-lg border border-admin-border bg-white p-4 text-center text-admin-muted text-sm">Нет прошедших записей</div>
+                    : renderTable(past, false)
+                  }
+                </div>
+              </div>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
