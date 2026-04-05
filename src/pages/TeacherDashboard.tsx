@@ -239,6 +239,7 @@ function TeacherDashboardInner() {
       setHasSchedule((scheduleCheck.data?.length || 0) > 0);
 
       await fetchSubscriptions(session.user.id);
+      await fetchTeacherStats(teacherData.id);
 
       setLoading(false);
     };
