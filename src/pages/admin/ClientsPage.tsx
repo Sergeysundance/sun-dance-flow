@@ -211,8 +211,10 @@ export default function ClientsPage() {
             <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
               <th className="px-4 py-3">Имя</th>
               <th className="px-4 py-3">Телефон</th>
+              <th className="px-4 py-3">Скидка</th>
               <th className="px-4 py-3">Бонусы</th>
               <th className="px-4 py-3">Абонемент</th>
+              <th className="px-4 py-3">Записи на занятия</th>
               <th className="px-4 py-3">Регистрация</th>
               <th className="px-4 py-3 w-20"></th>
             </tr>
@@ -220,6 +222,7 @@ export default function ClientsPage() {
           <tbody>
             {filtered.map((p, i) => {
               const sub = getActiveSub(p.user_id);
+              const upcoming = getUpcomingBookings(p.user_id);
               return (
                 <tr
                   key={p.id}
@@ -233,10 +236,34 @@ export default function ClientsPage() {
                     <a href={`tel:${p.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{p.phone}</a>
                   </td>
                   <td className="px-4 py-3">
+                    {p.discount_percent > 0
+                      ? <Badge className="bg-orange-100 text-orange-800">{p.discount_percent}%</Badge>
+                      : <span className="text-admin-muted">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
                     <span className="font-medium text-admin-foreground">{p.bonus_points ?? 0}</span>
                   </td>
                   <td className="px-4 py-3">
                     {sub ? <Badge className="bg-green-100 text-green-800">Активен</Badge> : <span className="text-admin-muted">—</span>}
+                  </td>
+                  <td className="px-4 py-3">
+                    {upcoming.length === 0
+                      ? <span className="text-admin-muted">—</span>
+                      : (
+                        <div className="space-y-1 max-w-xs">
+                          {upcoming.slice(0, 3).map(({ cls, dir }) => (
+                            <div key={cls.id} className="text-xs">
+                              <span className="inline-block h-2 w-2 rounded-full mr-1" style={{ backgroundColor: dir?.color || '#999' }} />
+                              <span className="font-medium">{dir?.name || '—'}</span>
+                              {' '}
+                              <span className="text-admin-muted">
+                                {new Date(cls.date).toLocaleDateString('ru-RU', { day: 'numeric', month: 'short' })}, {cls.start_time.slice(0, 5)}
+                              </span>
+                            </div>
+                          ))}
+                          {upcoming.length > 3 && <span className="text-xs text-admin-muted">+{upcoming.length - 3} ещё</span>}
+                        </div>
+                      )}
                   </td>
                   <td className="px-4 py-3 text-admin-muted">{new Date(p.created_at).toLocaleDateString('ru-RU')}</td>
                   <td className="px-4 py-3">
