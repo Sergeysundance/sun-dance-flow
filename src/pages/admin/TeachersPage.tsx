@@ -305,6 +305,23 @@ export default function TeachersPage() {
         ) : (
           <p className="mt-1 text-xs text-admin-muted">Скидка: {t.discount_percent ?? 20}%</p>
         )}
+        {/* Monthly salary stats */}
+        {teacherStats[t.id] && teacherStats[t.id].length > 0 && (
+          <div className="mt-3 border-t border-admin-border pt-2 space-y-1">
+            <div className="flex items-center gap-1 text-xs font-semibold text-admin-foreground mb-1">
+              <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
+            </div>
+            {teacherStats[t.id].map(s => (
+              <div key={s.month} className="flex items-center justify-between text-xs">
+                <span className="text-admin-muted">{s.month}</span>
+                <span className="flex gap-3">
+                  <span className="flex items-center gap-0.5 text-admin-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
+                  <span className="font-medium text-green-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
