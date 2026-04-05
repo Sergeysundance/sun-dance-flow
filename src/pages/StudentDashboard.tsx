@@ -430,6 +430,9 @@ const StudentDashboardInner = () => {
             <TabsTrigger value="subscriptions" className="gap-1">
               <CreditCard className="h-4 w-4" /> Абонементы
             </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-1">
+              <BookOpen className="h-4 w-4" /> Мои записи
+            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
               <Calendar className="h-4 w-4" /> Расписание
             </TabsTrigger>
