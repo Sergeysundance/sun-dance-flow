@@ -79,30 +79,33 @@ export default function TeachersPage() {
       .select("id, class_id, user_id")
       .in("class_id", classIds);
 
-    if (!allBookings || allBookings.length === 0) { setTeacherStats({}); return; }
+    const userIds = [...new Set((allBookings || []).map(b => b.user_id))];
+    let typesMap = new Map<string, any>();
+    let subsMap = new Map<string, any>();
 
-    const userIds = [...new Set(allBookings.map(b => b.user_id))];
-    const { data: userSubs } = await supabase
-      .from("user_subscriptions")
-      .select("id, user_id, subscription_type_id, hours_total")
-      .in("user_id", userIds);
+    if (userIds.length > 0) {
+      const { data: userSubs } = await supabase
+        .from("user_subscriptions")
+        .select("id, user_id, subscription_type_id, hours_total")
+        .in("user_id", userIds);
 
-    const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
-    const { data: subTypes } = await supabase
-      .from("subscription_types")
-      .select("id, price, hours_count")
-      .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+      const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
+      const { data: subTypes } = await supabase
+        .from("subscription_types")
+        .select("id, price, hours_count")
+        .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
 
-    const typesMap = new Map((subTypes || []).map(t => [t.id, t]));
-    const subsMap = new Map<string, any>();
-    for (const s of (userSubs || [])) {
-      if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
-        subsMap.set(s.user_id, s);
+      typesMap = new Map((subTypes || []).map(t => [t.id, t]));
+      for (const s of (userSubs || [])) {
+        if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
+          subsMap.set(s.user_id, s);
+        }
       }
     }
 
+
     const bookingsByClass: Record<string, any[]> = {};
-    for (const b of allBookings) {
+    for (const b of (allBookings || [])) {
       if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
       bookingsByClass[b.class_id].push(b);
     }
@@ -110,9 +113,6 @@ export default function TeachersPage() {
     const result: Record<string, Record<string, { hours: number; salary: number }>> = {};
 
     for (const cls of allClasses) {
-      const classBookings = bookingsByClass[cls.id] || [];
-      if (classBookings.length === 0) continue;
-
       const dt = new Date(cls.date);
       const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
       if (!result[cls.teacher_id]) result[cls.teacher_id] = {};
@@ -124,6 +124,7 @@ export default function TeachersPage() {
       result[cls.teacher_id][key].hours += durationHours;
 
       let classRevenue = 0;
+      const classBookings = bookingsByClass[cls.id] || [];
       for (const b of classBookings) {
         const sub = subsMap.get(b.user_id);
         if (sub) {
@@ -306,12 +307,12 @@ export default function TeachersPage() {
           <p className="mt-1 text-xs text-admin-muted">Скидка: {t.discount_percent ?? 20}%</p>
         )}
         {/* Monthly salary stats */}
-        {teacherStats[t.id] && teacherStats[t.id].length > 0 && (
-          <div className="mt-3 border-t border-admin-border pt-2 space-y-1">
-            <div className="flex items-center gap-1 text-xs font-semibold text-admin-foreground mb-1">
-              <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
-            </div>
-            {teacherStats[t.id].map(s => (
+        <div className="mt-3 border-t border-admin-border pt-2 space-y-1">
+          <div className="flex items-center gap-1 text-xs font-semibold text-admin-foreground mb-1">
+            <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
+          </div>
+          {teacherStats[t.id] && teacherStats[t.id].length > 0 ? (
+            teacherStats[t.id].map(s => (
               <div key={s.month} className="flex items-center justify-between text-xs">
                 <span className="text-admin-muted">{s.month}</span>
                 <span className="flex gap-3">
@@ -319,9 +320,11 @@ export default function TeachersPage() {
                   <span className="font-medium text-green-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
                 </span>
               </div>
-            ))}
-          </div>
-        )}
+            ))
+          ) : (
+            <p className="text-xs text-admin-muted">Нет данных</p>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
