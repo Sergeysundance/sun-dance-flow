@@ -124,6 +124,7 @@ export default function TeachersPage() {
       result[cls.teacher_id][key].hours += durationHours;
 
       let classRevenue = 0;
+      const classBookings = bookingsByClass[cls.id] || [];
       for (const b of classBookings) {
         const sub = subsMap.get(b.user_id);
         if (sub) {
