@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { Plus, MoreHorizontal, Trash2, Upload, X } from "lucide-react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,6 +25,7 @@ export default function TeachersPage() {
   const [editTeacher, setEditTeacher] = useState<any | null>(null);
   const [deactivateTeacher, setDeactivateTeacher] = useState<any | null>(null);
   const [deleteTeacher, setDeleteTeacher] = useState<any | null>(null);
+  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number }[]>>({});
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -55,7 +56,99 @@ export default function TeachersPage() {
     setTeachers(allTeachers);
     if (dRes.data) setDirections(dRes.data);
     setLoading(false);
+    fetchAllTeacherStats(allTeachers);
   };
+
+  const fetchAllTeacherStats = useCallback(async (teacherList: any[]) => {
+    if (teacherList.length === 0) return;
+    const teacherIds = teacherList.map(t => t.id);
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+    const { data: allClasses } = await supabase
+      .from("schedule_classes")
+      .select("id, date, start_time, end_time, teacher_id")
+      .in("teacher_id", teacherIds)
+      .eq("cancelled", false)
+      .lte("date", new Date().toISOString().split("T")[0]);
+
+    if (!allClasses || allClasses.length === 0) { setTeacherStats({}); return; }
+
+    const classIds = allClasses.map(c => c.id);
+    const { data: allBookings } = await supabase
+      .from("bookings")
+      .select("id, class_id, user_id")
+      .in("class_id", classIds);
+
+    if (!allBookings || allBookings.length === 0) { setTeacherStats({}); return; }
+
+    const userIds = [...new Set(allBookings.map(b => b.user_id))];
+    const { data: userSubs } = await supabase
+      .from("user_subscriptions")
+      .select("id, user_id, subscription_type_id, hours_total")
+      .in("user_id", userIds);
+
+    const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
+    const { data: subTypes } = await supabase
+      .from("subscription_types")
+      .select("id, price, hours_count")
+      .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+
+    const typesMap = new Map((subTypes || []).map(t => [t.id, t]));
+    const subsMap = new Map<string, any>();
+    for (const s of (userSubs || [])) {
+      if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
+        subsMap.set(s.user_id, s);
+      }
+    }
+
+    const bookingsByClass: Record<string, any[]> = {};
+    for (const b of allBookings) {
+      if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
+      bookingsByClass[b.class_id].push(b);
+    }
+
+    const result: Record<string, Record<string, { hours: number; salary: number }>> = {};
+
+    for (const cls of allClasses) {
+      const classBookings = bookingsByClass[cls.id] || [];
+      if (classBookings.length === 0) continue;
+
+      const dt = new Date(cls.date);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
+      if (!result[cls.teacher_id]) result[cls.teacher_id] = {};
+      if (!result[cls.teacher_id][key]) result[cls.teacher_id][key] = { hours: 0, salary: 0 };
+
+      const [sh, sm] = cls.start_time.split(':').map(Number);
+      const [eh, em] = cls.end_time.split(':').map(Number);
+      const durationHours = (eh * 60 + em - sh * 60 - sm) / 60;
+      result[cls.teacher_id][key].hours += durationHours;
+
+      let classRevenue = 0;
+      for (const b of classBookings) {
+        const sub = subsMap.get(b.user_id);
+        if (sub) {
+          const subType = typesMap.get(sub.subscription_type_id);
+          if (subType && subType.hours_count && subType.hours_count > 0) {
+            const hourlyRate = subType.price / subType.hours_count;
+            classRevenue += hourlyRate * durationHours;
+          }
+        }
+      }
+      result[cls.teacher_id][key].salary += (classRevenue * 0.95) / 2;
+    }
+
+    const statsMap: Record<string, { month: string; hours: number; salary: number }[]> = {};
+    for (const [tid, grouped] of Object.entries(result)) {
+      statsMap[tid] = Object.entries(grouped)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .slice(0, 6)
+        .map(([k, data]) => {
+          const [y, m] = k.split('-');
+          return { month: `${monthNames[parseInt(m)]} ${y}`, hours: Math.round(data.hours * 10) / 10, salary: Math.round(data.salary) };
+        });
+    }
+    setTeacherStats(statsMap);
+  }, []);
 
   useEffect(() => { fetchData(); }, [selectedBranchId]);
 
@@ -211,6 +304,23 @@ export default function TeachersPage() {
           <p className="mt-1 text-xs font-medium text-admin-accent">Скидка: {t.discount_percent}%</p>
         ) : (
           <p className="mt-1 text-xs text-admin-muted">Скидка: {t.discount_percent ?? 20}%</p>
+        )}
+        {/* Monthly salary stats */}
+        {teacherStats[t.id] && teacherStats[t.id].length > 0 && (
+          <div className="mt-3 border-t border-admin-border pt-2 space-y-1">
+            <div className="flex items-center gap-1 text-xs font-semibold text-admin-foreground mb-1">
+              <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
+            </div>
+            {teacherStats[t.id].map(s => (
+              <div key={s.month} className="flex items-center justify-between text-xs">
+                <span className="text-admin-muted">{s.month}</span>
+                <span className="flex gap-3">
+                  <span className="flex items-center gap-0.5 text-admin-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
+                  <span className="font-medium text-green-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
+                </span>
+              </div>
+            ))}
+          </div>
         )}
       </CardContent>
     </Card>
