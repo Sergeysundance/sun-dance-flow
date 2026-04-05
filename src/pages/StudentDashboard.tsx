@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,6 +93,8 @@ const StudentDashboardInner = () => {
   const [monthlyHours, setMonthlyHours] = useState<{ month: string; hours: number }[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [allBookingsLoading, setAllBookingsLoading] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -192,6 +194,8 @@ const StudentDashboardInner = () => {
         setUnreadCount(notifs.filter((n: any) => !n.read).length);
       }
       setLoading(false);
+      // Fetch all upcoming bookings
+      fetchAllBookings(session.user.id);
     };
     checkAuth();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
