@@ -103,28 +103,9 @@ export default function TeachersPage() {
       }
     }
 
-    const userIds = [...new Set(allBookings.map(b => b.user_id))];
-    const { data: userSubs } = await supabase
-      .from("user_subscriptions")
-      .select("id, user_id, subscription_type_id, hours_total")
-      .in("user_id", userIds);
-
-    const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
-    const { data: subTypes } = await supabase
-      .from("subscription_types")
-      .select("id, price, hours_count")
-      .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
-
-    const typesMap = new Map((subTypes || []).map(t => [t.id, t]));
-    const subsMap = new Map<string, any>();
-    for (const s of (userSubs || [])) {
-      if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
-        subsMap.set(s.user_id, s);
-      }
-    }
 
     const bookingsByClass: Record<string, any[]> = {};
-    for (const b of allBookings) {
+    for (const b of (allBookings || [])) {
       if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
       bookingsByClass[b.class_id].push(b);
     }
@@ -132,9 +113,6 @@ export default function TeachersPage() {
     const result: Record<string, Record<string, { hours: number; salary: number }>> = {};
 
     for (const cls of allClasses) {
-      const classBookings = bookingsByClass[cls.id] || [];
-      if (classBookings.length === 0) continue;
-
       const dt = new Date(cls.date);
       const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
       if (!result[cls.teacher_id]) result[cls.teacher_id] = {};
