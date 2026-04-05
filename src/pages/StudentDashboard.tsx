@@ -168,7 +168,39 @@ const StudentDashboardInner = () => {
     setMonthlyHours(sorted);
   };
 
-  useEffect(() => {
+  const fetchAllBookings = async (uid: string) => {
+    setAllBookingsLoading(true);
+    const todayDate = fmtDate(new Date());
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+    if (!bookingsData || bookingsData.length === 0) {
+      setAllBookings([]);
+      setAllBookingsLoading(false);
+      return;
+    }
+    const classIds = bookingsData.map(b => b.class_id);
+    const { data: classesData } = await supabase
+      .from("schedule_classes")
+      .select("*")
+      .in("id", classIds)
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true });
+    const classMap = new Map((classesData || []).map(c => [c.id, c]));
+    const enriched = bookingsData
+      .map(b => ({ ...b, class: classMap.get(b.class_id) }))
+      .filter(b => b.class)
+      .sort((a, b) => {
+        const dateA = `${a.class.date}T${a.class.start_time}`;
+        const dateB = `${b.class.date}T${b.class.start_time}`;
+        return dateA.localeCompare(dateB);
+      });
+    setAllBookings(enriched);
+    setAllBookingsLoading(false);
+  };
+
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { navigate("/"); return; }
