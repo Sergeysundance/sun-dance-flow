@@ -1,12 +1,13 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit, Plus, Minus } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Minus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -40,6 +41,8 @@ export default function ClientDetailPage() {
   const [birthDate, setBirthDate] = useState("");
   const [notes, setNotes] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const fetchData = async () => {
     if (!id) return;
@@ -102,6 +105,19 @@ export default function ClientDetailPage() {
     setSelectedDirections(prev =>
       prev.includes(dirId) ? prev.filter(d => d !== dirId) : [...prev, dirId]
     );
+  };
+
+  const handleDeleteClient = async () => {
+    if (!profile) return;
+    setDeleting(true);
+    await supabase.from("bookings").delete().eq("user_id", profile.user_id);
+    await supabase.from("user_subscriptions").delete().eq("user_id", profile.user_id);
+    await supabase.from("notifications").delete().eq("user_id", profile.user_id);
+    const { error } = await supabase.from("profiles").delete().eq("id", profile.id);
+    setDeleting(false);
+    if (error) { toast.error("Ошибка при удалении"); return; }
+    toast.success("Аккаунт клиента удалён");
+    navigate("/admin/clients");
   };
 
   const getDir = (dirId: string) => directions.find(d => d.id === dirId);
@@ -311,12 +327,37 @@ export default function ClientDetailPage() {
             </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" value={notes} onChange={e => setNotes(e.target.value)} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="destructive" className="mr-auto" onClick={() => setDeleteConfirmOpen(true)}>
+              <Trash2 className="h-4 w-4 mr-1" /> Удалить аккаунт
+            </Button>
             <Button variant="outline" onClick={() => setEditOpen(false)} className="border-admin-border">Отмена</Button>
             <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave}>Сохранить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить аккаунт клиента?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие необратимо. Будут удалены профиль клиента, все записи на занятия и абонементы.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteClient}
+              disabled={deleting}
+            >
+              {deleting ? "Удаление…" : "Удалить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

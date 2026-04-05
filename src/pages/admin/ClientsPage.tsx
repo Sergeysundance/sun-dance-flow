@@ -1,11 +1,12 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -37,6 +38,9 @@ export default function ClientsPage() {
   const [notes, setNotes] = useState("");
   const [discountPercent, setDiscountPercent] = useState(0);
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
+
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const isEditing = !!editProfile;
 
@@ -112,6 +116,23 @@ export default function ClientsPage() {
       return;
     }
 
+    setDialogOpen(false);
+    resetForm();
+    fetchData();
+  };
+
+  const handleDeleteClient = async () => {
+    if (!editProfile) return;
+    setDeleting(true);
+    // Delete related data first, then profile
+    await supabase.from("bookings").delete().eq("user_id", editProfile.user_id);
+    await supabase.from("user_subscriptions").delete().eq("user_id", editProfile.user_id);
+    await supabase.from("notifications").delete().eq("user_id", editProfile.user_id);
+    const { error } = await supabase.from("profiles").delete().eq("id", editProfile.id);
+    setDeleting(false);
+    if (error) { toast.error("Ошибка при удалении клиента"); return; }
+    toast.success("Аккаунт клиента удалён");
+    setDeleteConfirmOpen(false);
     setDialogOpen(false);
     resetForm();
     fetchData();
@@ -241,12 +262,39 @@ export default function ClientsPage() {
             </div>
             <div><Label>Заметки</Label><Textarea className="bg-white border-admin-border" value={notes} onChange={e => setNotes(e.target.value)} /></div>
           </div>
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            {isEditing && (
+              <Button variant="destructive" className="mr-auto" onClick={() => setDeleteConfirmOpen(true)}>
+                <Trash2 className="h-4 w-4 mr-1" /> Удалить аккаунт
+              </Button>
+            )}
             <Button variant="outline" onClick={() => { setDialogOpen(false); resetForm(); }} className="border-admin-border">Отмена</Button>
             <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave}>Сохранить</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent className="bg-white">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Удалить аккаунт клиента?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Это действие необратимо. Будут удалены профиль клиента, все записи на занятия и абонементы.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Отмена</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={handleDeleteClient}
+              disabled={deleting}
+            >
+              {deleting ? "Удаление…" : "Удалить"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
