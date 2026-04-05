@@ -56,6 +56,7 @@ export default function TeachersPage() {
     setTeachers(allTeachers);
     if (dRes.data) setDirections(dRes.data);
     setLoading(false);
+    fetchAllTeacherStats(allTeachers);
   };
 
   const fetchAllTeacherStats = useCallback(async (teacherList: any[]) => {
