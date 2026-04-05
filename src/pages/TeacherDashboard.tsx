@@ -486,16 +486,16 @@ function TeacherDashboardInner() {
             </Card>
 
             {/* Hours & Salary Stats */}
-            {(
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <Clock className="h-4 w-4 text-sun" />
-                      Часы проведённых занятий
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Clock className="h-4 w-4 text-sun" />
+                    Часы проведённых занятий
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {monthlyStats.length > 0 ? (
                     <div className="space-y-2">
                       {monthlyStats.map(s => (
                         <div key={s.month} className="flex items-center justify-between text-sm">
@@ -504,18 +504,22 @@ function TeacherDashboardInner() {
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Нет данных за последние месяцы</p>
+                  )}
+                </CardContent>
+              </Card>
 
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="flex items-center gap-2 text-base">
-                      <DollarSign className="h-4 w-4 text-sun" />
-                      Заработная плата
-                    </CardTitle>
-                    <p className="text-xs text-muted-foreground mt-1">Формула: стоимость часа × учеников − 5% налог, ÷ 2</p>
-                  </CardHeader>
-                  <CardContent>
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <DollarSign className="h-4 w-4 text-sun" />
+                    Заработная плата
+                  </CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">Формула: стоимость часа × учеников − 5% налог, ÷ 2</p>
+                </CardHeader>
+                <CardContent>
+                  {monthlyStats.length > 0 ? (
                     <div className="space-y-2">
                       {monthlyStats.map(s => (
                         <div key={s.month} className="flex items-center justify-between text-sm">
@@ -524,10 +528,12 @@ function TeacherDashboardInner() {
                         </div>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
+                  ) : (
+                    <p className="text-sm text-muted-foreground">Нет данных за последние месяцы</p>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Subscriptions tab */}

@@ -79,7 +79,29 @@ export default function TeachersPage() {
       .select("id, class_id, user_id")
       .in("class_id", classIds);
 
-    if (!allBookings || allBookings.length === 0) { setTeacherStats({}); return; }
+    const userIds = [...new Set((allBookings || []).map(b => b.user_id))];
+    let typesMap = new Map<string, any>();
+    let subsMap = new Map<string, any>();
+
+    if (userIds.length > 0) {
+      const { data: userSubs } = await supabase
+        .from("user_subscriptions")
+        .select("id, user_id, subscription_type_id, hours_total")
+        .in("user_id", userIds);
+
+      const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
+      const { data: subTypes } = await supabase
+        .from("subscription_types")
+        .select("id, price, hours_count")
+        .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+
+      typesMap = new Map((subTypes || []).map(t => [t.id, t]));
+      for (const s of (userSubs || [])) {
+        if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
+          subsMap.set(s.user_id, s);
+        }
+      }
+    }
 
     const userIds = [...new Set(allBookings.map(b => b.user_id))];
     const { data: userSubs } = await supabase
