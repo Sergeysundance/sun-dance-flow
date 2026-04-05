@@ -50,14 +50,20 @@ export default function ClientsPage() {
   const isEditing = !!editProfile;
 
   const fetchData = async () => {
-    const [pRes, dRes, sRes] = await Promise.all([
+    const [pRes, dRes, sRes, bRes, cRes, tRes] = await Promise.all([
       supabase.from("profiles").select("*").order("created_at", { ascending: false }),
       supabase.from("directions").select("*").order("sort_order"),
       supabase.from("user_subscriptions").select("*"),
+      supabase.from("bookings").select("*"),
+      supabase.from("schedule_classes").select("*"),
+      supabase.from("teachers").select("id, first_name, last_name"),
     ]);
     if (pRes.data) setProfiles(pRes.data);
     if (dRes.data) setDirections(dRes.data);
     if (sRes.data) setSubscriptions(sRes.data);
+    if (bRes.data) setBookings(bRes.data);
+    if (cRes.data) setClasses(cRes.data);
+    if (tRes.data) setTeachers(tRes.data);
     setLoading(false);
   };
 
