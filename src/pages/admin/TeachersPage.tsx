@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
