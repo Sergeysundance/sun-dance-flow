@@ -17,6 +17,8 @@ import type { Tables } from "@/integrations/supabase/types";
 type Profile = Tables<"profiles">;
 type Direction = Tables<"directions">;
 type UserSubscription = Tables<"user_subscriptions">;
+type Booking = Tables<"bookings">;
+type ScheduleClass = Tables<"schedule_classes">;
 
 export default function ClientsPage() {
   const navigate = useNavigate();
