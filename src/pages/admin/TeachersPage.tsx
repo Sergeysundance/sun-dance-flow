@@ -25,7 +25,9 @@ export default function TeachersPage() {
   const [editTeacher, setEditTeacher] = useState<any | null>(null);
   const [deactivateTeacher, setDeactivateTeacher] = useState<any | null>(null);
   const [deleteTeacher, setDeleteTeacher] = useState<any | null>(null);
-  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number }[]>>({});
+  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number; days: { date: string; hours: number; salary: number; classes: { time: string; direction: string; students: number; salary: number }[] }[] }[]>>({});
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
