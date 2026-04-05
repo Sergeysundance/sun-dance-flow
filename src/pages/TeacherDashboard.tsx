@@ -62,6 +62,8 @@ function TeacherDashboardInner() {
   const [subTab, setSubTab] = useState("group");
   const [hasSchedule, setHasSchedule] = useState(false);
 
+  // Stats: hours taught & salary
+  const [monthlyStats, setMonthlyStats] = useState<{ month: string; hours: number; salary: number }[]>([]);
   // Schedule
   const [weekOffset, setWeekOffset] = useState(0);
   const [classes, setClasses] = useState<any[]>([]);
