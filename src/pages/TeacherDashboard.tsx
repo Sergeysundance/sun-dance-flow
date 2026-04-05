@@ -93,7 +93,102 @@ function TeacherDashboardInner() {
     return subs.map((s: any) => ({ ...s, subscription_type: typesMap.get(s.subscription_type_id) }));
   };
 
-  const fetchSubscriptions = async (uid: string) => {
+  const fetchTeacherStats = async (teacherId: string) => {
+    // Get all classes taught by this teacher (past, not cancelled)
+    const { data: allClasses } = await supabase
+      .from("schedule_classes")
+      .select("id, date, start_time, end_time")
+      .eq("teacher_id", teacherId)
+      .eq("cancelled", false)
+      .lte("date", fmtDate(new Date()))
+      .order("date", { ascending: false });
+
+    if (!allClasses || allClasses.length === 0) { setMonthlyStats([]); return; }
+
+    const classIds = allClasses.map(c => c.id);
+    // Get bookings for these classes
+    const { data: allBookings } = await supabase
+      .from("bookings")
+      .select("id, class_id, user_id")
+      .in("class_id", classIds);
+
+    if (!allBookings || allBookings.length === 0) { setMonthlyStats([]); return; }
+
+    // Get user subscriptions & types for salary calculation
+    const userIds = [...new Set(allBookings.map(b => b.user_id))];
+    const { data: userSubs } = await supabase
+      .from("user_subscriptions")
+      .select("id, user_id, subscription_type_id, hours_total")
+      .in("user_id", userIds);
+
+    const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
+    const { data: subTypes } = await supabase
+      .from("subscription_types")
+      .select("id, price, hours_count")
+      .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+
+    const typesMap = new Map((subTypes || []).map(t => [t.id, t]));
+    const subsMap = new Map<string, any>();
+    for (const s of (userSubs || [])) {
+      // Use the latest/most relevant subscription per user
+      if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
+        subsMap.set(s.user_id, s);
+      }
+    }
+
+    // Group by class_id for counting students
+    const bookingsByClass: Record<string, any[]> = {};
+    for (const b of allBookings) {
+      if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
+      bookingsByClass[b.class_id].push(b);
+    }
+
+    // Calculate hours and salary per month
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const grouped: Record<string, { hours: number; salary: number }> = {};
+
+    for (const cls of allClasses) {
+      const classBookings = bookingsByClass[cls.id] || [];
+      if (classBookings.length === 0) continue;
+
+      const dt = new Date(cls.date);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
+      if (!grouped[key]) grouped[key] = { hours: 0, salary: 0 };
+
+      // Calculate class duration in hours
+      const [sh, sm] = cls.start_time.split(':').map(Number);
+      const [eh, em] = cls.end_time.split(':').map(Number);
+      const durationHours = (eh * 60 + em - sh * 60 - sm) / 60;
+      grouped[key].hours += durationHours;
+
+      // Salary: for each student, hourly rate from their subscription × duration
+      let classRevenue = 0;
+      for (const b of classBookings) {
+        const sub = subsMap.get(b.user_id);
+        if (sub) {
+          const subType = typesMap.get(sub.subscription_type_id);
+          if (subType && subType.hours_count && subType.hours_count > 0) {
+            const hourlyRate = subType.price / subType.hours_count;
+            classRevenue += hourlyRate * durationHours;
+          }
+        }
+      }
+      // Minus 5% tax, then divide by 2
+      grouped[key].salary += (classRevenue * 0.95) / 2;
+    }
+
+    const sorted = Object.entries(grouped)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .slice(0, 6)
+      .map(([key, data]) => {
+        const [y, m] = key.split('-');
+        return { month: `${monthNames[parseInt(m)]} ${y}`, hours: Math.round(data.hours * 10) / 10, salary: Math.round(data.salary) };
+      });
+
+    setMonthlyStats(sorted);
+  };
+
+
     const { data: activeSubs } = await supabase
       .from("user_subscriptions")
       .select("*")
