@@ -188,7 +188,7 @@ function TeacherDashboardInner() {
     setMonthlyStats(sorted);
   };
 
-
+  const fetchSubscriptions = async (uid: string) => {
     const { data: activeSubs } = await supabase
       .from("user_subscriptions")
       .select("*")
