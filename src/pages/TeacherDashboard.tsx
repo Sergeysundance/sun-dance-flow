@@ -112,33 +112,34 @@ function TeacherDashboardInner() {
       .select("id, class_id, user_id")
       .in("class_id", classIds);
 
-    if (!allBookings || allBookings.length === 0) { setMonthlyStats([]); return; }
-
     // Get user subscriptions & types for salary calculation
-    const userIds = [...new Set(allBookings.map(b => b.user_id))];
-    const { data: userSubs } = await supabase
-      .from("user_subscriptions")
-      .select("id, user_id, subscription_type_id, hours_total")
-      .in("user_id", userIds);
+    const userIds = [...new Set((allBookings || []).map(b => b.user_id))];
+    let typesMap = new Map<string, any>();
+    let subsMap = new Map<string, any>();
 
-    const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
-    const { data: subTypes } = await supabase
-      .from("subscription_types")
-      .select("id, price, hours_count")
-      .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+    if (userIds.length > 0) {
+      const { data: userSubs } = await supabase
+        .from("user_subscriptions")
+        .select("id, user_id, subscription_type_id, hours_total")
+        .in("user_id", userIds);
 
-    const typesMap = new Map((subTypes || []).map(t => [t.id, t]));
-    const subsMap = new Map<string, any>();
-    for (const s of (userSubs || [])) {
-      // Use the latest/most relevant subscription per user
-      if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
-        subsMap.set(s.user_id, s);
+      const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
+      const { data: subTypes } = await supabase
+        .from("subscription_types")
+        .select("id, price, hours_count")
+        .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+
+      typesMap = new Map((subTypes || []).map(t => [t.id, t]));
+      for (const s of (userSubs || [])) {
+        if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
+          subsMap.set(s.user_id, s);
+        }
       }
     }
 
-    // Group by class_id for counting students
+    // Group bookings by class_id
     const bookingsByClass: Record<string, any[]> = {};
-    for (const b of allBookings) {
+    for (const b of (allBookings || [])) {
       if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
       bookingsByClass[b.class_id].push(b);
     }
@@ -148,9 +149,6 @@ function TeacherDashboardInner() {
     const grouped: Record<string, { hours: number; salary: number }> = {};
 
     for (const cls of allClasses) {
-      const classBookings = bookingsByClass[cls.id] || [];
-      if (classBookings.length === 0) continue;
-
       const dt = new Date(cls.date);
       const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
       if (!grouped[key]) grouped[key] = { hours: 0, salary: 0 };
@@ -162,6 +160,7 @@ function TeacherDashboardInner() {
       grouped[key].hours += durationHours;
 
       // Salary: for each student, hourly rate from their subscription × duration
+      const classBookings = bookingsByClass[cls.id] || [];
       let classRevenue = 0;
       for (const b of classBookings) {
         const sub = subsMap.get(b.user_id);
@@ -487,7 +486,7 @@ function TeacherDashboardInner() {
             </Card>
 
             {/* Hours & Salary Stats */}
-            {monthlyStats.length > 0 && (
+            {(
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <Card>
                   <CardHeader className="pb-2">
