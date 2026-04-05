@@ -121,6 +121,23 @@ export default function ClientsPage() {
     fetchData();
   };
 
+  const handleDeleteClient = async () => {
+    if (!editProfile) return;
+    setDeleting(true);
+    // Delete related data first, then profile
+    await supabase.from("bookings").delete().eq("user_id", editProfile.user_id);
+    await supabase.from("user_subscriptions").delete().eq("user_id", editProfile.user_id);
+    await supabase.from("notifications").delete().eq("user_id", editProfile.user_id);
+    const { error } = await supabase.from("profiles").delete().eq("id", editProfile.id);
+    setDeleting(false);
+    if (error) { toast.error("Ошибка при удалении клиента"); return; }
+    toast.success("Аккаунт клиента удалён");
+    setDeleteConfirmOpen(false);
+    setDialogOpen(false);
+    resetForm();
+    fetchData();
+  };
+
   const toggleDirection = (id: string) => {
     setSelectedDirections(prev =>
       prev.includes(id) ? prev.filter(d => d !== id) : [...prev, id]
