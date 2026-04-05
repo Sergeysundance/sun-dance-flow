@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -25,7 +25,9 @@ export default function TeachersPage() {
   const [editTeacher, setEditTeacher] = useState<any | null>(null);
   const [deactivateTeacher, setDeactivateTeacher] = useState<any | null>(null);
   const [deleteTeacher, setDeleteTeacher] = useState<any | null>(null);
-  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number }[]>>({});
+  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number; days: { date: string; hours: number; salary: number; classes: { time: string; direction: string; students: number; salary: number }[] }[] }[]>>({});
+  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
+  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -63,38 +65,33 @@ export default function TeachersPage() {
     if (teacherList.length === 0) return;
     const teacherIds = teacherList.map(t => t.id);
     const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+    const dayNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
 
     const { data: allClasses } = await supabase
       .from("schedule_classes")
-      .select("id, date, start_time, end_time, teacher_id")
+      .select("id, date, start_time, end_time, teacher_id, direction_id")
       .in("teacher_id", teacherIds)
       .eq("cancelled", false)
       .lte("date", new Date().toISOString().split("T")[0]);
 
     if (!allClasses || allClasses.length === 0) { setTeacherStats({}); return; }
 
+    // Fetch directions for names
+    const dirIds = [...new Set(allClasses.map(c => c.direction_id))];
+    const { data: dirData } = await supabase.from("directions").select("id, name").in("id", dirIds);
+    const dirMap = new Map((dirData || []).map(d => [d.id, d.name]));
+
     const classIds = allClasses.map(c => c.id);
-    const { data: allBookings } = await supabase
-      .from("bookings")
-      .select("id, class_id, user_id")
-      .in("class_id", classIds);
+    const { data: allBookings } = await supabase.from("bookings").select("id, class_id, user_id").in("class_id", classIds);
 
     const userIds = [...new Set((allBookings || []).map(b => b.user_id))];
     let typesMap = new Map<string, any>();
     let subsMap = new Map<string, any>();
 
     if (userIds.length > 0) {
-      const { data: userSubs } = await supabase
-        .from("user_subscriptions")
-        .select("id, user_id, subscription_type_id, hours_total")
-        .in("user_id", userIds);
-
+      const { data: userSubs } = await supabase.from("user_subscriptions").select("id, user_id, subscription_type_id, hours_total").in("user_id", userIds);
       const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
-      const { data: subTypes } = await supabase
-        .from("subscription_types")
-        .select("id, price, hours_count")
-        .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
-
+      const { data: subTypes } = await supabase.from("subscription_types").select("id, price, hours_count").in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
       typesMap = new Map((subTypes || []).map(t => [t.id, t]));
       for (const s of (userSubs || [])) {
         if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
@@ -103,25 +100,27 @@ export default function TeachersPage() {
       }
     }
 
-
     const bookingsByClass: Record<string, any[]> = {};
     for (const b of (allBookings || [])) {
       if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
       bookingsByClass[b.class_id].push(b);
     }
 
-    const result: Record<string, Record<string, { hours: number; salary: number }>> = {};
+    // Build nested structure: teacher -> month -> day -> class
+    const result: Record<string, Record<string, Record<string, { hours: number; salary: number; classes: { time: string; direction: string; students: number; salary: number }[] }>>> = {};
 
     for (const cls of allClasses) {
       const dt = new Date(cls.date);
-      const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
+      const monthKey = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
+      const dayKey = cls.date;
+
       if (!result[cls.teacher_id]) result[cls.teacher_id] = {};
-      if (!result[cls.teacher_id][key]) result[cls.teacher_id][key] = { hours: 0, salary: 0 };
+      if (!result[cls.teacher_id][monthKey]) result[cls.teacher_id][monthKey] = {};
+      if (!result[cls.teacher_id][monthKey][dayKey]) result[cls.teacher_id][monthKey][dayKey] = { hours: 0, salary: 0, classes: [] };
 
       const [sh, sm] = cls.start_time.split(':').map(Number);
       const [eh, em] = cls.end_time.split(':').map(Number);
       const durationHours = (eh * 60 + em - sh * 60 - sm) / 60;
-      result[cls.teacher_id][key].hours += durationHours;
 
       let classRevenue = 0;
       const classBookings = bookingsByClass[cls.id] || [];
@@ -135,17 +134,45 @@ export default function TeachersPage() {
           }
         }
       }
-      result[cls.teacher_id][key].salary += (classRevenue * 0.95) / 2;
+      const classSalary = (classRevenue * 0.95) / 2;
+
+      result[cls.teacher_id][monthKey][dayKey].hours += durationHours;
+      result[cls.teacher_id][monthKey][dayKey].salary += classSalary;
+      result[cls.teacher_id][monthKey][dayKey].classes.push({
+        time: `${cls.start_time.slice(0,5)}–${cls.end_time.slice(0,5)}`,
+        direction: dirMap.get(cls.direction_id) || '—',
+        students: classBookings.length,
+        salary: Math.round(classSalary),
+      });
     }
 
-    const statsMap: Record<string, { month: string; hours: number; salary: number }[]> = {};
-    for (const [tid, grouped] of Object.entries(result)) {
-      statsMap[tid] = Object.entries(grouped)
+    const statsMap: typeof teacherStats = {};
+    for (const [tid, months] of Object.entries(result)) {
+      statsMap[tid] = Object.entries(months)
         .sort(([a], [b]) => b.localeCompare(a))
         .slice(0, 6)
-        .map(([k, data]) => {
-          const [y, m] = k.split('-');
-          return { month: `${monthNames[parseInt(m)]} ${y}`, hours: Math.round(data.hours * 10) / 10, salary: Math.round(data.salary) };
+        .map(([mKey, daysObj]) => {
+          const [y, m] = mKey.split('-');
+          let totalHours = 0, totalSalary = 0;
+          const days = Object.entries(daysObj)
+            .sort(([a], [b]) => b.localeCompare(a))
+            .map(([dateStr, dayData]) => {
+              totalHours += dayData.hours;
+              totalSalary += dayData.salary;
+              const d = new Date(dateStr);
+              return {
+                date: `${dayNames[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`,
+                hours: Math.round(dayData.hours * 10) / 10,
+                salary: Math.round(dayData.salary),
+                classes: dayData.classes,
+              };
+            });
+          return {
+            month: `${monthNames[parseInt(m)]} ${y}`,
+            hours: Math.round(totalHours * 10) / 10,
+            salary: Math.round(totalSalary),
+            days,
+          };
         });
     }
     setTeacherStats(statsMap);
@@ -312,17 +339,64 @@ export default function TeachersPage() {
             <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
           </div>
           {teacherStats[t.id] && teacherStats[t.id].length > 0 ? (
-            teacherStats[t.id].map(s => (
-              <div key={s.month} className="flex items-center justify-between text-xs">
-                <span className="text-admin-muted">{s.month}</span>
-                <span className="flex gap-3">
-                  <span className="flex items-center gap-0.5 text-admin-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
-                  <span className="font-medium text-green-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
-                </span>
-              </div>
-            ))
+            teacherStats[t.id].map(s => {
+              const monthId = `${t.id}-${s.month}`;
+              const isMonthOpen = expandedMonths[monthId];
+              return (
+                <div key={s.month} className="space-y-0.5">
+                  <button
+                    onClick={() => setExpandedMonths(prev => ({ ...prev, [monthId]: !prev[monthId] }))}
+                    className="flex items-center justify-between w-full text-xs hover:bg-muted/50 rounded px-1 py-0.5"
+                  >
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      {isMonthOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                      {s.month}
+                    </span>
+                    <span className="flex gap-3">
+                      <span className="flex items-center gap-0.5 text-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
+                      <span className="font-medium text-emerald-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
+                    </span>
+                  </button>
+                  {isMonthOpen && (
+                    <div className="ml-3 border-l-2 border-muted pl-2 space-y-0.5">
+                      {s.days.map(day => {
+                        const dayId = `${monthId}-${day.date}`;
+                        const isDayOpen = expandedDays[dayId];
+                        return (
+                          <div key={day.date} className="space-y-0.5">
+                            <button
+                              onClick={() => setExpandedDays(prev => ({ ...prev, [dayId]: !prev[dayId] }))}
+                              className="flex items-center justify-between w-full text-xs hover:bg-muted/50 rounded px-1 py-0.5"
+                            >
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                {isDayOpen ? <ChevronDown className="h-2.5 w-2.5" /> : <ChevronRight className="h-2.5 w-2.5" />}
+                                {day.date}
+                              </span>
+                              <span className="flex gap-3">
+                                <span className="text-foreground">{day.hours}ч</span>
+                                <span className="font-medium text-emerald-600">{day.salary.toLocaleString('ru-RU')} ₽</span>
+                              </span>
+                            </button>
+                            {isDayOpen && (
+                              <div className="ml-3 border-l border-muted/50 pl-2 space-y-0.5">
+                                {day.classes.map((cl, i) => (
+                                  <div key={i} className="flex items-center justify-between text-xs px-1 py-0.5 text-muted-foreground">
+                                    <span>{cl.time} · {cl.direction} · {cl.students} уч.</span>
+                                    <span className="font-medium text-emerald-600">{cl.salary.toLocaleString('ru-RU')} ₽</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           ) : (
-            <p className="text-xs text-admin-muted">Нет данных</p>
+            <p className="text-xs text-muted-foreground">Нет данных</p>
           )}
         </div>
       </CardContent>
