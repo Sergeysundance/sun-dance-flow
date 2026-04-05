@@ -339,17 +339,64 @@ export default function TeachersPage() {
             <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
           </div>
           {teacherStats[t.id] && teacherStats[t.id].length > 0 ? (
-            teacherStats[t.id].map(s => (
-              <div key={s.month} className="flex items-center justify-between text-xs">
-                <span className="text-admin-muted">{s.month}</span>
-                <span className="flex gap-3">
-                  <span className="flex items-center gap-0.5 text-admin-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
-                  <span className="font-medium text-green-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
-                </span>
-              </div>
-            ))
+            teacherStats[t.id].map(s => {
+              const monthId = `${t.id}-${s.month}`;
+              const isMonthOpen = expandedMonths[monthId];
+              return (
+                <div key={s.month} className="space-y-0.5">
+                  <button
+                    onClick={() => setExpandedMonths(prev => ({ ...prev, [monthId]: !prev[monthId] }))}
+                    className="flex items-center justify-between w-full text-xs hover:bg-muted/50 rounded px-1 py-0.5"
+                  >
+                    <span className="flex items-center gap-1 text-muted-foreground">
+                      {isMonthOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                      {s.month}
+                    </span>
+                    <span className="flex gap-3">
+                      <span className="flex items-center gap-0.5 text-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
+                      <span className="font-medium text-emerald-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
+                    </span>
+                  </button>
+                  {isMonthOpen && (
+                    <div className="ml-3 border-l-2 border-muted pl-2 space-y-0.5">
+                      {s.days.map(day => {
+                        const dayId = `${monthId}-${day.date}`;
+                        const isDayOpen = expandedDays[dayId];
+                        return (
+                          <div key={day.date} className="space-y-0.5">
+                            <button
+                              onClick={() => setExpandedDays(prev => ({ ...prev, [dayId]: !prev[dayId] }))}
+                              className="flex items-center justify-between w-full text-xs hover:bg-muted/50 rounded px-1 py-0.5"
+                            >
+                              <span className="flex items-center gap-1 text-muted-foreground">
+                                {isDayOpen ? <ChevronDown className="h-2.5 w-2.5" /> : <ChevronRight className="h-2.5 w-2.5" />}
+                                {day.date}
+                              </span>
+                              <span className="flex gap-3">
+                                <span className="text-foreground">{day.hours}ч</span>
+                                <span className="font-medium text-emerald-600">{day.salary.toLocaleString('ru-RU')} ₽</span>
+                              </span>
+                            </button>
+                            {isDayOpen && (
+                              <div className="ml-3 border-l border-muted/50 pl-2 space-y-0.5">
+                                {day.classes.map((cl, i) => (
+                                  <div key={i} className="flex items-center justify-between text-xs px-1 py-0.5 text-muted-foreground">
+                                    <span>{cl.time} · {cl.direction} · {cl.students} уч.</span>
+                                    <span className="font-medium text-emerald-600">{cl.salary.toLocaleString('ru-RU')} ₽</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            })
           ) : (
-            <p className="text-xs text-admin-muted">Нет данных</p>
+            <p className="text-xs text-muted-foreground">Нет данных</p>
           )}
         </div>
       </CardContent>
