@@ -158,6 +158,22 @@ export default function ClientsPage() {
   const getActiveSub = (userId: string) =>
     subscriptions.find(s => s.user_id === userId && s.active);
 
+  const now = new Date();
+
+  const getUpcomingBookings = (userId: string) => {
+    const userBookings = bookings.filter(b => b.user_id === userId);
+    return userBookings
+      .map(b => {
+        const cls = classes.find(c => c.id === b.class_id);
+        if (!cls) return null;
+        if (new Date(`${cls.date}T${cls.end_time}`) <= now) return null;
+        const dir = directions.find(d => d.id === cls.direction_id);
+        const teacher = teachers.find(t => t.id === cls.teacher_id);
+        return { booking: b, cls, dir, teacher };
+      })
+      .filter(Boolean) as { booking: Booking; cls: ScheduleClass; dir: Direction | undefined; teacher: { id: string; first_name: string; last_name: string } | undefined }[];
+  };
+
   const filtered = profiles.filter(p => {
     const q = search.toLowerCase();
     const matchesSearch = !q ||
