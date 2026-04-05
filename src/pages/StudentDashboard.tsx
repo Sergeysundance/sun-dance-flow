@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,6 +93,8 @@ const StudentDashboardInner = () => {
   const [monthlyHours, setMonthlyHours] = useState<{ month: string; hours: number }[]>([]);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
+  const [allBookingsLoading, setAllBookingsLoading] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -166,6 +168,39 @@ const StudentDashboardInner = () => {
     setMonthlyHours(sorted);
   };
 
+  const fetchAllBookings = async (uid: string) => {
+    setAllBookingsLoading(true);
+    const todayDate = fmtDate(new Date());
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+    if (!bookingsData || bookingsData.length === 0) {
+      setAllBookings([]);
+      setAllBookingsLoading(false);
+      return;
+    }
+    const classIds = bookingsData.map(b => b.class_id);
+    const { data: classesData } = await supabase
+      .from("schedule_classes")
+      .select("*")
+      .in("id", classIds)
+      .order("date", { ascending: true })
+      .order("start_time", { ascending: true });
+    const classMap = new Map((classesData || []).map(c => [c.id, c]));
+    const enriched = bookingsData
+      .map(b => ({ ...b, class: classMap.get(b.class_id) }))
+      .filter(b => b.class)
+      .sort((a, b) => {
+        const dateA = `${a.class.date}T${a.class.start_time}`;
+        const dateB = `${b.class.date}T${b.class.start_time}`;
+        return dateA.localeCompare(dateB);
+      });
+    setAllBookings(enriched);
+    setAllBookingsLoading(false);
+  };
+
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -192,6 +227,8 @@ const StudentDashboardInner = () => {
         setUnreadCount(notifs.filter((n: any) => !n.read).length);
       }
       setLoading(false);
+      // Fetch all upcoming bookings
+      fetchAllBookings(session.user.id);
     };
     checkAuth();
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
@@ -392,6 +429,9 @@ const StudentDashboardInner = () => {
             </TabsTrigger>
             <TabsTrigger value="subscriptions" className="gap-1">
               <CreditCard className="h-4 w-4" /> Абонементы
+            </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-1">
+              <BookOpen className="h-4 w-4" /> Мои записи
             </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
               <Calendar className="h-4 w-4" /> Расписание
@@ -893,6 +933,102 @@ const StudentDashboardInner = () => {
                 </Button>
               </DialogContent>
             </Dialog>
+          </TabsContent>
+
+          {/* My Bookings tab */}
+          <TabsContent value="bookings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Мои записи</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {allBookingsLoading ? (
+                  <p className="text-center text-muted-foreground py-6">Загрузка...</p>
+                ) : allBookings.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-6">У вас пока нет записей на занятия</p>
+                ) : (
+                  <div className="space-y-3">
+                    {(() => {
+                      const now = new Date();
+                      const upcoming = allBookings.filter(b => new Date(`${b.class.date}T${b.class.end_time}`) >= now);
+                      const past = allBookings.filter(b => new Date(`${b.class.date}T${b.class.end_time}`) < now);
+                      return (
+                        <>
+                          {upcoming.length > 0 && (
+                            <>
+                              <h3 className="font-display text-sm font-bold text-foreground">Предстоящие</h3>
+                              {upcoming.map(b => {
+                                const cls = b.class;
+                                const dir = getDir(cls.direction_id);
+                                const teacher = getTeacher(cls.teacher_id);
+                                const room = getRoom(cls.room_id);
+                                const canCancel = !isWithin6Hours(cls);
+                                const dateObj = new Date(cls.date + 'T00:00');
+                                const dayLabel = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+                                return (
+                                  <div key={b.id} className="rounded-lg p-3 border border-border" style={{ borderLeftWidth: 4, borderLeftColor: dir?.color || '#3B82F6' }}>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
+                                        <div className="text-xs font-medium text-foreground">{dayLabel}, {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
+                                        <div className="text-xs text-muted-foreground">{teacher?.first_name} {teacher?.last_name}</div>
+                                        {room && <div className="text-xs text-muted-foreground">{room.name}</div>}
+                                      </div>
+                                      {canCancel ? (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="shrink-0 text-xs"
+                                          disabled={bookingLoading === cls.id}
+                                          onClick={async () => {
+                                            setBookingLoading(cls.id);
+                                            const { error } = await supabase.from("bookings").delete().eq("id", b.id);
+                                            if (error) { toast.error("Ошибка отмены записи"); }
+                                            else {
+                                              setAllBookings(prev => prev.filter(x => x.id !== b.id));
+                                              setBookings(prev => { const n = new Set(prev); n.delete(cls.id); return n; });
+                                              toast.success("Запись отменена");
+                                            }
+                                            setBookingLoading(null);
+                                          }}
+                                        >
+                                          <X className="h-3 w-3 mr-1" /> Отменить
+                                        </Button>
+                                      ) : (
+                                        <span className="text-[10px] text-muted-foreground italic shrink-0">Отмена недоступна</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                          {past.length > 0 && (
+                            <>
+                              <h3 className="font-display text-sm font-bold text-muted-foreground mt-4">Прошедшие</h3>
+                              {past.slice(0, 20).map(b => {
+                                const cls = b.class;
+                                const dir = getDir(cls.direction_id);
+                                const teacher = getTeacher(cls.teacher_id);
+                                const dateObj = new Date(cls.date + 'T00:00');
+                                const dayLabel = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+                                return (
+                                  <div key={b.id} className="rounded-lg p-3 border border-border opacity-60">
+                                    <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
+                                    <div className="text-xs font-medium text-foreground">{dayLabel}, {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
+                                    <div className="text-xs text-muted-foreground">{teacher?.first_name} {teacher?.last_name}</div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
 
           {/* Schedule tab */}
