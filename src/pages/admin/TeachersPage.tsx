@@ -25,6 +25,7 @@ export default function TeachersPage() {
   const [editTeacher, setEditTeacher] = useState<any | null>(null);
   const [deactivateTeacher, setDeactivateTeacher] = useState<any | null>(null);
   const [deleteTeacher, setDeleteTeacher] = useState<any | null>(null);
+  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number }[]>>({});
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
