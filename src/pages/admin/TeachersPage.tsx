@@ -58,6 +58,97 @@ export default function TeachersPage() {
     setLoading(false);
   };
 
+  const fetchAllTeacherStats = useCallback(async (teacherList: any[]) => {
+    if (teacherList.length === 0) return;
+    const teacherIds = teacherList.map(t => t.id);
+    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+
+    const { data: allClasses } = await supabase
+      .from("schedule_classes")
+      .select("id, date, start_time, end_time, teacher_id")
+      .in("teacher_id", teacherIds)
+      .eq("cancelled", false)
+      .lte("date", new Date().toISOString().split("T")[0]);
+
+    if (!allClasses || allClasses.length === 0) { setTeacherStats({}); return; }
+
+    const classIds = allClasses.map(c => c.id);
+    const { data: allBookings } = await supabase
+      .from("bookings")
+      .select("id, class_id, user_id")
+      .in("class_id", classIds);
+
+    if (!allBookings || allBookings.length === 0) { setTeacherStats({}); return; }
+
+    const userIds = [...new Set(allBookings.map(b => b.user_id))];
+    const { data: userSubs } = await supabase
+      .from("user_subscriptions")
+      .select("id, user_id, subscription_type_id, hours_total")
+      .in("user_id", userIds);
+
+    const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
+    const { data: subTypes } = await supabase
+      .from("subscription_types")
+      .select("id, price, hours_count")
+      .in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
+
+    const typesMap = new Map((subTypes || []).map(t => [t.id, t]));
+    const subsMap = new Map<string, any>();
+    for (const s of (userSubs || [])) {
+      if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
+        subsMap.set(s.user_id, s);
+      }
+    }
+
+    const bookingsByClass: Record<string, any[]> = {};
+    for (const b of allBookings) {
+      if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
+      bookingsByClass[b.class_id].push(b);
+    }
+
+    const result: Record<string, Record<string, { hours: number; salary: number }>> = {};
+
+    for (const cls of allClasses) {
+      const classBookings = bookingsByClass[cls.id] || [];
+      if (classBookings.length === 0) continue;
+
+      const dt = new Date(cls.date);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
+      if (!result[cls.teacher_id]) result[cls.teacher_id] = {};
+      if (!result[cls.teacher_id][key]) result[cls.teacher_id][key] = { hours: 0, salary: 0 };
+
+      const [sh, sm] = cls.start_time.split(':').map(Number);
+      const [eh, em] = cls.end_time.split(':').map(Number);
+      const durationHours = (eh * 60 + em - sh * 60 - sm) / 60;
+      result[cls.teacher_id][key].hours += durationHours;
+
+      let classRevenue = 0;
+      for (const b of classBookings) {
+        const sub = subsMap.get(b.user_id);
+        if (sub) {
+          const subType = typesMap.get(sub.subscription_type_id);
+          if (subType && subType.hours_count && subType.hours_count > 0) {
+            const hourlyRate = subType.price / subType.hours_count;
+            classRevenue += hourlyRate * durationHours;
+          }
+        }
+      }
+      result[cls.teacher_id][key].salary += (classRevenue * 0.95) / 2;
+    }
+
+    const statsMap: Record<string, { month: string; hours: number; salary: number }[]> = {};
+    for (const [tid, grouped] of Object.entries(result)) {
+      statsMap[tid] = Object.entries(grouped)
+        .sort(([a], [b]) => b.localeCompare(a))
+        .slice(0, 6)
+        .map(([k, data]) => {
+          const [y, m] = k.split('-');
+          return { month: `${monthNames[parseInt(m)]} ${y}`, hours: Math.round(data.hours * 10) / 10, salary: Math.round(data.salary) };
+        });
+    }
+    setTeacherStats(statsMap);
+  }, []);
+
   useEffect(() => { fetchData(); }, [selectedBranchId]);
 
   const activeTeachers = teachers.filter(t => t.active);
