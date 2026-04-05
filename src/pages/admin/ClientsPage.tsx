@@ -25,6 +25,9 @@ export default function ClientsPage() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [directions, setDirections] = useState<Direction[]>([]);
   const [subscriptions, setSubscriptions] = useState<UserSubscription[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+  const [classes, setClasses] = useState<ScheduleClass[]>([]);
+  const [teachers, setTeachers] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState("all");
