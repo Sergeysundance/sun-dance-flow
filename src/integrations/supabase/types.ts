@@ -220,6 +220,7 @@ export type Database = {
           notes: string | null
           phone: string
           preferred_directions: string[] | null
+          seen_by_admin: boolean
           updated_at: string
           user_id: string
         }
@@ -235,6 +236,7 @@ export type Database = {
           notes?: string | null
           phone?: string
           preferred_directions?: string[] | null
+          seen_by_admin?: boolean
           updated_at?: string
           user_id: string
         }
@@ -250,6 +252,7 @@ export type Database = {
           notes?: string | null
           phone?: string
           preferred_directions?: string[] | null
+          seen_by_admin?: boolean
           updated_at?: string
           user_id?: string
         }
@@ -531,6 +534,7 @@ export type Database = {
           last_name: string
           phone: string
           photo_url: string
+          seen_by_admin: boolean
           telegram_id: string
           user_id: string | null
         }
@@ -547,6 +551,7 @@ export type Database = {
           last_name?: string
           phone?: string
           photo_url?: string
+          seen_by_admin?: boolean
           telegram_id?: string
           user_id?: string | null
         }
@@ -563,6 +568,7 @@ export type Database = {
           last_name?: string
           phone?: string
           photo_url?: string
+          seen_by_admin?: boolean
           telegram_id?: string
           user_id?: string | null
         }
