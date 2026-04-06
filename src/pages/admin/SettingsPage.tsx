@@ -23,6 +23,10 @@ interface RulesData {
   paid_freeze_14_price: number; paid_freeze_30_price: number;
 }
 
+interface LegalData {
+  entity_name: string; inn: string; ogrn: string; email: string; work_hours: string;
+}
+
 const DEFAULT_HOURS: HourEntry[] = [
   { day: 'Понедельник', open: '10:00', close: '22:00' },
   { day: 'Вторник', open: '10:00', close: '22:00' },
@@ -43,6 +47,9 @@ export default function SettingsPage() {
     cancel_hours: 3, auto_activate_days: 7, free_freeze_days: 14,
     paid_freeze_14_price: 700, paid_freeze_30_price: 1000,
   });
+  const [legal, setLegal] = useState<LegalData>({
+    entity_name: '', inn: '', ogrn: '', email: '', work_hours: 'Пн-Вс: 09:00–22:00',
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -56,6 +63,7 @@ export default function SettingsPage() {
             if (row.key === 'studio') setStudio(val as unknown as StudioData);
             if (row.key === 'telegram') setTelegram(val as unknown as TelegramData);
             if (row.key === 'rules') setRules(val as unknown as RulesData);
+            if (row.key === 'legal') setLegal(val as unknown as LegalData);
           }
         }
         setLoading(false);
@@ -90,6 +98,7 @@ export default function SettingsPage() {
     <Tabs defaultValue="studio">
       <TabsList className="bg-gray-100">
         <TabsTrigger value="studio">Студия</TabsTrigger>
+        <TabsTrigger value="legal">Юридические данные</TabsTrigger>
         <TabsTrigger value="telegram">Telegram</TabsTrigger>
         <TabsTrigger value="rules">Правила</TabsTrigger>
       </TabsList>
@@ -128,6 +137,66 @@ export default function SettingsPage() {
             </div>
 
             <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => save('studio', studio)}>Сохранить</Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="legal" className="mt-4">
+        <Card className="bg-white border-admin-border shadow-sm">
+          <CardContent className="p-6 space-y-4">
+            <p className="text-sm text-admin-muted">
+              Юридическая информация, обязательная для размещения на сайте согласно законодательству РФ (149-ФЗ, 2300-1).
+              Данные отображаются в футере сайта и в публичной оферте.
+            </p>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div>
+                <Label>Полное наименование юрлица / ИП</Label>
+                <Input
+                  placeholder='ИП Иванов Иван Иванович или ООО «Название»'
+                  value={legal.entity_name}
+                  onChange={e => setLegal(prev => ({ ...prev, entity_name: e.target.value }))}
+                  className="bg-white border-admin-border"
+                />
+              </div>
+              <div>
+                <Label>ИНН</Label>
+                <Input
+                  placeholder="123456789012"
+                  value={legal.inn}
+                  onChange={e => setLegal(prev => ({ ...prev, inn: e.target.value }))}
+                  className="bg-white border-admin-border"
+                />
+              </div>
+              <div>
+                <Label>ОГРН / ОГРНИП</Label>
+                <Input
+                  placeholder="1234567890123"
+                  value={legal.ogrn}
+                  onChange={e => setLegal(prev => ({ ...prev, ogrn: e.target.value }))}
+                  className="bg-white border-admin-border"
+                />
+              </div>
+              <div>
+                <Label>Email для связи (обязательно по 149-ФЗ)</Label>
+                <Input
+                  type="email"
+                  placeholder="info@example.com"
+                  value={legal.email}
+                  onChange={e => setLegal(prev => ({ ...prev, email: e.target.value }))}
+                  className="bg-white border-admin-border"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <Label>Режим работы (отображается в футере)</Label>
+                <Input
+                  placeholder="Пн-Вс: 09:00–22:00"
+                  value={legal.work_hours}
+                  onChange={e => setLegal(prev => ({ ...prev, work_hours: e.target.value }))}
+                  className="bg-white border-admin-border"
+                />
+              </div>
+            </div>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => save('legal', legal)}>Сохранить</Button>
           </CardContent>
         </Card>
       </TabsContent>
