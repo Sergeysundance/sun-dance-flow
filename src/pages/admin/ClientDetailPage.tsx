@@ -44,6 +44,11 @@ export default function ClientDetailPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Manual deduction dialog
+  const [deductOpen, setDeductOpen] = useState(false);
+  const [deductSub, setDeductSub] = useState<(UserSubscription & { type?: SubscriptionType }) | null>(null);
+  const [deductHours, setDeductHours] = useState("1");
+
   const fetchData = async () => {
     if (!id) return;
 
@@ -223,10 +228,11 @@ export default function ClientDetailPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-admin-border bg-gray-50 text-left text-xs text-admin-muted">
-                    <th className="px-4 py-3">Тип</th>
+                     <th className="px-4 py-3">Тип</th>
                     <th className="px-4 py-3">Период</th>
                     <th className="px-4 py-3">Остаток</th>
                     <th className="px-4 py-3">Статус</th>
+                    <th className="px-4 py-3"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,10 +318,22 @@ export default function ClientDetailPage() {
                                 Разморозить
                               </Button>
                             )}
-                            {!isFrozen && wasFrozen && (
+                             {!isFrozen && wasFrozen && (
                               <span className="text-xs text-gray-400">Заморозка использована</span>
                             )}
                           </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          {s.active && !isFrozen && s.hours_remaining > 0 && s.type?.type && s.type.type !== 'group' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-7 text-xs border-orange-300 text-orange-600 hover:bg-orange-50 gap-1"
+                              onClick={() => { setDeductSub(s); setDeductHours("1"); setDeductOpen(true); }}
+                            >
+                              <Minus className="h-3 w-3" /> Списать часы
+                            </Button>
+                          )}
                         </td>
                       </tr>
                     );
