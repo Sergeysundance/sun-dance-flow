@@ -35,6 +35,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const [birthDate, setBirthDate] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
   const [bio, setBio] = useState("");
+  const [consentGiven, setConsentGiven] = useState(false);
 
   // Directions from DB
   const [directions, setDirections] = useState<any[]>([]);
@@ -61,6 +62,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     setSelectedDirections([]);
     setBio("");
     setRole("student");
+    setConsentGiven(false);
   };
 
   const toggleDirection = (id: string) => {
@@ -89,6 +91,10 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
   const handleRegister = async () => {
     if (!email || !password || !firstName || !lastName || !middleName || !phone) {
       toast.error("Заполните все обязательные поля (Имя, Фамилия, Отчество, Телефон, Email, Пароль)");
+      return;
+    }
+    if (!consentGiven) {
+      toast.error("Необходимо дать согласие на обработку персональных данных");
       return;
     }
     if (password !== confirmPassword) {
@@ -298,6 +304,26 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
                   <Input value={bio} onChange={e => setBio(e.target.value)} placeholder="Расскажите о своём опыте" />
                 </div>
               )}
+
+              <div className="rounded-md border border-border p-3 space-y-2">
+                <label className="flex items-start gap-2 cursor-pointer text-sm">
+                  <Checkbox
+                    checked={consentGiven}
+                    onCheckedChange={(v) => setConsentGiven(!!v)}
+                    className="mt-0.5"
+                  />
+                  <span className="text-muted-foreground leading-tight">
+                    Я даю согласие на обработку персональных данных в соответствии с{" "}
+                    <a href="/privacy" target="_blank" className="text-sun underline hover:no-underline">
+                      Политикой конфиденциальности
+                    </a>{" "}
+                    и принимаю условия{" "}
+                    <a href="/terms" target="_blank" className="text-sun underline hover:no-underline">
+                      Пользовательского соглашения
+                    </a>
+                  </span>
+                </label>
+              </div>
 
               <div>
                 <Label>{role === "teacher" ? "Направления преподавания" : "Предпочтительные направления"}</Label>
