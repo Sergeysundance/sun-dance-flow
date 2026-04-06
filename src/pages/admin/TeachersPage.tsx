@@ -1,13 +1,11 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign, ChevronDown, ChevronRight, Minus } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { Plus, Upload, X, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -17,25 +15,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { useBranch } from "@/contexts/BranchContext";
 
 export default function TeachersPage() {
+  const navigate = useNavigate();
   const { selectedBranchId } = useBranch();
   const [teachers, setTeachers] = useState<any[]>([]);
   const [directions, setDirections] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  // Create dialog
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editTeacher, setEditTeacher] = useState<any | null>(null);
-  const [deactivateTeacher, setDeactivateTeacher] = useState<any | null>(null);
-  const [deleteTeacher, setDeleteTeacher] = useState<any | null>(null);
-  const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number; days: { date: string; hours: number; salary: number; classes: { time: string; direction: string; students: number; salary: number }[] }[] }[]>>({});
-  const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
-  const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
-
-  // Manual deduction
-  const [deductTeacher, setDeductTeacher] = useState<any | null>(null);
-  const [deductSubs, setDeductSubs] = useState<any[]>([]);
-  const [deductSubId, setDeductSubId] = useState("");
-  const [deductHours, setDeductHours] = useState("1");
-  const [deductOpen, setDeductOpen] = useState(false);
-
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
@@ -44,14 +32,10 @@ export default function TeachersPage() {
   const [telegramId, setTelegramId] = useState("");
   const [selectedDirections, setSelectedDirections] = useState<string[]>([]);
   const [discountPercent, setDiscountPercent] = useState(20);
-
-  // Photo state
   const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [photoPreview, setPhotoPreview] = useState<string>("");
+  const [photoPreview, setPhotoPreview] = useState("");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const isEditing = !!editTeacher;
 
   const fetchData = async () => {
     const [tRes, dRes] = await Promise.all([
@@ -65,517 +49,177 @@ export default function TeachersPage() {
     setTeachers(allTeachers);
     if (dRes.data) setDirections(dRes.data);
     setLoading(false);
-    fetchAllTeacherStats(allTeachers);
   };
-
-  const fetchAllTeacherStats = useCallback(async (teacherList: any[]) => {
-    if (teacherList.length === 0) return;
-    const teacherIds = teacherList.map(t => t.id);
-    const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
-    const dayNames = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-
-    const { data: allClasses } = await supabase
-      .from("schedule_classes")
-      .select("id, date, start_time, end_time, teacher_id, direction_id")
-      .in("teacher_id", teacherIds)
-      .eq("cancelled", false)
-      .lte("date", new Date().toISOString().split("T")[0]);
-
-    if (!allClasses || allClasses.length === 0) { setTeacherStats({}); return; }
-
-    // Fetch directions for names
-    const dirIds = [...new Set(allClasses.map(c => c.direction_id))];
-    const { data: dirData } = await supabase.from("directions").select("id, name").in("id", dirIds);
-    const dirMap = new Map((dirData || []).map(d => [d.id, d.name]));
-
-    const classIds = allClasses.map(c => c.id);
-    const { data: allBookings } = await supabase.from("bookings").select("id, class_id, user_id").in("class_id", classIds);
-
-    const userIds = [...new Set((allBookings || []).map(b => b.user_id))];
-    let typesMap = new Map<string, any>();
-    let subsMap = new Map<string, any>();
-
-    if (userIds.length > 0) {
-      const { data: userSubs } = await supabase.from("user_subscriptions").select("id, user_id, subscription_type_id, hours_total").in("user_id", userIds);
-      const typeIds = [...new Set((userSubs || []).map(s => s.subscription_type_id))];
-      const { data: subTypes } = await supabase.from("subscription_types").select("id, price, hours_count").in("id", typeIds.length > 0 ? typeIds : ["__none__"]);
-      typesMap = new Map((subTypes || []).map(t => [t.id, t]));
-      for (const s of (userSubs || [])) {
-        if (!subsMap.has(s.user_id) || s.hours_total > (subsMap.get(s.user_id)?.hours_total || 0)) {
-          subsMap.set(s.user_id, s);
-        }
-      }
-    }
-
-    const bookingsByClass: Record<string, any[]> = {};
-    for (const b of (allBookings || [])) {
-      if (!bookingsByClass[b.class_id]) bookingsByClass[b.class_id] = [];
-      bookingsByClass[b.class_id].push(b);
-    }
-
-    // Build nested structure: teacher -> month -> day -> class
-    const result: Record<string, Record<string, Record<string, { hours: number; salary: number; classes: { time: string; direction: string; students: number; salary: number }[] }>>> = {};
-
-    for (const cls of allClasses) {
-      const dt = new Date(cls.date);
-      const monthKey = `${dt.getFullYear()}-${String(dt.getMonth()).padStart(2, '0')}`;
-      const dayKey = cls.date;
-
-      if (!result[cls.teacher_id]) result[cls.teacher_id] = {};
-      if (!result[cls.teacher_id][monthKey]) result[cls.teacher_id][monthKey] = {};
-      if (!result[cls.teacher_id][monthKey][dayKey]) result[cls.teacher_id][monthKey][dayKey] = { hours: 0, salary: 0, classes: [] };
-
-      const [sh, sm] = cls.start_time.split(':').map(Number);
-      const [eh, em] = cls.end_time.split(':').map(Number);
-      const durationHours = (eh * 60 + em - sh * 60 - sm) / 60;
-
-      let classRevenue = 0;
-      const classBookings = bookingsByClass[cls.id] || [];
-      for (const b of classBookings) {
-        const sub = subsMap.get(b.user_id);
-        if (sub) {
-          const subType = typesMap.get(sub.subscription_type_id);
-          if (subType && subType.hours_count && subType.hours_count > 0) {
-            const hourlyRate = subType.price / subType.hours_count;
-            classRevenue += hourlyRate * durationHours;
-          }
-        }
-      }
-      const classSalary = (classRevenue * 0.95) / 2;
-
-      result[cls.teacher_id][monthKey][dayKey].hours += durationHours;
-      result[cls.teacher_id][monthKey][dayKey].salary += classSalary;
-      result[cls.teacher_id][monthKey][dayKey].classes.push({
-        time: `${cls.start_time.slice(0,5)}–${cls.end_time.slice(0,5)}`,
-        direction: dirMap.get(cls.direction_id) || '—',
-        students: classBookings.length,
-        salary: Math.round(classSalary),
-      });
-    }
-
-    const statsMap: typeof teacherStats = {};
-    for (const [tid, months] of Object.entries(result)) {
-      statsMap[tid] = Object.entries(months)
-        .sort(([a], [b]) => b.localeCompare(a))
-        .slice(0, 6)
-        .map(([mKey, daysObj]) => {
-          const [y, m] = mKey.split('-');
-          let totalHours = 0, totalSalary = 0;
-          const days = Object.entries(daysObj)
-            .sort(([a], [b]) => b.localeCompare(a))
-            .map(([dateStr, dayData]) => {
-              totalHours += dayData.hours;
-              totalSalary += dayData.salary;
-              const d = new Date(dateStr);
-              return {
-                date: `${dayNames[d.getDay()]} ${d.getDate().toString().padStart(2,'0')}.${(d.getMonth()+1).toString().padStart(2,'0')}`,
-                hours: Math.round(dayData.hours * 10) / 10,
-                salary: Math.round(dayData.salary),
-                classes: dayData.classes,
-              };
-            });
-          return {
-            month: `${monthNames[parseInt(m)]} ${y}`,
-            hours: Math.round(totalHours * 10) / 10,
-            salary: Math.round(totalSalary),
-            days,
-          };
-        });
-    }
-    setTeacherStats(statsMap);
-  }, []);
 
   useEffect(() => { fetchData(); }, [selectedBranchId]);
 
+  const getDirection = (id: string) => directions.find(d => d.id === id);
   const activeTeachers = teachers.filter(t => t.active);
   const inactiveTeachers = teachers.filter(t => !t.active);
 
-  const getDirection = (id: string) => directions.find(d => d.id === id);
+  const filterTeachers = (list: any[]) => {
+    if (!search) return list;
+    const q = search.toLowerCase();
+    return list.filter(t =>
+      `${t.first_name} ${t.last_name}`.toLowerCase().includes(q) ||
+      t.phone.includes(q) || t.email.toLowerCase().includes(q)
+    );
+  };
 
   const resetForm = () => {
     setFirstName(""); setLastName(""); setPhone(""); setEmail(""); setBio(""); setTelegramId(""); setSelectedDirections([]); setDiscountPercent(20);
     setPhotoFile(null); setPhotoPreview("");
   };
 
-  const openNew = () => { setEditTeacher(null); resetForm(); setDialogOpen(true); };
-
-  const openEdit = (t: any) => {
-    setEditTeacher(t); setFirstName(t.first_name); setLastName(t.last_name); setPhone(t.phone); setEmail(t.email); setBio(t.bio); setTelegramId(t.telegram_id); setSelectedDirections([...t.direction_ids]); setDiscountPercent(t.discount_percent ?? 20);
-    setPhotoFile(null);
-    setPhotoPreview(t.photo_url || "");
-    setDialogOpen(true);
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith("image/")) { toast.error("Выберите изображение"); return; }
-    if (file.size > 5 * 1024 * 1024) { toast.error("Файл слишком большой (макс. 5 МБ)"); return; }
-    setPhotoFile(file);
-    setPhotoPreview(URL.createObjectURL(file));
-  };
-
-  const removePhoto = () => {
-    setPhotoFile(null);
-    setPhotoPreview("");
-    if (fileInputRef.current) fileInputRef.current.value = "";
-  };
-
-  const uploadPhoto = async (teacherId: string): Promise<string> => {
-    if (!photoFile) return photoPreview; // keep existing URL or empty
-    const ext = photoFile.name.split(".").pop();
-    const path = `${teacherId}.${ext}`;
-    const { error } = await supabase.storage.from("teacher-photos").upload(path, photoFile, { upsert: true });
-    if (error) throw error;
-    const { data } = supabase.storage.from("teacher-photos").getPublicUrl(path);
-    return `${data.publicUrl}?t=${Date.now()}`;
-  };
-
-  const handleSave = async () => {
-    if (!firstName.trim()) { toast.error("Введите имя преподавателя"); return; }
+  const handleCreate = async () => {
+    if (!firstName.trim()) { toast.error("Введите имя"); return; }
     setUploading(true);
     try {
-      const payload: any = { first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(), email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(), direction_ids: selectedDirections, discount_percent: discountPercent };
-
-      if (isEditing && editTeacher) {
-        let branchIds = [...(editTeacher.branch_ids || [])];
-        if (selectedBranchId && !branchIds.includes(selectedBranchId)) branchIds.push(selectedBranchId);
-        payload.branch_ids = branchIds;
-
-        const photoUrl = await uploadPhoto(editTeacher.id);
-        payload.photo_url = photoUrl;
-
-        const { error } = await supabase.from("teachers").update(payload).eq("id", editTeacher.id);
-        if (error) { toast.error("Ошибка при обновлении"); return; }
-        toast.success("Преподаватель обновлён");
-      } else {
-        payload.branch_ids = selectedBranchId ? [selectedBranchId] : [];
-        // Insert first to get id, then upload photo
-        const { data, error } = await supabase.from("teachers").insert(payload).select("id").single();
-        if (error) { toast.error("Ошибка при создании"); return; }
-        if (photoFile && data) {
-          const photoUrl = await uploadPhoto(data.id);
-          await supabase.from("teachers").update({ photo_url: photoUrl }).eq("id", data.id);
-        }
-        toast.success("Преподаватель создан");
+      const payload: any = {
+        first_name: firstName.trim(), last_name: lastName.trim(), phone: phone.trim(),
+        email: email.trim(), bio: bio.trim(), telegram_id: telegramId.trim(),
+        direction_ids: selectedDirections, discount_percent: discountPercent,
+        branch_ids: selectedBranchId ? [selectedBranchId] : [],
+      };
+      const { data, error } = await supabase.from("teachers").insert(payload).select("id").single();
+      if (error) { toast.error("Ошибка"); return; }
+      if (photoFile && data) {
+        const ext = photoFile.name.split(".").pop();
+        const path = `${data.id}.${ext}`;
+        await supabase.storage.from("teacher-photos").upload(path, photoFile, { upsert: true });
+        const { data: urlData } = supabase.storage.from("teacher-photos").getPublicUrl(path);
+        await supabase.from("teachers").update({ photo_url: `${urlData.publicUrl}?t=${Date.now()}` }).eq("id", data.id);
       }
-      setDialogOpen(false); resetForm(); setEditTeacher(null); fetchData();
+      toast.success("Преподаватель создан");
+      setDialogOpen(false); resetForm(); fetchData();
     } catch (err: any) {
-      toast.error("Ошибка загрузки фото: " + err.message);
+      toast.error("Ошибка: " + err.message);
     } finally {
       setUploading(false);
     }
   };
 
-  const handleDeactivate = async (t: any) => {
-    const { error } = await supabase.from("teachers").update({ active: !t.active }).eq("id", t.id);
-    if (error) { toast.error("Ошибка"); return; }
-    toast.success(t.active ? "Преподаватель деактивирован" : "Преподаватель активирован");
-    fetchData();
-  };
-
-  const handleDelete = async (t: any) => {
-    const { data: classes } = await supabase.from("schedule_classes").select("id").eq("teacher_id", t.id);
-    if (classes && classes.length > 0) {
-      const classIds = classes.map(c => c.id);
-      await supabase.from("bookings").delete().in("class_id", classIds);
-      await supabase.from("schedule_classes").delete().eq("teacher_id", t.id);
-    }
-    // Delete photo from storage
-    if (t.photo_url) {
-      const fileName = t.photo_url.split("/").pop()?.split("?")[0];
-      if (fileName) await supabase.storage.from("teacher-photos").remove([fileName]);
-    }
-    const { error } = await supabase.from("teachers").delete().eq("id", t.id);
-    if (error) { toast.error("Ошибка при удалении: " + error.message); return; }
-    toast.success("Преподаватель удалён");
-    fetchData();
-  };
-
-  const toggleDirection = (dirId: string) => {
-    setSelectedDirections(prev => prev.includes(dirId) ? prev.filter(id => id !== dirId) : [...prev, dirId]);
-  };
-
-  const openDeductDialog = async (t: any) => {
-    if (!t.user_id) { toast.error("У преподавателя нет привязанного аккаунта"); return; }
-    const { data } = await supabase
-      .from("user_subscriptions")
-      .select("*, subscription_types(*)")
-      .eq("user_id", t.user_id)
-      .eq("active", true)
-      .gt("hours_remaining", 0);
-    const individual = (data || [])
-      .map((s: any) => ({ ...s, type: s.subscription_types }))
-      .filter((s: any) => s.type?.type && s.type.type !== 'group');
-    if (individual.length === 0) { toast.error("Нет активных индивидуальных абонементов"); return; }
-    setDeductTeacher(t);
-    setDeductSubs(individual);
-    setDeductSubId(individual[0].id);
-    setDeductHours("1");
-    setDeductOpen(true);
-  };
-
-  const markTeacherSeen = async (t: any) => {
+  const handleRowClick = (t: any) => {
     if (!t.seen_by_admin) {
-      await supabase.from("teachers").update({ seen_by_admin: true }).eq("id", t.id);
-      setTeachers(prev => prev.map(tr => tr.id === t.id ? { ...tr, seen_by_admin: true } : tr));
+      supabase.from("teachers").update({ seen_by_admin: true }).eq("id", t.id).then(() => {
+        setTeachers(prev => prev.map(tr => tr.id === t.id ? { ...tr, seen_by_admin: true } : tr));
+      });
     }
+    navigate(`/admin/teachers/${t.id}`);
   };
 
-  const renderTeacherCard = (t: any) => (
-    <Card key={t.id} className={`bg-white border-admin-border shadow-sm ${!t.seen_by_admin ? 'ring-2 ring-green-400 bg-green-50' : ''}`}>
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-12 w-12">
-              {t.photo_url ? (
-                <AvatarImage src={t.photo_url} alt={`${t.first_name} ${t.last_name}`} />
-              ) : null}
-              <AvatarFallback className="bg-admin-accent/20 text-lg font-bold text-admin-foreground">
-                {t.first_name[0]}{t.last_name?.[0] || ""}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="font-semibold text-admin-foreground">
-                {!t.seen_by_admin && <Badge className="bg-green-500 text-white text-[10px] mr-2">Новый</Badge>}
-                {t.first_name} {t.last_name}
-              </div>
-              <div className="text-xs text-admin-muted">{t.phone}</div>
-            </div>
-          </div>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => { markTeacherSeen(t); openEdit(t); }}>Редактировать</DropdownMenuItem>
-              <DropdownMenuItem onClick={() => openDeductDialog(t)}>
-                <Minus className="h-4 w-4 mr-1" /> Списать часы
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => setDeactivateTeacher(t)}>
-                {t.active ? "Деактивировать" : "Активировать"}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-red-600" onClick={() => setDeleteTeacher(t)}>
-                <Trash2 className="h-4 w-4 mr-1" /> Удалить навсегда
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-        <div className="mt-3 flex flex-wrap gap-1">
-          {t.direction_ids.map((dId: string) => {
-            const dir = getDirection(dId);
-            return dir ? <Badge key={dId} variant="outline" style={{ borderColor: dir.color, color: dir.color }} className="text-xs">{dir.name}</Badge> : null;
-          })}
-        </div>
-        <p className="mt-2 text-xs text-admin-muted line-clamp-2">{t.bio}</p>
-        {(t.discount_percent != null && t.discount_percent !== 20) ? (
-          <p className="mt-1 text-xs font-medium text-admin-accent">Скидка: {t.discount_percent}%</p>
-        ) : (
-          <p className="mt-1 text-xs text-admin-muted">Скидка: {t.discount_percent ?? 20}%</p>
-        )}
-        {/* Monthly salary stats */}
-        <div className="mt-3 border-t border-admin-border pt-2 space-y-1">
-          <div className="flex items-center gap-1 text-xs font-semibold text-admin-foreground mb-1">
-            <DollarSign className="h-3.5 w-3.5" /> Зарплата / Часы
-          </div>
-          {teacherStats[t.id] && teacherStats[t.id].length > 0 ? (
-            teacherStats[t.id].map(s => {
-              const monthId = `${t.id}-${s.month}`;
-              const isMonthOpen = expandedMonths[monthId];
-              return (
-                <div key={s.month} className="space-y-0.5">
-                  <button
-                    onClick={() => setExpandedMonths(prev => ({ ...prev, [monthId]: !prev[monthId] }))}
-                    className="flex items-center justify-between w-full text-xs hover:bg-muted/50 rounded px-1 py-0.5"
-                  >
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      {isMonthOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                      {s.month}
-                    </span>
-                    <span className="flex gap-3">
-                      <span className="flex items-center gap-0.5 text-foreground"><Clock className="h-3 w-3" />{s.hours}ч</span>
-                      <span className="font-medium text-emerald-600">{s.salary.toLocaleString('ru-RU')} ₽</span>
-                    </span>
-                  </button>
-                  {isMonthOpen && (
-                    <div className="ml-3 border-l-2 border-muted pl-2 space-y-0.5">
-                      {s.days.map(day => {
-                        const dayId = `${monthId}-${day.date}`;
-                        const isDayOpen = expandedDays[dayId];
-                        return (
-                          <div key={day.date} className="space-y-0.5">
-                            <button
-                              onClick={() => setExpandedDays(prev => ({ ...prev, [dayId]: !prev[dayId] }))}
-                              className="flex items-center justify-between w-full text-xs hover:bg-muted/50 rounded px-1 py-0.5"
-                            >
-                              <span className="flex items-center gap-1 text-muted-foreground">
-                                {isDayOpen ? <ChevronDown className="h-2.5 w-2.5" /> : <ChevronRight className="h-2.5 w-2.5" />}
-                                {day.date}
-                              </span>
-                              <span className="flex gap-3">
-                                <span className="text-foreground">{day.hours}ч</span>
-                                <span className="font-medium text-emerald-600">{day.salary.toLocaleString('ru-RU')} ₽</span>
-                              </span>
-                            </button>
-                            {isDayOpen && (
-                              <div className="ml-3 border-l border-muted/50 pl-2 space-y-0.5">
-                                {day.classes.map((cl, i) => (
-                                  <div key={i} className="flex items-center justify-between text-xs px-1 py-0.5 text-muted-foreground">
-                                    <span>{cl.time} · {cl.direction} · {cl.students} уч.</span>
-                                    <span className="font-medium text-emerald-600">{cl.salary.toLocaleString('ru-RU')} ₽</span>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
+  const renderTable = (list: any[]) => {
+    const filtered = filterTeachers(list);
+    if (filtered.length === 0) return <div className="p-8 text-center text-admin-muted text-sm">Преподаватели не найдены</div>;
+    return (
+      <div className="overflow-x-auto rounded-lg border border-admin-border bg-white shadow-sm">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
+              <th className="px-4 py-3">Преподаватель</th>
+              <th className="px-4 py-3">Телефон</th>
+              <th className="px-4 py-3">Направления</th>
+              <th className="px-4 py-3">Скидка</th>
+              <th className="px-4 py-3">Регистрация</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((t, i) => (
+              <tr
+                key={t.id}
+                className={`border-b border-admin-border last:border-0 hover:bg-gray-50 cursor-pointer ${!t.seen_by_admin ? 'bg-green-50 border-l-4 border-l-green-400' : i % 2 === 1 ? 'bg-gray-50/50' : ''}`}
+                onClick={() => handleRowClick(t)}
+              >
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-8 w-8">
+                      {t.photo_url ? <AvatarImage src={t.photo_url} /> : null}
+                      <AvatarFallback className="bg-admin-accent/20 text-xs font-bold text-admin-foreground">{t.first_name[0]}{t.last_name?.[0] || ""}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <span className="font-medium text-admin-foreground">
+                        {!t.seen_by_admin && <Badge className="bg-green-500 text-white text-[10px] mr-1.5">Новый</Badge>}
+                        {t.first_name} {t.last_name}
+                      </span>
+                      {t.bio && <p className="text-xs text-admin-muted line-clamp-1 max-w-xs">{t.bio}</p>}
                     </div>
-                  )}
-                </div>
-              );
-            })
-          ) : (
-            <p className="text-xs text-muted-foreground">Нет данных</p>
-          )}
-        </div>
-      </CardContent>
-    </Card>
-  );
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  <a href={`tel:${t.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{t.phone}</a>
+                </td>
+                <td className="px-4 py-3">
+                  <div className="flex flex-wrap gap-1 max-w-xs">
+                    {t.direction_ids.slice(0, 3).map((dId: string) => {
+                      const dir = getDirection(dId);
+                      return dir ? <Badge key={dId} variant="outline" style={{ borderColor: dir.color, color: dir.color }} className="text-[10px]">{dir.name}</Badge> : null;
+                    })}
+                    {t.direction_ids.length > 3 && <span className="text-xs text-admin-muted">+{t.direction_ids.length - 3}</span>}
+                  </div>
+                </td>
+                <td className="px-4 py-3">
+                  {t.discount_percent !== 20
+                    ? <Badge className="bg-orange-100 text-orange-800">{t.discount_percent}%</Badge>
+                    : <span className="text-admin-muted">{t.discount_percent}%</span>}
+                </td>
+                <td className="px-4 py-3 text-admin-muted">{new Date(t.created_at).toLocaleDateString('ru-RU')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
+  };
 
   if (loading) return <div className="text-admin-muted p-8">Загрузка…</div>;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div />
-        <Button onClick={openNew} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый преподаватель</Button>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-admin-muted" />
+          <Input placeholder="Поиск по имени, телефону, email" className="pl-9 w-64 bg-white border-admin-border" value={search} onChange={e => setSearch(e.target.value)} />
+        </div>
+        <Button onClick={() => { resetForm(); setDialogOpen(true); }} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1"><Plus className="h-4 w-4" /> Новый преподаватель</Button>
       </div>
 
       <Tabs defaultValue="active">
-        <TabsList>
+        <TabsList className="bg-gray-100">
           <TabsTrigger value="active">Активные ({activeTeachers.length})</TabsTrigger>
           <TabsTrigger value="inactive">Деактивированные ({inactiveTeachers.length})</TabsTrigger>
         </TabsList>
-        <TabsContent value="active">
-          {activeTeachers.length === 0 ? (
-            <p className="text-admin-muted text-sm py-8 text-center">Нет активных преподавателей в этом филиале</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">{activeTeachers.map(renderTeacherCard)}</div>
-          )}
-        </TabsContent>
-        <TabsContent value="inactive">
-          {inactiveTeachers.length === 0 ? (
-            <p className="text-admin-muted text-sm py-8 text-center">Нет деактивированных преподавателей</p>
-          ) : (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">{inactiveTeachers.map(renderTeacherCard)}</div>
-          )}
-        </TabsContent>
+        <TabsContent value="active">{renderTable(activeTeachers)}</TabsContent>
+        <TabsContent value="inactive">{renderTable(inactiveTeachers)}</TabsContent>
       </Tabs>
 
-      {/* Manual deduction dialog */}
-      <Dialog open={deductOpen} onOpenChange={setDeductOpen}>
-        <DialogContent className="bg-white text-admin-foreground sm:max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-admin-foreground">Списать часы с абонемента</DialogTitle>
-          </DialogHeader>
-          {deductTeacher && deductSubs.length > 0 && (
-            <div className="space-y-3">
-              <p className="text-sm text-admin-muted">
-                Преподаватель: <span className="font-medium text-admin-foreground">{deductTeacher.first_name} {deductTeacher.last_name}</span>
-              </p>
-              {deductSubs.length > 1 && (
-                <div>
-                  <Label>Абонемент</Label>
-                  <select
-                    className="w-full mt-1 rounded-md border border-admin-border bg-white px-3 py-2 text-sm"
-                    value={deductSubId}
-                    onChange={e => setDeductSubId(e.target.value)}
-                  >
-                    {deductSubs.map((s: any) => (
-                      <option key={s.id} value={s.id}>{s.type?.name} ({s.hours_remaining}/{s.hours_total} ч)</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-              {(() => {
-                const sel = deductSubs.find((s: any) => s.id === deductSubId);
-                return sel ? (
-                  <p className="text-sm text-admin-muted">
-                    Остаток: <span className="font-medium text-admin-foreground">{sel.hours_remaining}/{sel.hours_total} ч</span>
-                  </p>
-                ) : null;
-              })()}
-              <div>
-                <Label>Количество часов для списания</Label>
-                <Input
-                  type="number"
-                  min={0.5}
-                  step={0.5}
-                  className="bg-white border-admin-border mt-1"
-                  value={deductHours}
-                  onChange={e => setDeductHours(e.target.value)}
-                />
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeductOpen(false)} className="border-admin-border">Отмена</Button>
-            <Button
-              className="bg-orange-500 text-white hover:bg-orange-600"
-              onClick={async () => {
-                const sel = deductSubs.find((s: any) => s.id === deductSubId);
-                if (!sel) return;
-                const hrs = parseFloat(deductHours);
-                if (!hrs || hrs <= 0) { toast.error("Введите количество часов"); return; }
-                if (hrs > Number(sel.hours_remaining)) { toast.error("Недостаточно часов на абонементе"); return; }
-                const newRemaining = Number(sel.hours_remaining) - hrs;
-                const { error } = await supabase.from("user_subscriptions").update({
-                  hours_remaining: newRemaining,
-                  active: newRemaining > 0,
-                }).eq("id", sel.id);
-                if (error) { toast.error("Ошибка списания"); return; }
-                toast.success(`Списано ${hrs} ч с абонемента`);
-                setDeductOpen(false);
-              }}
-            >
-              Списать
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit/Create Dialog */}
+      {/* Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md max-h-[90vh] flex flex-col">
-          <DialogHeader><DialogTitle className="text-admin-foreground">{isEditing ? "Редактировать преподавателя" : "Новый преподаватель"}</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>Новый преподаватель</DialogTitle></DialogHeader>
           <div className="grid gap-3 overflow-y-auto flex-1 pr-1">
-            {/* Photo upload */}
             <div>
               <Label>Фото</Label>
               <div className="mt-1 flex items-center gap-4">
-                <Avatar className="h-20 w-20">
-                  {photoPreview ? <AvatarImage src={photoPreview} alt="Preview" /> : null}
-                  <AvatarFallback className="bg-admin-accent/20 text-2xl font-bold text-admin-foreground">
-                    {firstName?.[0] || "?"}{lastName?.[0] || ""}
-                  </AvatarFallback>
+                <Avatar className="h-16 w-16">
+                  {photoPreview ? <AvatarImage src={photoPreview} /> : null}
+                  <AvatarFallback className="bg-admin-accent/20 text-xl font-bold">{firstName?.[0] || "?"}{lastName?.[0] || ""}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col gap-2">
-                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={handleFileSelect} />
-                  <Button type="button" variant="outline" size="sm" className="border-admin-border gap-1" onClick={() => fileInputRef.current?.click()}>
-                    <Upload className="h-3.5 w-3.5" /> Загрузить
-                  </Button>
-                  {photoPreview && (
-                    <Button type="button" variant="ghost" size="sm" className="text-red-500 gap-1" onClick={removePhoto}>
-                      <X className="h-3.5 w-3.5" /> Удалить
-                    </Button>
-                  )}
+                  <input ref={fileInputRef} type="file" accept="image/*" className="hidden" onChange={e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (!file.type.startsWith("image/")) { toast.error("Выберите изображение"); return; }
+                    if (file.size > 5 * 1024 * 1024) { toast.error("Макс. 5 МБ"); return; }
+                    setPhotoFile(file); setPhotoPreview(URL.createObjectURL(file));
+                  }} />
+                  <Button type="button" variant="outline" size="sm" className="border-admin-border gap-1" onClick={() => fileInputRef.current?.click()}><Upload className="h-3.5 w-3.5" /> Загрузить</Button>
+                  {photoPreview && <Button type="button" variant="ghost" size="sm" className="text-red-500 gap-1" onClick={() => { setPhotoFile(null); setPhotoPreview(""); }}><X className="h-3.5 w-3.5" /> Удалить</Button>}
                 </div>
               </div>
             </div>
-
             <div className="grid grid-cols-2 gap-3">
               <div><Label>Имя *</Label><Input className="bg-white border-admin-border" value={firstName} onChange={e => setFirstName(e.target.value)} /></div>
-              <div><Label>Фамилия *</Label><Input className="bg-white border-admin-border" value={lastName} onChange={e => setLastName(e.target.value)} /></div>
+              <div><Label>Фамилия</Label><Input className="bg-white border-admin-border" value={lastName} onChange={e => setLastName(e.target.value)} /></div>
             </div>
             <div><Label>Телефон</Label><Input className="bg-white border-admin-border" value={phone} onChange={e => setPhone(e.target.value)} /></div>
             <div><Label>Email</Label><Input type="email" className="bg-white border-admin-border" value={email} onChange={e => setEmail(e.target.value)} /></div>
@@ -585,71 +229,24 @@ export default function TeachersPage() {
               <div className="mt-1 space-y-2">
                 {directions.map(d => (
                   <div key={d.id} className="flex items-center gap-2">
-                    <Checkbox id={`dir-${d.id}`} checked={selectedDirections.includes(d.id)} onCheckedChange={() => toggleDirection(d.id)} />
-                    <label htmlFor={`dir-${d.id}`} className="text-sm text-admin-foreground">{d.name}</label>
+                    <Checkbox checked={selectedDirections.includes(d.id)} onCheckedChange={() => setSelectedDirections(p => p.includes(d.id) ? p.filter(x => x !== d.id) : [...p, d.id])} />
+                    <label className="text-sm">{d.name}</label>
                   </div>
                 ))}
               </div>
             </div>
             <div><Label>Telegram ID</Label><Input className="bg-white border-admin-border" value={telegramId} onChange={e => setTelegramId(e.target.value)} /></div>
             <div>
-              <Label>Скидка на абонементы (%)</Label>
+              <Label>Скидка (%)</Label>
               <Input type="number" min={0} max={100} className="bg-white border-admin-border" value={discountPercent} onChange={e => setDiscountPercent(Math.max(0, Math.min(100, parseInt(e.target.value) || 0)))} />
-              <p className="text-xs text-admin-muted mt-1">Применяется при покупке абонемента через личный кабинет преподавателя</p>
             </div>
           </div>
-          <DialogFooter className="flex-shrink-0">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)} className="border-admin-border">Отмена</Button>
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleSave} disabled={uploading}>
-              {uploading ? "Загрузка…" : "Сохранить"}
-            </Button>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={handleCreate} disabled={uploading}>{uploading ? "Загрузка…" : "Создать"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Deactivate/Activate Dialog */}
-      <AlertDialog open={!!deactivateTeacher} onOpenChange={(open) => { if (!open) setDeactivateTeacher(null); }}>
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>{deactivateTeacher?.active ? "Деактивировать преподавателя?" : "Активировать преподавателя?"}</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deactivateTeacher?.active
-                ? `${deactivateTeacher.first_name} ${deactivateTeacher.last_name} будет деактивирован и не будет отображаться в расписании.`
-                : `${deactivateTeacher?.first_name} ${deactivateTeacher?.last_name} будет снова активирован.`}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              className={deactivateTeacher?.active ? "bg-red-600 hover:bg-red-700" : "bg-green-600 hover:bg-green-700"}
-              onClick={() => { if (deactivateTeacher) handleDeactivate(deactivateTeacher); setDeactivateTeacher(null); }}
-            >
-              {deactivateTeacher?.active ? "Деактивировать" : "Активировать"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Delete Forever Dialog */}
-      <AlertDialog open={!!deleteTeacher} onOpenChange={(open) => { if (!open) setDeleteTeacher(null); }}>
-        <AlertDialogContent className="bg-white">
-          <AlertDialogHeader>
-            <AlertDialogTitle>Удалить преподавателя навсегда?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {deleteTeacher?.first_name} {deleteTeacher?.last_name} будет удалён без возможности восстановления. Все связанные данные будут потеряны.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Отмена</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-red-600 hover:bg-red-700"
-              onClick={() => { if (deleteTeacher) handleDelete(deleteTeacher); setDeleteTeacher(null); }}
-            >
-              Удалить навсегда
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

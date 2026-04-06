@@ -10,6 +10,7 @@ import DashboardPage from "./pages/admin/DashboardPage.tsx";
 import ClientsPage from "./pages/admin/ClientsPage.tsx";
 import ClientDetailPage from "./pages/admin/ClientDetailPage.tsx";
 import TeachersPage from "./pages/admin/TeachersPage.tsx";
+import TeacherDetailPage from "./pages/admin/TeacherDetailPage.tsx";
 import SchedulePage from "./pages/admin/SchedulePage.tsx";
 import SubscriptionTypesPage from "./pages/admin/SubscriptionTypesPage.tsx";
 import SubscriptionsPage from "./pages/admin/SubscriptionsPage.tsx";
