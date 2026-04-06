@@ -77,6 +77,8 @@ export default function DashboardPage() {
   const [trialRequests, setTrialRequests] = useState<TrialRequest[]>([]);
   const [activeSubs, setActiveSubs] = useState<UserSubscription[]>([]);
   const [bookingCounts, setBookingCounts] = useState<Record<string, number>>({});
+  const [newClientsCount, setNewClientsCount] = useState(0);
+  const [newTeachersCount, setNewTeachersCount] = useState(0);
 
   useEffect(() => {
     fetchData();
@@ -85,13 +87,15 @@ export default function DashboardPage() {
   const fetchData = async () => {
     setLoading(true);
 
-    const [classesRes, dirsRes, teachersRes, roomsRes, trialsRes, subsRes] = await Promise.all([
+    const [classesRes, dirsRes, teachersRes, roomsRes, trialsRes, subsRes, newClientsRes, newTeachersRes] = await Promise.all([
       supabase.from("schedule_classes").select("*").eq("date", today).eq("cancelled", false).order("start_time", { ascending: true }),
       supabase.from("directions").select("id, name, color"),
       supabase.from("teachers").select("id, first_name, last_name"),
       supabase.from("rooms").select("id, name"),
       supabase.from("trial_requests").select("*").order("created_at", { ascending: false }).limit(10),
       supabase.from("user_subscriptions").select("*").eq("active", true),
+      supabase.from("profiles").select("id", { count: "exact", head: true }).eq("seen_by_admin", false),
+      supabase.from("teachers").select("id", { count: "exact", head: true }).eq("seen_by_admin", false),
     ]);
 
     const classes = (classesRes.data || []) as ScheduleClass[];
@@ -101,6 +105,8 @@ export default function DashboardPage() {
     setRooms((roomsRes.data || []) as Room[]);
     setTrialRequests((trialsRes.data || []) as TrialRequest[]);
     setActiveSubs((subsRes.data || []) as UserSubscription[]);
+    setNewClientsCount(newClientsRes.count || 0);
+    setNewTeachersCount(newTeachersRes.count || 0);
 
     // Fetch booking counts for today's classes
     if (classes.length > 0) {
