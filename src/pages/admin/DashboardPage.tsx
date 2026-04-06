@@ -137,10 +137,13 @@ export default function DashboardPage() {
     return diff <= 7 && diff >= 0;
   });
 
+  const totalNew = newClientsCount + newTeachersCount;
+  const newSub = [newClientsCount > 0 ? `${newClientsCount} клиент(ов)` : "", newTeachersCount > 0 ? `${newTeachersCount} преподаватель(ей)` : ""].filter(Boolean).join(", ");
+
   const stats = [
     { label: "Сегодня занятий", value: todayClasses.length, sub: `записано ${totalEnrolled} человек`, icon: CalendarDays, color: "text-blue-500" },
+    { label: "Новые регистрации", value: totalNew, sub: newSub || "все просмотрены", icon: UserPlus, color: "text-green-500", badge: totalNew > 0, onClick: () => navigate("/admin/clients") },
     { label: "Новые заявки", value: newRequests.length, sub: "", icon: Mail, color: "text-yellow-500", badge: newRequests.length > 0 },
-    { label: "Активных абонементов", value: activeSubs.length, sub: "", icon: CreditCard, color: "text-green-500" },
     { label: "Истекают скоро", value: expiringSoon.length, sub: "в ближайшие 7 дней", icon: AlertTriangle, color: "text-red-500", badge: expiringSoon.length > 0 },
   ];
 
