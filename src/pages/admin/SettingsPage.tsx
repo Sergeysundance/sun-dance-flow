@@ -65,7 +65,7 @@ export default function SettingsPage() {
   const save = async (key: string, value: unknown) => {
     const { error } = await supabase
       .from("studio_settings")
-      .update({ value: value as Record<string, unknown>, updated_at: new Date().toISOString() })
+      .update({ value: value as any, updated_at: new Date().toISOString() })
       .eq("key", key);
     if (error) {
       toast.error("Ошибка сохранения");
