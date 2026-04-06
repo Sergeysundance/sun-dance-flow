@@ -74,8 +74,11 @@ const Header = () => {
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo + Branch */}
         <div className="flex items-center gap-3">
-          <a href="#" className="font-display text-lg font-black tracking-tight text-foreground">
-            <span className="text-sun">{nameFirst}</span> {nameRest}
+          <a href="#" className="flex flex-col leading-tight">
+            <span className="font-display text-lg font-black tracking-tight text-foreground">
+              <span className="text-sun">{nameFirst}</span> {nameRest}
+            </span>
+            <span className="text-[0.55rem] font-body text-muted-foreground tracking-wide">Школа танцев Сан Дэнс</span>
           </a>
           {branches.length > 0 && (
             <DropdownMenu>
