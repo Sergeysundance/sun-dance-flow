@@ -976,6 +976,34 @@ const StudentDashboardInner = () => {
                 </Button>
               </DialogContent>
             </Dialog>
+
+            <Dialog open={!!insufficientHoursInfo} onOpenChange={(open) => { if (!open) setInsufficientHoursInfo(null); }}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Недостаточно часов
+                  </DialogTitle>
+                  <DialogDescription>
+                    Для этого занятия требуется {insufficientHoursInfo?.needed} ч, а у вас осталось {insufficientHoursInfo?.remaining} ч. Приобретите новый абонемент — остаток часов будет перенесён.
+                  </DialogDescription>
+                </DialogHeader>
+                <Button
+                  variant="sun"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setInsufficientHoursInfo(null);
+                    setActiveTab("subscriptions");
+                    setSubTab("group");
+                    setBuyDialogType("group");
+                    setBuyDialogOpen(true);
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Купить абонемент
+                </Button>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* My Bookings tab */}
