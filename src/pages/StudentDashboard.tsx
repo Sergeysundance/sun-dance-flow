@@ -305,6 +305,12 @@ const StudentDashboardInner = () => {
         toast.success("Запись отменена");
       }
     } else {
+      // Check if subscription is frozen
+      if (activeSubscription && (activeSubscription as any).frozen) {
+        toast.error("Ваш абонемент заморожен. Запись на занятия временно недоступна.");
+        setBookingLoading(null);
+        return;
+      }
       // Check for active subscription before booking
       if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
         setActiveTab("subscriptions");
