@@ -182,50 +182,41 @@ export default function SchedulePage() {
       return;
     }
 
-    // Fetch existing classes for the next 4 weeks to avoid duplicates
-    const lastDate = new Date(monday);
-    lastDate.setDate(lastDate.getDate() + 5 * 7 - 1);
     const nextMonday = new Date(monday);
     nextMonday.setDate(nextMonday.getDate() + 7);
+    const lastSunday = new Date(monday);
+    lastSunday.setDate(lastSunday.getDate() + 5 * 7 - 1);
 
-    let existingQuery = supabase.from("schedule_classes").select("direction_id, teacher_id, room_id, date, start_time, end_time, branch_id")
-      .gte("date", fmt(nextMonday)).lte("date", fmt(lastDate));
-    if (selectedBranchId) existingQuery = existingQuery.eq("branch_id", selectedBranchId);
-    const { data: existing } = await existingQuery;
+    // 1. Delete all existing classes for the next 4 weeks
+    let deleteQuery = supabase.from("schedule_classes")
+      .delete()
+      .gte("date", fmt(nextMonday))
+      .lte("date", fmt(lastSunday));
+    if (selectedBranchId) deleteQuery = deleteQuery.eq("branch_id", selectedBranchId);
+    const { error: delError } = await deleteQuery;
+    if (delError) { toast.error("Ошибка очистки расписания"); return; }
 
-    const existingSet = new Set(
-      (existing || []).map(e => `${e.direction_id}|${e.teacher_id}|${e.room_id}|${e.date}|${e.start_time}|${e.end_time}|${e.branch_id}`)
-    );
-
+    // 2. Insert current week's classes for each of the next 4 weeks
     const inserts = [];
     for (let week = 1; week <= 4; week++) {
       for (const cls of classes) {
         const origDate = new Date(cls.date + "T00:00");
         origDate.setDate(origDate.getDate() + week * 7);
-        const newDate = fmt(origDate);
-        const key = `${cls.direction_id}|${cls.teacher_id}|${cls.room_id}|${newDate}|${cls.start_time}|${cls.end_time}|${cls.branch_id}`;
-        if (!existingSet.has(key)) {
-          inserts.push({
-            direction_id: cls.direction_id,
-            teacher_id: cls.teacher_id,
-            room_id: cls.room_id,
-            date: newDate,
-            start_time: cls.start_time,
-            end_time: cls.end_time,
-            max_spots: cls.max_spots,
-            branch_id: cls.branch_id,
-          });
-          existingSet.add(key);
-        }
+        inserts.push({
+          direction_id: cls.direction_id,
+          teacher_id: cls.teacher_id,
+          room_id: cls.room_id,
+          date: fmt(origDate),
+          start_time: cls.start_time,
+          end_time: cls.end_time,
+          max_spots: cls.max_spots,
+          branch_id: cls.branch_id,
+        });
       }
-    }
-    if (inserts.length === 0) {
-      toast.info("Все занятия уже существуют на следующих неделях");
-      return;
     }
     const { error } = await supabase.from("schedule_classes").insert(inserts);
     if (error) { toast.error("Ошибка копирования"); return; }
-    toast.success(`Расписание скопировано на 4 недели вперёд (${inserts.length} занятий)`);
+    toast.success(`Расписание перестроено на 4 недели вперёд (${inserts.length} занятий)`);
     fetchData();
   };
 
