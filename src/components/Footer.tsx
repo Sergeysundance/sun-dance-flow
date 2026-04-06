@@ -14,10 +14,11 @@ const Footer = () => {
       <div className="container mx-auto grid grid-cols-1 gap-10 px-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Brand & Legal */}
         <div>
-          <p className="mb-4 font-display text-lg font-black tracking-tight text-foreground">
+          <p className="mb-1 font-display text-lg font-black tracking-tight text-foreground">
             <span className="text-sun">{settings.name.split(" ")[0]?.toUpperCase()}</span>{" "}
             {settings.name.split(" ").slice(1).join(" ").toUpperCase()}
           </p>
+          <p className="mb-4 font-body text-xs text-muted-foreground">Школа танцев Сан Дэнс</p>
           <p className="font-body text-sm text-muted-foreground">{settings.address}</p>
           {legal.entity_name && (
             <p className="font-body text-xs text-muted-foreground mt-2">{legal.entity_name}</p>
