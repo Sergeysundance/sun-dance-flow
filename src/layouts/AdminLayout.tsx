@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   LayoutDashboard, Users, GraduationCap, CalendarDays, CreditCard,
-  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin, BadgePercent,
+  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin, BadgePercent, MessageCircle,
 } from "lucide-react";
 import { BranchProvider } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
@@ -25,7 +25,7 @@ const navItems = [
   { title: "Акции и скидки", path: "/admin/promotions", icon: BadgePercent },
   { title: "Филиалы", path: "/admin/branches", icon: MapPin },
   { title: "Настройки", path: "/admin/settings", icon: Settings },
-  { title: "Поддержка", path: "/admin/support", icon: Bell },
+  { title: "Поддержка", path: "/admin/support", icon: MessageCircle },
 ];
 
 function getPageTitle(pathname: string): string {
