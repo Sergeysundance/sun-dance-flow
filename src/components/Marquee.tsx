@@ -1,8 +1,23 @@
-const items = [
-  "БАЧАТА", "ЙОГА", "ВОСТОЧНЫЕ ТАНЦЫ", "ЛАТИНА", "КОНТЕМПОРАРИ", "СТРЕТЧИНГ",
-];
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 const Marquee = () => {
+  const [items, setItems] = useState<string[]>([]);
+
+  useEffect(() => {
+    const fetch = async () => {
+      const { data } = await supabase
+        .from("directions")
+        .select("name")
+        .eq("active", true)
+        .order("sort_order");
+      if (data) setItems(data.map((d) => d.name.toUpperCase()));
+    };
+    fetch();
+  }, []);
+
+  if (items.length === 0) return null;
+
   const repeated = [...items, ...items, ...items, ...items];
 
   return (
