@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign } from "lucide-react";
+import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign, Check, X, AlertTriangle, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -80,12 +80,32 @@ function TeacherDashboardInner() {
   const [cancellingClassId, setCancellingClassId] = useState<string | null>(null);
   const [cancelDialogClassId, setCancelDialogClassId] = useState<string | null>(null);
 
+  // Browse schedule (all classes, for booking as student)
+  const [browseClasses, setBrowseClasses] = useState<any[]>([]);
+  const [browseTeachers, setBrowseTeachers] = useState<any[]>([]);
+  const [browseRooms, setBrowseRooms] = useState<any[]>([]);
+  const [browseBookings, setBrowseBookings] = useState<Set<string>>(new Set());
+  const [bookingLoading, setBookingLoading] = useState<string | null>(null);
+  const [confirmBookingClassId, setConfirmBookingClassId] = useState<string | null>(null);
+  const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [browseWeekOffset, setBrowseWeekOffset] = useState(0);
+  const [activeTab, setActiveTab] = useState("schedule");
+  const [allTeacherBookings, setAllTeacherBookings] = useState<any[]>([]);
+  const [allBookingsLoading, setAllBookingsLoading] = useState(false);
+
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
   }, [weekOffset]);
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
+
+  const browseMonday = useMemo(() => {
+    const m = getMonday(new Date()); m.setDate(m.getDate() + browseWeekOffset * 7); return m;
+  }, [browseWeekOffset]);
+  const browseWeekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(browseMonday); d.setDate(d.getDate() + i); return fmtDate(d);
+  }), [browseMonday]);
 
   const enrichSubscriptions = async (subs: any[]) => {
     if (!subs || subs.length === 0) return [];
@@ -324,7 +344,9 @@ function TeacherDashboardInner() {
   }, [monday, teacher, selectedBranchId]);
 
   const getDir = (id: string) => directions.find(d => d.id === id);
+  const getBrowseTeacher = (id: string) => browseTeachers.find(t => t.id === id);
   const getRoom = (id: string) => rooms.find(r => r.id === id);
+  const getBrowseRoom = (id: string) => browseRooms.find(r => r.id === id);
   const todayStr = fmtDate(new Date());
 
   const formatHours = (n: number) => {
@@ -335,6 +357,7 @@ function TeacherDashboardInner() {
 
   const groupSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type || 'group') === 'group');
   const individualSubscriptions = userSubscriptions.filter(s => s.subscription_type?.type?.startsWith('individual'));
+  const activeSubscription = userSubscriptions.length > 0 ? userSubscriptions[0] : null;
 
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
@@ -344,6 +367,128 @@ function TeacherDashboardInner() {
     }
     return map;
   }, [classes, weekDates]);
+
+  const browseClassesByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const date of browseWeekDates) map[date] = [];
+    for (const c of browseClasses) {
+      if (map[c.date]) map[c.date].push(c);
+    }
+    return map;
+  }, [browseClasses, browseWeekDates]);
+
+  const browseMaxClasses = useMemo(() => Math.max(1, ...Object.values(browseClassesByDate).map(arr => arr.length)), [browseClassesByDate]);
+
+  // Fetch browse schedule
+  useEffect(() => {
+    if (!userId) return;
+    const fetchBrowseSchedule = async () => {
+      const sunday = new Date(browseMonday); sunday.setDate(sunday.getDate() + 6);
+      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmtDate(browseMonday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
+      const [clsRes, tchRes, rmRes] = await Promise.all([
+        clsQuery,
+        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+      ]);
+      setBrowseClasses(clsRes.data || []);
+      setBrowseTeachers(tchRes.data || []);
+      setBrowseRooms(rmRes.data || []);
+
+      if (clsRes.data && clsRes.data.length > 0) {
+        const ids = clsRes.data.map((c: any) => c.id);
+        const { data: bookingsData } = await supabase
+          .from("bookings")
+          .select("class_id")
+          .eq("user_id", userId)
+          .in("class_id", ids);
+        setBrowseBookings(new Set((bookingsData || []).map((b: any) => b.class_id)));
+      } else {
+        setBrowseBookings(new Set());
+      }
+    };
+    fetchBrowseSchedule();
+  }, [browseMonday, userId, selectedBranchId]);
+
+  // Fetch all teacher bookings
+  const fetchAllTeacherBookings = async (uid: string) => {
+    setAllBookingsLoading(true);
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+    if (!bookingsData || bookingsData.length === 0) {
+      setAllTeacherBookings([]);
+      setAllBookingsLoading(false);
+      return;
+    }
+    const classIds = bookingsData.map(b => b.class_id);
+    const { data: classesData } = await supabase
+      .from("schedule_classes")
+      .select("*")
+      .in("id", classIds)
+      .order("date").order("start_time");
+    const classMap = new Map((classesData || []).map(c => [c.id, c]));
+    const enriched = bookingsData
+      .map(b => ({ ...b, class: classMap.get(b.class_id) }))
+      .filter(b => b.class)
+      .sort((a, b) => `${a.class.date}T${a.class.start_time}`.localeCompare(`${b.class.date}T${b.class.start_time}`));
+    setAllTeacherBookings(enriched);
+    setAllBookingsLoading(false);
+  };
+
+  const isWithin6Hours = (cls: any) => {
+    const classStart = new Date(`${cls.date}T${cls.start_time}`);
+    return classStart.getTime() - Date.now() < 6 * 60 * 60 * 1000;
+  };
+
+  const handleBooking = async (classId: string) => {
+    setBookingLoading(classId);
+    if (browseBookings.has(classId)) {
+      const cls = browseClasses.find((c: any) => c.id === classId);
+      if (cls && isWithin6Hours(cls)) {
+        toast.error("Отмена невозможна менее чем за 6 часов до начала занятия");
+        setBookingLoading(null);
+        return;
+      }
+      const { error } = await supabase.from("bookings").delete().eq("user_id", userId).eq("class_id", classId);
+      if (error) { toast.error("Ошибка отмены записи"); }
+      else {
+        setBrowseBookings(prev => { const n = new Set(prev); n.delete(classId); return n; });
+        toast.success("Запись отменена");
+      }
+    } else {
+      if (activeSubscription && (activeSubscription as any).frozen) {
+        toast.error("Ваш абонемент заморожен. Запись на занятия временно недоступна.");
+        setBookingLoading(null);
+        return;
+      }
+      if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
+        setActiveTab("subscriptions");
+        setNoSubDialogOpen(true);
+        setBookingLoading(null);
+        return;
+      }
+      setConfirmBookingClassId(classId);
+      setBookingLoading(null);
+      return;
+    }
+    setBookingLoading(null);
+  };
+
+  const confirmBooking = async () => {
+    if (!confirmBookingClassId) return;
+    setBookingLoading(confirmBookingClassId);
+    setConfirmBookingClassId(null);
+    const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: confirmBookingClassId });
+    if (error) { toast.error("Ошибка записи на занятие"); }
+    else {
+      setBrowseBookings(prev => new Set(prev).add(confirmBookingClassId));
+      toast.success("Вы записаны на занятие!");
+    }
+    setBookingLoading(null);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -434,7 +579,7 @@ function TeacherDashboardInner() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="font-display text-2xl font-bold mb-6">Кабинет преподавателя</h1>
 
-        <Tabs defaultValue="schedule" onValueChange={(v) => { if (v === "subscriptions") refreshTeacherData(); }}>
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v === "subscriptions") refreshTeacherData(); if (v === "bookings") fetchAllTeacherBookings(userId); }}>
           <TabsList className="mb-6">
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
@@ -442,8 +587,14 @@ function TeacherDashboardInner() {
             <TabsTrigger value="subscriptions" className="gap-1">
               <CreditCard className="h-4 w-4" /> Абонементы
             </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-1">
+              <BookOpen className="h-4 w-4" /> Мои записи
+            </TabsTrigger>
+            <TabsTrigger value="browse-schedule" className="gap-1">
+              <Calendar className="h-4 w-4" /> Расписание
+            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
-              <Calendar className="h-4 w-4" /> Мои занятия
+              <Users className="h-4 w-4" /> Мои занятия
             </TabsTrigger>
           </TabsList>
 
@@ -781,6 +932,303 @@ function TeacherDashboardInner() {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* Browse Schedule tab (booking as student) */}
+          <TabsContent value="browse-schedule">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Расписание на неделю</CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" onClick={() => setBrowseWeekOffset(w => w - 1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium text-foreground min-w-[180px] text-center">
+                    {formatWeekLabel(browseMonday)}
+                  </span>
+                  <Button variant="outline" size="icon" onClick={() => setBrowseWeekOffset(w => w + 1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  {browseWeekOffset !== 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => setBrowseWeekOffset(0)} className="text-muted-foreground text-xs">
+                      Сегодня
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {/* Mobile */}
+                <div className="sm:hidden space-y-3">
+                  {browseWeekDates.map((date, i) => {
+                    const dayClasses = browseClassesByDate[date] || [];
+                    if (dayClasses.length === 0) return null;
+                    const dateObj = new Date(date + 'T00:00');
+                    const isToday = date === todayStr;
+                    return (
+                      <div key={date}>
+                        <div className={`text-sm font-bold mb-1.5 ${isToday ? 'text-sun' : 'text-foreground'}`}>
+                          {DAYS_SHORT[i]}, {dateObj.getDate()}{isToday ? ' — сегодня' : ''}
+                        </div>
+                        <div className="space-y-2">
+                          {dayClasses.map((cls: any) => {
+                            const dir = getDir(cls.direction_id);
+                            const tch = getBrowseTeacher(cls.teacher_id);
+                            const room = getBrowseRoom(cls.room_id);
+                            const isBooked = browseBookings.has(cls.id);
+                            return (
+                              <div key={cls.id} className="rounded-lg p-3 border border-border" style={{ borderLeftWidth: 4, borderLeftColor: dir?.color || '#3B82F6' }}>
+                                <div className="flex items-start justify-between">
+                                  <div>
+                                    <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
+                                    <div className="text-xs text-foreground font-medium">{cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
+                                    <div className="text-xs text-muted-foreground">{tch?.first_name} {tch?.last_name}</div>
+                                    <div className="text-xs text-muted-foreground">{room?.name}</div>
+                                  </div>
+                                  {isBooked && isWithin6Hours(cls) ? (
+                                    <span className="text-[10px] text-muted-foreground italic">Отмена недоступна</span>
+                                  ) : (
+                                    <Button
+                                      size="sm"
+                                      variant={isBooked ? "outline" : "sun"}
+                                      disabled={bookingLoading === cls.id}
+                                      onClick={() => handleBooking(cls.id)}
+                                      className="shrink-0 text-xs"
+                                    >
+                                      {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                  {!browseWeekDates.some(d => (browseClassesByDate[d] || []).length > 0) && (
+                    <p className="text-center text-muted-foreground py-6">Нет занятий на этой неделе</p>
+                  )}
+                </div>
+
+                {/* Desktop */}
+                <div className="hidden sm:block rounded-lg border border-border overflow-hidden">
+                  <div className="grid grid-cols-7 border-b border-border">
+                    {DAYS_SHORT.map((day, i) => {
+                      const date = browseWeekDates[i];
+                      const isToday = date === todayStr;
+                      const dateObj = new Date(date + 'T00:00');
+                      return (
+                        <div key={i} className={`border-r border-border last:border-r-0 px-2 py-2 text-center ${isToday ? 'bg-sun/10' : ''}`}>
+                          <div className={`text-xs font-medium ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
+                          <div className={`text-base font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {Object.values(browseClassesByDate).some(arr => arr.length > 0) ? (
+                    Array.from({ length: browseMaxClasses }).map((_, rowIdx) => (
+                      <div key={rowIdx} className="grid grid-cols-7 border-b border-border last:border-b-0">
+                        {browseWeekDates.map((date, colIdx) => {
+                          const cls = browseClassesByDate[date]?.[rowIdx];
+                          const isToday = date === todayStr;
+                          if (!cls) return <div key={colIdx} className={`border-r border-border last:border-r-0 min-h-[90px] ${isToday ? 'bg-sun/5' : ''}`} />;
+                          const dir = getDir(cls.direction_id);
+                          const tch = getBrowseTeacher(cls.teacher_id);
+                          const room = getBrowseRoom(cls.room_id);
+                          const isBooked = browseBookings.has(cls.id);
+                          return (
+                            <div key={colIdx} className={`border-r border-border last:border-r-0 p-1 min-h-[90px] ${isToday ? 'bg-sun/5' : ''}`}>
+                              <div
+                                className="rounded-md p-2 h-full space-y-0.5 flex flex-col"
+                                style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
+                              >
+                                <div className="text-[11px] font-semibold text-foreground">
+                                  {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
+                                </div>
+                                <div className="text-xs font-bold" style={{ color: dir?.color }}>
+                                  {dir?.name}
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {tch?.first_name} {tch?.last_name?.[0]}.
+                                </div>
+                                <div className="text-[10px] text-muted-foreground">
+                                  {room?.name}
+                                </div>
+                                <div className="mt-auto pt-1">
+                                  {isBooked && isWithin6Hours(cls) ? (
+                                    <div className="w-full text-[10px] font-medium rounded px-1 py-0.5 text-center text-muted-foreground bg-muted italic">
+                                      Отмена недоступна
+                                    </div>
+                                  ) : (
+                                    <button
+                                      disabled={bookingLoading === cls.id}
+                                      onClick={() => handleBooking(cls.id)}
+                                      className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
+                                        isBooked
+                                          ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
+                                          : 'text-white hover:opacity-90'
+                                      }`}
+                                      style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
+                                    >
+                                      {isBooked ? 'Отменить' : 'Записаться'}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Confirm booking dialog */}
+            <Dialog open={!!confirmBookingClassId} onOpenChange={(open) => { if (!open) setConfirmBookingClassId(null); }}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Подтверждение записи
+                  </DialogTitle>
+                  <DialogDescription>
+                    Обратите внимание: отменить запись менее чем за 6 часов до начала занятия будет невозможно. Час абонемента будет списан автоматически.
+                  </DialogDescription>
+                </DialogHeader>
+                <DialogFooter className="gap-2 sm:gap-0">
+                  <Button variant="outline" onClick={() => setConfirmBookingClassId(null)}>Отмена</Button>
+                  <Button variant="sun" onClick={confirmBooking}>Записаться</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={noSubDialogOpen} onOpenChange={setNoSubDialogOpen}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Нет активного абонемента
+                  </DialogTitle>
+                  <DialogDescription>
+                    Для записи на занятие необходимо приобрести абонемент. Выберите подходящий вариант и оплатите его.
+                  </DialogDescription>
+                </DialogHeader>
+                <Button
+                  variant="sun"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setNoSubDialogOpen(false);
+                    setActiveTab("subscriptions");
+                    setSubTab("group");
+                    setBuyDialogType("group");
+                    setBuyDialogOpen(true);
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Купить абонемент
+                </Button>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
+          {/* My Bookings tab */}
+          <TabsContent value="bookings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Мои записи</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {allBookingsLoading ? (
+                  <p className="text-center text-muted-foreground py-6">Загрузка...</p>
+                ) : allTeacherBookings.length === 0 ? (
+                  <p className="text-center text-muted-foreground py-6">У вас пока нет записей на занятия</p>
+                ) : (
+                  <div className="space-y-3">
+                    {(() => {
+                      const now = new Date();
+                      const upcoming = allTeacherBookings.filter(b => new Date(`${b.class.date}T${b.class.end_time}`) >= now);
+                      const past = allTeacherBookings.filter(b => new Date(`${b.class.date}T${b.class.end_time}`) < now);
+                      return (
+                        <>
+                          {upcoming.length > 0 && (
+                            <>
+                              <h3 className="font-display text-sm font-bold text-foreground">Предстоящие</h3>
+                              {upcoming.map(b => {
+                                const cls = b.class;
+                                const dir = getDir(cls.direction_id);
+                                const tch = getBrowseTeacher(cls.teacher_id);
+                                const room = getBrowseRoom(cls.room_id);
+                                const canCancel = !isWithin6Hours(cls);
+                                const dateObj = new Date(cls.date + 'T00:00');
+                                const dayLabel = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+                                return (
+                                  <div key={b.id} className="rounded-lg p-3 border border-border" style={{ borderLeftWidth: 4, borderLeftColor: dir?.color || '#3B82F6' }}>
+                                    <div className="flex items-start justify-between gap-2">
+                                      <div>
+                                        <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
+                                        <div className="text-xs font-medium text-foreground">{dayLabel}, {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
+                                        <div className="text-xs text-muted-foreground">{tch?.first_name} {tch?.last_name}</div>
+                                        {room && <div className="text-xs text-muted-foreground">{room.name}</div>}
+                                      </div>
+                                      {canCancel ? (
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="shrink-0 text-xs"
+                                          disabled={bookingLoading === cls.id}
+                                          onClick={async () => {
+                                            setBookingLoading(cls.id);
+                                            const { error } = await supabase.from("bookings").delete().eq("id", b.id);
+                                            if (error) { toast.error("Ошибка отмены записи"); }
+                                            else {
+                                              setAllTeacherBookings(prev => prev.filter(x => x.id !== b.id));
+                                              setBrowseBookings(prev => { const n = new Set(prev); n.delete(cls.id); return n; });
+                                              toast.success("Запись отменена");
+                                            }
+                                            setBookingLoading(null);
+                                          }}
+                                        >
+                                          <X className="h-3 w-3 mr-1" /> Отменить
+                                        </Button>
+                                      ) : (
+                                        <span className="text-[10px] text-muted-foreground italic shrink-0">Отмена недоступна</span>
+                                      )}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                          {past.length > 0 && (
+                            <>
+                              <h3 className="font-display text-sm font-bold text-muted-foreground mt-4">Прошедшие</h3>
+                              {past.slice(0, 20).map(b => {
+                                const cls = b.class;
+                                const dir = getDir(cls.direction_id);
+                                const tch = getBrowseTeacher(cls.teacher_id);
+                                const dateObj = new Date(cls.date + 'T00:00');
+                                const dayLabel = dateObj.toLocaleDateString('ru-RU', { weekday: 'short', day: 'numeric', month: 'short' });
+                                return (
+                                  <div key={b.id} className="rounded-lg p-3 border border-border opacity-60">
+                                    <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
+                                    <div className="text-xs font-medium text-foreground">{dayLabel}, {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
+                                    <div className="text-xs text-muted-foreground">{tch?.first_name} {tch?.last_name}</div>
+                                  </div>
+                                );
+                              })}
+                            </>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
 
