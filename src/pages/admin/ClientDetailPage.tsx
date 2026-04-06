@@ -233,12 +233,13 @@ export default function ClientDetailPage() {
                   {subscriptions.map(s => {
                     const pct = s.hours_total > 0 ? ((s.hours_total - s.hours_remaining) / s.hours_total) * 100 : 0;
                     const isFrozen = (s as any).frozen === true;
+                    const wasFrozen = (s as any).was_frozen === true;
                     const frozenUntil = (s as any).frozen_until ? new Date((s as any).frozen_until) : null;
                     const frozenAt = (s as any).frozen_at ? new Date((s as any).frozen_at) : null;
 
                     const handleFreeze = async () => {
-                      if (isFrozen) {
-                        toast.error("Абонемент уже заморожен");
+                      if (wasFrozen) {
+                        toast.error("Заморозка уже была использована для этого абонемента");
                         return;
                       }
                       const now = new Date();
@@ -249,6 +250,7 @@ export default function ClientDetailPage() {
 
                       const { error } = await supabase.from("user_subscriptions").update({
                         frozen: true,
+                        was_frozen: true,
                         frozen_at: now.toISOString(),
                         frozen_until: freezeUntil.toISOString(),
                         original_expires_at: s.expires_at,
@@ -259,14 +261,23 @@ export default function ClientDetailPage() {
                       fetchData();
                     };
 
+                    const handleUnfreeze = async () => {
+                      const { error } = await supabase.from("user_subscriptions").update({
+                        frozen: false,
+                      }).eq("id", s.id);
+                      if (error) { toast.error("Ошибка разморозки"); return; }
+                      toast.success("Абонемент разморожен");
+                      fetchData();
+                    };
+
                     return (
                       <tr key={s.id} className="border-b border-admin-border last:border-0">
                         <td className="px-4 py-3 font-medium text-admin-foreground">{s.type?.name || "—"}</td>
                         <td className="px-4 py-3 text-admin-muted">
                           {new Date(s.purchased_at).toLocaleDateString('ru-RU')} — {new Date(s.expires_at).toLocaleDateString('ru-RU')}
-                          {isFrozen && frozenAt && frozenUntil && (
-                            <div className="text-xs text-blue-600 mt-0.5">
-                              ❄️ Заморожен {frozenAt.toLocaleDateString('ru-RU')} — {frozenUntil.toLocaleDateString('ru-RU')}
+                          {frozenAt && frozenUntil && (
+                            <div className={`text-xs mt-0.5 ${isFrozen ? 'text-blue-600' : 'text-gray-500'}`}>
+                              ❄️ {isFrozen ? 'Заморожен' : 'Был заморожен'} {frozenAt.toLocaleDateString('ru-RU')} — {frozenUntil.toLocaleDateString('ru-RU')}
                             </div>
                           )}
                         </td>
@@ -277,11 +288,11 @@ export default function ClientDetailPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <Badge className={s.active ? (isFrozen ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800") : "bg-gray-100 text-gray-800"}>
                               {isFrozen ? "Заморожен" : s.active ? "Активен" : "Неактивен"}
                             </Badge>
-                            {s.active && !isFrozen && (
+                            {s.active && !isFrozen && !wasFrozen && (
                               <Button
                                 variant="outline"
                                 size="sm"
@@ -290,6 +301,19 @@ export default function ClientDetailPage() {
                               >
                                 <Snowflake className="h-3 w-3" /> Заморозить
                               </Button>
+                            )}
+                            {isFrozen && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs border-green-300 text-green-600 hover:bg-green-50 gap-1"
+                                onClick={handleUnfreeze}
+                              >
+                                Разморозить
+                              </Button>
+                            )}
+                            {!isFrozen && wasFrozen && (
+                              <span className="text-xs text-gray-400">Заморозка использована</span>
                             )}
                           </div>
                         </td>
