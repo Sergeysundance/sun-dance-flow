@@ -255,6 +255,42 @@ export type Database = {
         }
         Relationships: []
       }
+      promotions: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string
+          discount_percent: number
+          ends_at: string | null
+          id: string
+          name: string
+          sort_order: number
+          starts_at: string | null
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          discount_percent?: number
+          ends_at?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          starts_at?: string | null
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string
+          discount_percent?: number
+          ends_at?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          starts_at?: string | null
+        }
+        Relationships: []
+      }
       rooms: {
         Row: {
           active: boolean
