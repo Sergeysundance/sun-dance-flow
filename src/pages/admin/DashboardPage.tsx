@@ -169,7 +169,7 @@ export default function DashboardPage() {
       <div className="flex flex-wrap gap-2">
         <Button onClick={() => navigate("/admin/clients")} className="bg-admin-accent text-black hover:bg-yellow-400 gap-2"><UserPlus className="h-4 w-4" /> Новый клиент</Button>
         <Button onClick={() => navigate("/admin/schedule")} variant="outline" className="border-admin-border text-admin-foreground gap-2"><CalendarPlus className="h-4 w-4" /> Новое занятие</Button>
-        <Button onClick={() => navigate("/admin/check-in")} variant="outline" className="border-admin-border text-admin-foreground gap-2"><CheckSquare className="h-4 w-4" /> Check-in</Button>
+        <Button onClick={() => navigate("/admin/check-in")} variant="outline" className="border-admin-border text-admin-foreground gap-2"><CheckSquare className="h-4 w-4" /> Отметка</Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
