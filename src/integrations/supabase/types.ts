@@ -487,6 +487,36 @@ export type Database = {
         }
         Relationships: []
       }
+      support_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          sender_role: string
+          subject: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          sender_role?: string
+          subject?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          sender_role?: string
+          subject?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       teachers: {
         Row: {
           active: boolean

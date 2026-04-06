@@ -21,6 +21,7 @@ import FaqPage from "./pages/admin/FaqPage.tsx";
 import BranchesPage from "./pages/admin/BranchesPage.tsx";
 import SettingsPage from "./pages/admin/SettingsPage.tsx";
 import PromotionsPage from "./pages/admin/PromotionsPage.tsx";
+import SupportMessagesPage from "./pages/admin/SupportMessagesPage.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 
@@ -52,6 +53,7 @@ const App = () => (
             <Route path="promotions" element={<PromotionsPage />} />
             <Route path="branches" element={<BranchesPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="support" element={<SupportMessagesPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
