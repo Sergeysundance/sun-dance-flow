@@ -1115,6 +1115,7 @@ const StudentDashboardInner = () => {
                     );
                   }}
                 />
+              </CardContent>
             </Card>
           </TabsContent>
           {/* Notifications tab */}
