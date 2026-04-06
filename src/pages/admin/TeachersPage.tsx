@@ -462,6 +462,78 @@ export default function TeachersPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Manual deduction dialog */}
+      <Dialog open={deductOpen} onOpenChange={setDeductOpen}>
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-admin-foreground">Списать часы с абонемента</DialogTitle>
+          </DialogHeader>
+          {deductTeacher && deductSubs.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm text-admin-muted">
+                Преподаватель: <span className="font-medium text-admin-foreground">{deductTeacher.first_name} {deductTeacher.last_name}</span>
+              </p>
+              {deductSubs.length > 1 && (
+                <div>
+                  <Label>Абонемент</Label>
+                  <select
+                    className="w-full mt-1 rounded-md border border-admin-border bg-white px-3 py-2 text-sm"
+                    value={deductSubId}
+                    onChange={e => setDeductSubId(e.target.value)}
+                  >
+                    {deductSubs.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.type?.name} ({s.hours_remaining}/{s.hours_total} ч)</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {(() => {
+                const sel = deductSubs.find((s: any) => s.id === deductSubId);
+                return sel ? (
+                  <p className="text-sm text-admin-muted">
+                    Остаток: <span className="font-medium text-admin-foreground">{sel.hours_remaining}/{sel.hours_total} ч</span>
+                  </p>
+                ) : null;
+              })()}
+              <div>
+                <Label>Количество часов для списания</Label>
+                <Input
+                  type="number"
+                  min={0.5}
+                  step={0.5}
+                  className="bg-white border-admin-border mt-1"
+                  value={deductHours}
+                  onChange={e => setDeductHours(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeductOpen(false)} className="border-admin-border">Отмена</Button>
+            <Button
+              className="bg-orange-500 text-white hover:bg-orange-600"
+              onClick={async () => {
+                const sel = deductSubs.find((s: any) => s.id === deductSubId);
+                if (!sel) return;
+                const hrs = parseFloat(deductHours);
+                if (!hrs || hrs <= 0) { toast.error("Введите количество часов"); return; }
+                if (hrs > Number(sel.hours_remaining)) { toast.error("Недостаточно часов на абонементе"); return; }
+                const newRemaining = Number(sel.hours_remaining) - hrs;
+                const { error } = await supabase.from("user_subscriptions").update({
+                  hours_remaining: newRemaining,
+                  active: newRemaining > 0,
+                }).eq("id", sel.id);
+                if (error) { toast.error("Ошибка списания"); return; }
+                toast.success(`Списано ${hrs} ч с абонемента`);
+                setDeductOpen(false);
+              }}
+            >
+              Списать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md max-h-[90vh] flex flex-col">
