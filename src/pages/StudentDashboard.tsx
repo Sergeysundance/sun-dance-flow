@@ -305,6 +305,12 @@ const StudentDashboardInner = () => {
         toast.success("Запись отменена");
       }
     } else {
+      // Check if subscription is frozen
+      if (activeSubscription && (activeSubscription as any).frozen) {
+        toast.error("Ваш абонемент заморожен. Запись на занятия временно недоступна.");
+        setBookingLoading(null);
+        return;
+      }
       // Check for active subscription before booking
       if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
         setActiveTab("subscriptions");
@@ -765,7 +771,9 @@ const StudentDashboardInner = () => {
                       <div className="space-y-3">
                         {groupSubscriptions.map(sub => {
                           const isFrozen = (sub as any).frozen === true;
+                          const wasFrozen = (sub as any).was_frozen === true;
                           const frozenUntil = (sub as any).frozen_until ? new Date((sub as any).frozen_until) : null;
+                          const frozenAt = (sub as any).frozen_at ? new Date((sub as any).frozen_at) : null;
                           return (
                           <div key={sub.id} className={`rounded-lg border p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : 'border-border'}`}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -780,6 +788,11 @@ const StudentDashboardInner = () => {
                                 {isFrozen && frozenUntil && (
                                   <div className="text-xs text-blue-600 mt-0.5">
                                     Заморозка до {frozenUntil.toLocaleDateString("ru-RU")} · Срок действия продлён на 7 дней
+                                  </div>
+                                )}
+                                {!isFrozen && wasFrozen && frozenAt && frozenUntil && (
+                                  <div className="text-xs text-muted-foreground mt-0.5">
+                                    ❄️ Был заморожен {frozenAt.toLocaleDateString("ru-RU")} — {frozenUntil.toLocaleDateString("ru-RU")}
                                   </div>
                                 )}
                               </div>
@@ -821,7 +834,9 @@ const StudentDashboardInner = () => {
                       <div className="space-y-3">
                         {individualSubscriptions.map(sub => {
                           const isFrozen = (sub as any).frozen === true;
+                          const wasFrozen = (sub as any).was_frozen === true;
                           const frozenUntil = (sub as any).frozen_until ? new Date((sub as any).frozen_until) : null;
+                          const frozenAt = (sub as any).frozen_at ? new Date((sub as any).frozen_at) : null;
                           return (
                           <div key={sub.id} className={`rounded-lg border p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : 'border-border'}`}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
@@ -836,6 +851,11 @@ const StudentDashboardInner = () => {
                                 {isFrozen && frozenUntil && (
                                   <div className="text-xs text-blue-600 mt-0.5">
                                     Заморозка до {frozenUntil.toLocaleDateString("ru-RU")} · Срок действия продлён на 7 дней
+                                  </div>
+                                )}
+                                {!isFrozen && wasFrozen && frozenAt && frozenUntil && (
+                                  <div className="text-xs text-muted-foreground mt-0.5">
+                                    ❄️ Был заморожен {frozenAt.toLocaleDateString("ru-RU")} — {frozenUntil.toLocaleDateString("ru-RU")}
                                   </div>
                                 )}
                               </div>

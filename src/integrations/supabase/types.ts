@@ -571,6 +571,7 @@ export type Database = {
           purchased_at: string
           subscription_type_id: string
           user_id: string
+          was_frozen: boolean
         }
         Insert: {
           active?: boolean
@@ -586,6 +587,7 @@ export type Database = {
           purchased_at?: string
           subscription_type_id: string
           user_id: string
+          was_frozen?: boolean
         }
         Update: {
           active?: boolean
@@ -601,6 +603,7 @@ export type Database = {
           purchased_at?: string
           subscription_type_id?: string
           user_id?: string
+          was_frozen?: boolean
         }
         Relationships: [
           {
