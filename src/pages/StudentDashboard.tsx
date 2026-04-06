@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen } from "lucide-react";
+import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -267,18 +268,6 @@ const StudentDashboardInner = () => {
     if (userId) fetchSchedule();
   }, [monday, userId, selectedBranchId]);
 
-  const classesByDate = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    for (const date of weekDates) map[date] = [];
-    for (const c of scheduleData) {
-      if (map[c.date]) {
-        map[c.date].push(c);
-      }
-    }
-    return map;
-  }, [scheduleData, weekDates]);
-
-  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
   const todayStr = fmtDate(new Date());
   const getDir = (id: string) => directions.find((d: any) => d.id === id);
   const getTeacher = (id: string) => schedTeachers.find((t: any) => t.id === id);
