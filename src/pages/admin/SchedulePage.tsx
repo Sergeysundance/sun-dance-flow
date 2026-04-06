@@ -111,19 +111,7 @@ export default function SchedulePage() {
 
   useEffect(() => { fetchData(); }, [monday, selectedBranchId]);
 
-  const classesByDate = useMemo(() => {
-    const map: Record<string, ScheduleClass[]> = {};
-    for (const date of weekDates) map[date] = [];
-    for (const c of classes) {
-      if (map[c.date]) map[c.date].push(c);
-    }
-    for (const date of weekDates) {
-      map[date].sort((a, b) => a.start_time.localeCompare(b.start_time));
-    }
-    return map;
-  }, [classes, weekDates]);
-
-  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
+  const todayStr = fmt(new Date());
 
   const selClass = selectedClass ? classes.find(c => c.id === selectedClass) : null;
   const selDir = selClass ? directions.find(d => d.id === selClass.direction_id) : null;
