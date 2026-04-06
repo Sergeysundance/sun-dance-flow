@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit, Plus, Minus, Trash2, Snowflake } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Minus, Trash2, Snowflake, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -324,16 +324,41 @@ export default function ClientDetailPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          {s.active && !isFrozen && s.hours_remaining > 0 && s.type?.type && s.type.type !== 'group' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 text-xs border-orange-300 text-orange-600 hover:bg-orange-50 gap-1"
-                              onClick={() => { setDeductSub(s); setDeductHours("1"); setDeductOpen(true); }}
-                            >
-                              <Minus className="h-3 w-3" /> Списать часы
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-1 flex-wrap">
+                            {s.active && !isFrozen && s.hours_remaining > 0 && s.type?.type && s.type.type !== 'group' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs border-orange-300 text-orange-600 hover:bg-orange-50 gap-1"
+                                onClick={() => { setDeductSub(s); setDeductHours("1"); setDeductOpen(true); }}
+                              >
+                                <Minus className="h-3 w-3" /> Списать часы
+                              </Button>
+                            )}
+                            {s.active && !isFrozen && (() => {
+                              const daysLeft = Math.ceil((new Date(s.expires_at).getTime() - Date.now()) / 86400000);
+                              return daysLeft <= 7 && daysLeft >= 0;
+                            })() && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs border-yellow-400 text-yellow-700 hover:bg-yellow-50 gap-1"
+                                onClick={async () => {
+                                  if (!profile) return;
+                                  const { error } = await supabase.from("notifications").insert({
+                                    user_id: profile.user_id,
+                                    title: "Абонемент скоро истекает",
+                                    message: `Ваш абонемент "${s.type?.name || ''}" истекает ${new Date(s.expires_at).toLocaleDateString('ru-RU')}. Рекомендуем продлить его.`,
+                                    type: "warning",
+                                  });
+                                  if (error) { toast.error("Ошибка отправки"); return; }
+                                  toast.success("Уведомление отправлено");
+                                }}
+                              >
+                                <Bell className="h-3 w-3" /> Напомнить
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );

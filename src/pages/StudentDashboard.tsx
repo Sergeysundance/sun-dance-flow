@@ -308,6 +308,18 @@ const StudentDashboardInner = () => {
         setBookingLoading(null);
         return;
       }
+      // Check if enough hours for this class duration
+      const cls = scheduleData.find((c: any) => c.id === classId);
+      if (cls) {
+        const startParts = cls.start_time.split(':').map(Number);
+        const endParts = cls.end_time.split(':').map(Number);
+        const classDurationHours = (endParts[0] * 60 + endParts[1] - startParts[0] * 60 - startParts[1]) / 60;
+        if (activeSubscription.hours_remaining < classDurationHours) {
+          setInsufficientHoursInfo({ needed: classDurationHours, remaining: activeSubscription.hours_remaining });
+          setBookingLoading(null);
+          return;
+        }
+      }
       // Show confirmation dialog with cancellation warning
       setConfirmBookingClassId(classId);
       setBookingLoading(null);
