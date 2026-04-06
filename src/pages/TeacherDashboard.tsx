@@ -562,14 +562,14 @@ function TeacherDashboardInner() {
               <TabsContent value="group">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Групповые абонементы</CardTitle>
+                    <CardTitle>Групповой абонемент</CardTitle>
                     <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("group"); setBuyDialogOpen(true); }}>
                       <CreditCard className="h-4 w-4 mr-1" /> Купить
                     </Button>
                   </CardHeader>
                   <CardContent>
                     {groupSubscriptions.length === 0 ? (
-                      <p className="text-muted-foreground">У вас нет активных групповых абонементов.</p>
+                      <p className="text-muted-foreground">У вас нет активного группового абонемента.</p>
                     ) : (
                       <div className="space-y-3">
                         {groupSubscriptions.map(sub => (
@@ -602,14 +602,14 @@ function TeacherDashboardInner() {
               <TabsContent value="individual">
                 <Card>
                   <CardHeader className="flex flex-row items-center justify-between">
-                    <CardTitle>Индивидуальные абонементы</CardTitle>
+                    <CardTitle>Индивидуальный абонемент</CardTitle>
                     <Button variant="sun" size="sm" onClick={() => { setBuyDialogType("individual"); setBuyDialogOpen(true); }}>
                       <CreditCard className="h-4 w-4 mr-1" /> Купить
                     </Button>
                   </CardHeader>
                   <CardContent>
                     {individualSubscriptions.length === 0 ? (
-                      <p className="text-muted-foreground">У вас нет активных индивидуальных абонементов.</p>
+                      <p className="text-muted-foreground">У вас нет активного индивидуального абонемента.</p>
                     ) : (
                       <div className="space-y-3">
                         {individualSubscriptions.map(sub => (
@@ -641,10 +641,10 @@ function TeacherDashboardInner() {
 
               <TabsContent value="history">
                 <Card>
-                  <CardHeader><CardTitle>История абонементов</CardTitle></CardHeader>
+                  <CardHeader><CardTitle>История абонемента</CardTitle></CardHeader>
                   <CardContent>
                     {historySubscriptions.length === 0 ? (
-                      <p className="text-muted-foreground">Использованных абонементов пока нет.</p>
+                      <p className="text-muted-foreground">Истории абонемента пока нет.</p>
                     ) : (
                       <div className="space-y-3">
                         {historySubscriptions.map(sub => (
