@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus, Pencil, X, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -110,19 +111,6 @@ export default function SchedulePage() {
 
   useEffect(() => { fetchData(); }, [monday, selectedBranchId]);
 
-  const classesByDate = useMemo(() => {
-    const map: Record<string, ScheduleClass[]> = {};
-    for (const date of weekDates) map[date] = [];
-    for (const c of classes) {
-      if (map[c.date]) map[c.date].push(c);
-    }
-    for (const date of weekDates) {
-      map[date].sort((a, b) => a.start_time.localeCompare(b.start_time));
-    }
-    return map;
-  }, [classes, weekDates]);
-
-  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
 
   const selClass = selectedClass ? classes.find(c => c.id === selectedClass) : null;
   const selDir = selClass ? directions.find(d => d.id === selClass.direction_id) : null;
@@ -253,51 +241,16 @@ export default function SchedulePage() {
             <Button variant="ghost" size="sm" onClick={() => setWeekOffset(0)} className="text-admin-muted">Сегодня</Button>
           </div>
 
-          <div className="rounded-lg border border-admin-border bg-white overflow-hidden">
-            <div className="grid grid-cols-7 border-b border-admin-border">
-              {DAYS.map((day, i) => {
-                const date = weekDates[i];
-                const isToday = date === todayStr;
-                const dateObj = new Date(date + 'T00:00');
-                return (
-                  <div key={i} className={`border-r border-admin-border last:border-r-0 px-2 py-3 text-center ${isToday ? 'bg-yellow-50' : ''}`}>
-                    <div className={`text-xs font-medium ${isToday ? 'text-admin-accent' : 'text-admin-muted'}`}>{day}</div>
-                    <div className={`text-lg font-bold ${isToday ? 'text-admin-accent' : 'text-admin-foreground'}`}>{dateObj.getDate()}</div>
-                  </div>
-                );
-              })}
-            </div>
-            {Array.from({ length: maxClasses }).map((_, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-7 border-b border-admin-border last:border-b-0">
-                {weekDates.map((date, colIdx) => {
-                  const cls = classesByDate[date]?.[rowIdx];
-                  const isToday = date === todayStr;
-                  if (!cls) return (
-                    <div key={colIdx} className={`border-r border-admin-border last:border-r-0 min-h-[80px] ${isToday ? 'bg-yellow-50/50' : ''}`} />
-                  );
-                  const dir = directions.find(d => d.id === cls.direction_id);
-                  const teacher = teachers.find(t => t.id === cls.teacher_id);
-                  return (
-                    <div key={colIdx} className={`border-r border-admin-border last:border-r-0 p-1.5 min-h-[80px] ${isToday ? 'bg-yellow-50/50' : ''}`}>
-                      <button
-                        onClick={() => { setSelectedClass(cls.id); setEditing(false); }}
-                        className={`w-full rounded-md p-2 text-left text-[11px] leading-tight transition-colors hover:opacity-80 ${cls.cancelled ? 'opacity-50 line-through' : ''}`}
-                        style={{ backgroundColor: (dir?.color || '#3B82F6') + '20', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
-                      >
-                        <div className="font-medium" style={{ color: dir?.color }}>{dir?.name}</div>
-                        <div className="text-admin-muted">{cls.start_time.slice(0,5)}–{cls.end_time.slice(0,5)}</div>
-                        <div className="text-admin-muted">{teacher?.first_name} {teacher?.last_name?.[0]}.</div>
-                        <div className="text-admin-muted">{cls.max_spots} мест</div>
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            {classes.length === 0 && (
-              <div className="p-8 text-center text-admin-muted">Нет занятий на этой неделе</div>
-            )}
-          </div>
+          <WeeklyTimeGrid
+            weekDates={weekDates}
+            classes={classes}
+            directions={directions}
+            teachers={teachers}
+            rooms={rooms}
+            today={todayStr}
+            variant="admin"
+            onClassClick={(cls) => { setSelectedClass(cls.id); setEditing(false); }}
+          />
         </TabsContent>
 
         <TabsContent value="templates" className="mt-4">

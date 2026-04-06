@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign, Check, X, AlertTriangle, BookOpen } from "lucide-react";
+import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -368,16 +369,6 @@ function TeacherDashboardInner() {
     return map;
   }, [classes, weekDates]);
 
-  const browseClassesByDate = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    for (const date of browseWeekDates) map[date] = [];
-    for (const c of browseClasses) {
-      if (map[c.date]) map[c.date].push(c);
-    }
-    return map;
-  }, [browseClasses, browseWeekDates]);
-
-  const browseMaxClasses = useMemo(() => Math.max(1, ...Object.values(browseClassesByDate).map(arr => arr.length)), [browseClassesByDate]);
 
   // Fetch browse schedule
   useEffect(() => {
@@ -957,133 +948,38 @@ function TeacherDashboardInner() {
                 </div>
               </CardHeader>
               <CardContent>
-                {/* Mobile */}
-                <div className="sm:hidden space-y-3">
-                  {browseWeekDates.map((date, i) => {
-                    const dayClasses = browseClassesByDate[date] || [];
-                    if (dayClasses.length === 0) return null;
-                    const dateObj = new Date(date + 'T00:00');
-                    const isToday = date === todayStr;
-                    return (
-                      <div key={date}>
-                        <div className={`text-sm font-bold mb-1.5 ${isToday ? 'text-sun' : 'text-foreground'}`}>
-                          {DAYS_SHORT[i]}, {dateObj.getDate()}{isToday ? ' — сегодня' : ''}
-                        </div>
-                        <div className="space-y-2">
-                          {dayClasses.map((cls: any) => {
-                            const dir = getDir(cls.direction_id);
-                            const tch = getBrowseTeacher(cls.teacher_id);
-                            const room = getBrowseRoom(cls.room_id);
-                            const isBooked = browseBookings.has(cls.id);
-                            return (
-                              <div key={cls.id} className="rounded-lg p-3 border border-border" style={{ borderLeftWidth: 4, borderLeftColor: dir?.color || '#3B82F6' }}>
-                                <div className="flex items-start justify-between">
-                                  <div>
-                                    <div className="text-sm font-bold" style={{ color: dir?.color }}>{dir?.name}</div>
-                                    <div className="text-xs text-foreground font-medium">{cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}</div>
-                                    <div className="text-xs text-muted-foreground">{tch?.first_name} {tch?.last_name}</div>
-                                    <div className="text-xs text-muted-foreground">{room?.name}</div>
-                                  </div>
-                                  {isBooked && isWithin6Hours(cls) ? (
-                                    <span className="text-[10px] text-muted-foreground italic">Отмена недоступна</span>
-                                  ) : (
-                                    <Button
-                                      size="sm"
-                                      variant={isBooked ? "outline" : "sun"}
-                                      disabled={bookingLoading === cls.id}
-                                      onClick={() => handleBooking(cls.id)}
-                                      className="shrink-0 text-xs"
-                                    >
-                                      {isBooked ? <><X className="h-3 w-3 mr-1" />Отменить</> : <><Check className="h-3 w-3 mr-1" />Записаться</>}
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {!browseWeekDates.some(d => (browseClassesByDate[d] || []).length > 0) && (
-                    <p className="text-center text-muted-foreground py-6">Нет занятий на этой неделе</p>
-                  )}
-                </div>
-
-                {/* Desktop */}
-                <div className="hidden sm:block rounded-lg border border-border overflow-hidden">
-                  <div className="grid grid-cols-7 border-b border-border">
-                    {DAYS_SHORT.map((day, i) => {
-                      const date = browseWeekDates[i];
-                      const isToday = date === todayStr;
-                      const dateObj = new Date(date + 'T00:00');
+                <WeeklyTimeGrid
+                  weekDates={browseWeekDates}
+                  classes={browseClasses}
+                  directions={directions}
+                  teachers={browseTeachers}
+                  rooms={browseRooms}
+                  today={todayStr}
+                  renderClassAction={(cls, dir) => {
+                    const isBooked = browseBookings.has(cls.id);
+                    if (isBooked && isWithin6Hours(cls)) {
                       return (
-                        <div key={i} className={`border-r border-border last:border-r-0 px-2 py-2 text-center ${isToday ? 'bg-sun/10' : ''}`}>
-                          <div className={`text-xs font-medium ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
-                          <div className={`text-base font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
+                        <div className="w-full text-[10px] font-medium rounded px-1 py-0.5 text-center text-muted-foreground bg-muted italic">
+                          Отмена недоступна
                         </div>
                       );
-                    })}
-                  </div>
-                  {Object.values(browseClassesByDate).some(arr => arr.length > 0) ? (
-                    Array.from({ length: browseMaxClasses }).map((_, rowIdx) => (
-                      <div key={rowIdx} className="grid grid-cols-7 border-b border-border last:border-b-0">
-                        {browseWeekDates.map((date, colIdx) => {
-                          const cls = browseClassesByDate[date]?.[rowIdx];
-                          const isToday = date === todayStr;
-                          if (!cls) return <div key={colIdx} className={`border-r border-border last:border-r-0 min-h-[90px] ${isToday ? 'bg-sun/5' : ''}`} />;
-                          const dir = getDir(cls.direction_id);
-                          const tch = getBrowseTeacher(cls.teacher_id);
-                          const room = getBrowseRoom(cls.room_id);
-                          const isBooked = browseBookings.has(cls.id);
-                          return (
-                            <div key={colIdx} className={`border-r border-border last:border-r-0 p-1 min-h-[90px] ${isToday ? 'bg-sun/5' : ''}`}>
-                              <div
-                                className="rounded-md p-2 h-full space-y-0.5 flex flex-col"
-                                style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
-                              >
-                                <div className="text-[11px] font-semibold text-foreground">
-                                  {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
-                                </div>
-                                <div className="text-xs font-bold" style={{ color: dir?.color }}>
-                                  {dir?.name}
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">
-                                  {tch?.first_name} {tch?.last_name?.[0]}.
-                                </div>
-                                <div className="text-[10px] text-muted-foreground">
-                                  {room?.name}
-                                </div>
-                                <div className="mt-auto pt-1">
-                                  {isBooked && isWithin6Hours(cls) ? (
-                                    <div className="w-full text-[10px] font-medium rounded px-1 py-0.5 text-center text-muted-foreground bg-muted italic">
-                                      Отмена недоступна
-                                    </div>
-                                  ) : (
-                                    <button
-                                      disabled={bookingLoading === cls.id}
-                                      onClick={() => handleBooking(cls.id)}
-                                      className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
-                                        isBooked
-                                          ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
-                                          : 'text-white hover:opacity-90'
-                                      }`}
-                                      style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
-                                    >
-                                      {isBooked ? 'Отменить' : 'Записаться'}
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ))
-                  ) : (
-                    <div className="p-6 text-center text-muted-foreground">Нет занятий на этой неделе</div>
-                  )}
-                </div>
+                    }
+                    return (
+                      <button
+                        disabled={bookingLoading === cls.id}
+                        onClick={() => handleBooking(cls.id)}
+                        className={`w-full text-[10px] font-bold rounded px-1 py-0.5 transition-colors ${
+                          isBooked
+                            ? 'bg-muted text-foreground hover:bg-destructive/20 hover:text-destructive'
+                            : 'text-white hover:opacity-90'
+                        }`}
+                        style={!isBooked ? { backgroundColor: dir?.color || '#3B82F6' } : undefined}
+                      >
+                        {isBooked ? 'Отменить' : 'Записаться'}
+                      </button>
+                    );
+                  }}
+                />
               </CardContent>
             </Card>
 
