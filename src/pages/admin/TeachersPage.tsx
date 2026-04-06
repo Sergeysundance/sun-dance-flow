@@ -29,6 +29,13 @@ export default function TeachersPage() {
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
 
+  // Manual deduction
+  const [deductTeacher, setDeductTeacher] = useState<any | null>(null);
+  const [deductSubs, setDeductSubs] = useState<any[]>([]);
+  const [deductSubId, setDeductSubId] = useState("");
+  const [deductHours, setDeductHours] = useState("1");
+  const [deductOpen, setDeductOpen] = useState(false);
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
