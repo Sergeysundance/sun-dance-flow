@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,11 +6,86 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
-const DAYS = ['Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота', 'Воскресенье'];
-const defaultHours = DAYS.map((d, i) => ({ day: d, open: i < 6 ? '10:00' : '11:00', close: i < 5 ? '22:00' : '20:00' }));
+interface HourEntry { day: string; open: string; close: string }
+
+interface StudioData {
+  name: string; slogan: string; address: string; phone: string;
+  email: string; telegram: string; whatsapp: string; vk: string;
+  description: string; hours: HourEntry[];
+}
+
+interface TelegramData { bot_token: string; admin_chat_id: string }
+
+interface RulesData {
+  cancel_hours: number; auto_activate_days: number; free_freeze_days: number;
+  paid_freeze_14_price: number; paid_freeze_30_price: number;
+}
+
+const DEFAULT_HOURS: HourEntry[] = [
+  { day: 'Понедельник', open: '10:00', close: '22:00' },
+  { day: 'Вторник', open: '10:00', close: '22:00' },
+  { day: 'Среда', open: '10:00', close: '22:00' },
+  { day: 'Четверг', open: '10:00', close: '22:00' },
+  { day: 'Пятница', open: '10:00', close: '22:00' },
+  { day: 'Суббота', open: '11:00', close: '20:00' },
+  { day: 'Воскресенье', open: '11:00', close: '20:00' },
+];
 
 export default function SettingsPage() {
+  const [studio, setStudio] = useState<StudioData>({
+    name: '', slogan: '', address: '', phone: '', email: '',
+    telegram: '', whatsapp: '', vk: '', description: '', hours: DEFAULT_HOURS,
+  });
+  const [telegram, setTelegram] = useState<TelegramData>({ bot_token: '', admin_chat_id: '' });
+  const [rules, setRules] = useState<RulesData>({
+    cancel_hours: 3, auto_activate_days: 7, free_freeze_days: 14,
+    paid_freeze_14_price: 700, paid_freeze_30_price: 1000,
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    supabase
+      .from("studio_settings")
+      .select("key, value")
+      .then(({ data }) => {
+        if (data) {
+          for (const row of data) {
+            const val = row.value as Record<string, unknown>;
+            if (row.key === 'studio') setStudio(val as unknown as StudioData);
+            if (row.key === 'telegram') setTelegram(val as unknown as TelegramData);
+            if (row.key === 'rules') setRules(val as unknown as RulesData);
+          }
+        }
+        setLoading(false);
+      });
+  }, []);
+
+  const save = async (key: string, value: unknown) => {
+    const { error } = await supabase
+      .from("studio_settings")
+      .update({ value: value as Record<string, unknown>, updated_at: new Date().toISOString() })
+      .eq("key", key);
+    if (error) {
+      toast.error("Ошибка сохранения");
+      console.error(error);
+    } else {
+      toast.success("Настройки сохранены");
+    }
+  };
+
+  const updateStudio = (field: keyof StudioData, val: string) =>
+    setStudio(prev => ({ ...prev, [field]: val }));
+
+  const updateHour = (idx: number, field: 'open' | 'close', val: string) =>
+    setStudio(prev => ({
+      ...prev,
+      hours: prev.hours.map((h, i) => i === idx ? { ...h, [field]: val } : h),
+    }));
+
+  if (loading) return <div className="text-admin-muted">Загрузка...</div>;
+
   return (
     <Tabs defaultValue="studio">
       <TabsList className="bg-gray-100">
@@ -22,16 +98,16 @@ export default function SettingsPage() {
         <Card className="bg-white border-admin-border shadow-sm">
           <CardContent className="p-6 space-y-4">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div><Label>Название студии</Label><Input defaultValue="Sun Dance School" className="bg-white border-admin-border" /></div>
-              <div><Label>Слоган</Label><Input defaultValue="Пространство осознанного движения" className="bg-white border-admin-border" /></div>
-              <div><Label>Адрес</Label><Input defaultValue="пр. Ветеранов 147В, Санкт-Петербург" className="bg-white border-admin-border" /></div>
-              <div><Label>Телефон</Label><Input defaultValue="+7 (921) 413-18-30" className="bg-white border-admin-border" /></div>
-              <div><Label>Email</Label><Input type="email" className="bg-white border-admin-border" /></div>
-              <div><Label>Telegram</Label><Input defaultValue="https://t.me/bachatasolnechno" className="bg-white border-admin-border" /></div>
-              <div><Label>WhatsApp</Label><Input className="bg-white border-admin-border" /></div>
-              <div><Label>VK</Label><Input defaultValue="https://vk.ru/sunbachata" className="bg-white border-admin-border" /></div>
+              <div><Label>Название студии</Label><Input value={studio.name} onChange={e => updateStudio('name', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>Слоган</Label><Input value={studio.slogan} onChange={e => updateStudio('slogan', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>Адрес</Label><Input value={studio.address} onChange={e => updateStudio('address', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>Телефон</Label><Input value={studio.phone} onChange={e => updateStudio('phone', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>Email</Label><Input type="email" value={studio.email} onChange={e => updateStudio('email', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>Telegram</Label><Input value={studio.telegram} onChange={e => updateStudio('telegram', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>WhatsApp</Label><Input value={studio.whatsapp} onChange={e => updateStudio('whatsapp', e.target.value)} className="bg-white border-admin-border" /></div>
+              <div><Label>VK</Label><Input value={studio.vk} onChange={e => updateStudio('vk', e.target.value)} className="bg-white border-admin-border" /></div>
             </div>
-            <div><Label>Описание</Label><Textarea defaultValue="Sun Dance School — это место, где каждый найдет свое направление и уровень." className="bg-white border-admin-border" /></div>
+            <div><Label>Описание</Label><Textarea value={studio.description} onChange={e => updateStudio('description', e.target.value)} className="bg-white border-admin-border" /></div>
 
             <div>
               <Label className="mb-2 block">Часы работы</Label>
@@ -39,11 +115,11 @@ export default function SettingsPage() {
                 <table className="w-full text-sm">
                   <thead><tr className="bg-gray-50 text-xs text-admin-muted"><th className="px-3 py-2 text-left">День</th><th className="px-3 py-2">Открытие</th><th className="px-3 py-2">Закрытие</th></tr></thead>
                   <tbody>
-                    {defaultHours.map(h => (
+                    {studio.hours.map((h, i) => (
                       <tr key={h.day} className="border-t border-admin-border">
                         <td className="px-3 py-2 text-admin-foreground">{h.day}</td>
-                        <td className="px-3 py-2"><Input type="time" defaultValue={h.open} className="w-28 bg-white border-admin-border" /></td>
-                        <td className="px-3 py-2"><Input type="time" defaultValue={h.close} className="w-28 bg-white border-admin-border" /></td>
+                        <td className="px-3 py-2"><Input type="time" value={h.open} onChange={e => updateHour(i, 'open', e.target.value)} className="w-28 bg-white border-admin-border" /></td>
+                        <td className="px-3 py-2"><Input type="time" value={h.close} onChange={e => updateHour(i, 'close', e.target.value)} className="w-28 bg-white border-admin-border" /></td>
                       </tr>
                     ))}
                   </tbody>
@@ -51,7 +127,7 @@ export default function SettingsPage() {
               </div>
             </div>
 
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => toast.success("Настройки сохранены")}>Сохранить</Button>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => save('studio', studio)}>Сохранить</Button>
           </CardContent>
         </Card>
       </TabsContent>
@@ -59,11 +135,11 @@ export default function SettingsPage() {
       <TabsContent value="telegram" className="mt-4">
         <Card className="bg-white border-admin-border shadow-sm">
           <CardContent className="p-6 space-y-4">
-            <div><Label>Токен бота</Label><Input type="password" className="bg-white border-admin-border" /></div>
-            <div><Label>Chat ID администратора</Label><Input className="bg-white border-admin-border" /></div>
+            <div><Label>Токен бота</Label><Input type="password" value={telegram.bot_token} onChange={e => setTelegram(prev => ({ ...prev, bot_token: e.target.value }))} className="bg-white border-admin-border" /></div>
+            <div><Label>Chat ID администратора</Label><Input value={telegram.admin_chat_id} onChange={e => setTelegram(prev => ({ ...prev, admin_chat_id: e.target.value }))} className="bg-white border-admin-border" /></div>
             <div className="flex gap-2">
               <Button variant="outline" className="border-admin-border" onClick={() => toast.info("Тестовое сообщение отправлено (заглушка)")}>Отправить тестовое сообщение</Button>
-              <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => toast.success("Настройки Telegram сохранены")}>Сохранить</Button>
+              <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => save('telegram', telegram)}>Сохранить</Button>
             </div>
           </CardContent>
         </Card>
@@ -72,12 +148,12 @@ export default function SettingsPage() {
       <TabsContent value="rules" className="mt-4">
         <Card className="bg-white border-admin-border shadow-sm">
           <CardContent className="p-6 space-y-4">
-            <div><Label>Время отмены без списания (часы)</Label><Input type="number" defaultValue={3} className="bg-white border-admin-border w-32" /></div>
-            <div><Label>Автоактивация абонемента через (дни)</Label><Input type="number" defaultValue={7} className="bg-white border-admin-border w-32" /></div>
-            <div><Label>Бесплатная заморозка (дни)</Label><Input type="number" defaultValue={14} className="bg-white border-admin-border w-32" /></div>
-            <div><Label>Платная заморозка 14 дней — цена (₽)</Label><Input type="number" defaultValue={700} className="bg-white border-admin-border w-32" /></div>
-            <div><Label>Платная заморозка 30 дней — цена (₽)</Label><Input type="number" defaultValue={1000} className="bg-white border-admin-border w-32" /></div>
-            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => toast.success("Правила сохранены")}>Сохранить</Button>
+            <div><Label>Время отмены без списания (часы)</Label><Input type="number" value={rules.cancel_hours} onChange={e => setRules(prev => ({ ...prev, cancel_hours: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
+            <div><Label>Автоактивация абонемента через (дни)</Label><Input type="number" value={rules.auto_activate_days} onChange={e => setRules(prev => ({ ...prev, auto_activate_days: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
+            <div><Label>Бесплатная заморозка (дни)</Label><Input type="number" value={rules.free_freeze_days} onChange={e => setRules(prev => ({ ...prev, free_freeze_days: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
+            <div><Label>Платная заморозка 14 дней — цена (₽)</Label><Input type="number" value={rules.paid_freeze_14_price} onChange={e => setRules(prev => ({ ...prev, paid_freeze_14_price: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
+            <div><Label>Платная заморозка 30 дней — цена (₽)</Label><Input type="number" value={rules.paid_freeze_30_price} onChange={e => setRules(prev => ({ ...prev, paid_freeze_30_price: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
+            <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => save('rules', rules)}>Сохранить</Button>
           </CardContent>
         </Card>
       </TabsContent>
