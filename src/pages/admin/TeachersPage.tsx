@@ -315,8 +315,15 @@ export default function TeachersPage() {
     setDeductOpen(true);
   };
 
+  const markTeacherSeen = async (t: any) => {
+    if (!t.seen_by_admin) {
+      await supabase.from("teachers").update({ seen_by_admin: true }).eq("id", t.id);
+      setTeachers(prev => prev.map(tr => tr.id === t.id ? { ...tr, seen_by_admin: true } : tr));
+    }
+  };
+
   const renderTeacherCard = (t: any) => (
-    <Card key={t.id} className="bg-white border-admin-border shadow-sm">
+    <Card key={t.id} className={`bg-white border-admin-border shadow-sm ${!t.seen_by_admin ? 'ring-2 ring-green-400 bg-green-50' : ''}`}>
       <CardContent className="p-5">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-3">
@@ -329,14 +336,17 @@ export default function TeachersPage() {
               </AvatarFallback>
             </Avatar>
             <div>
-              <div className="font-semibold text-admin-foreground">{t.first_name} {t.last_name}</div>
+              <div className="font-semibold text-admin-foreground">
+                {!t.seen_by_admin && <Badge className="bg-green-500 text-white text-[10px] mr-2">Новый</Badge>}
+                {t.first_name} {t.last_name}
+              </div>
               <div className="text-xs text-admin-muted">{t.phone}</div>
             </div>
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => openEdit(t)}>Редактировать</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => { markTeacherSeen(t); openEdit(t); }}>Редактировать</DropdownMenuItem>
               <DropdownMenuItem onClick={() => openDeductDialog(t)}>
                 <Minus className="h-4 w-4 mr-1" /> Списать часы
               </DropdownMenuItem>

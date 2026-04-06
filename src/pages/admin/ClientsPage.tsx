@@ -226,10 +226,18 @@ export default function ClientsPage() {
               return (
                 <tr
                   key={p.id}
-                  className={`border-b border-admin-border last:border-0 hover:bg-gray-50 cursor-pointer ${i % 2 === 1 ? 'bg-gray-50/50' : ''}`}
-                  onClick={() => navigate(`/admin/clients/${p.id}`)}
+                  className={`border-b border-admin-border last:border-0 hover:bg-gray-50 cursor-pointer ${!(p as any).seen_by_admin ? 'bg-green-50 border-l-4 border-l-green-400' : i % 2 === 1 ? 'bg-gray-50/50' : ''}`}
+                  onClick={() => {
+                    if (!(p as any).seen_by_admin) {
+                      supabase.from("profiles").update({ seen_by_admin: true } as any).eq("id", p.id).then(() => {
+                        setProfiles(prev => prev.map(pr => pr.id === p.id ? { ...pr, seen_by_admin: true } as any : pr));
+                      });
+                    }
+                    navigate(`/admin/clients/${p.id}`);
+                  }}
                 >
                   <td className="px-4 py-3 font-medium text-admin-foreground">
+                    {!(p as any).seen_by_admin && <Badge className="bg-green-500 text-white text-[10px] mr-2">Новый</Badge>}
                     {p.last_name} {p.first_name} {p.middle_name}
                   </td>
                   <td className="px-4 py-3">
