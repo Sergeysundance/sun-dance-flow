@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import studioPhoto from "@/assets/studio-photo.png";
+import { useStudioSettings } from "@/hooks/useStudioSettings";
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
@@ -7,6 +8,7 @@ const fadeInUp = {
 };
 
 const About = () => {
+  const { settings } = useStudioSettings();
   return (
     <section id="about" className="bg-background py-20 sm:py-28">
       <div className="container mx-auto grid grid-cols-1 gap-12 px-4 lg:grid-cols-2">
@@ -56,9 +58,7 @@ const About = () => {
 
           {/* Text */}
           <p className="font-body text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Sun Dance School — это место, где каждый найдет свое направление и уровень. Мы специализируемся на бачате
-            и социальных танцах, но также предлагаем йогу, стретчинг и другие направления. Наша студия находится в
-            Красносельском районе Санкт-Петербурга, на проспекте Ветеранов.
+            {settings.description}
           </p>
 
           {/* Review */}
