@@ -296,6 +296,25 @@ export default function TeachersPage() {
     setSelectedDirections(prev => prev.includes(dirId) ? prev.filter(id => id !== dirId) : [...prev, dirId]);
   };
 
+  const openDeductDialog = async (t: any) => {
+    if (!t.user_id) { toast.error("У преподавателя нет привязанного аккаунта"); return; }
+    const { data } = await supabase
+      .from("user_subscriptions")
+      .select("*, subscription_types(*)")
+      .eq("user_id", t.user_id)
+      .eq("active", true)
+      .gt("hours_remaining", 0);
+    const individual = (data || [])
+      .map((s: any) => ({ ...s, type: s.subscription_types }))
+      .filter((s: any) => s.type?.type && s.type.type !== 'group');
+    if (individual.length === 0) { toast.error("Нет активных индивидуальных абонементов"); return; }
+    setDeductTeacher(t);
+    setDeductSubs(individual);
+    setDeductSubId(individual[0].id);
+    setDeductHours("1");
+    setDeductOpen(true);
+  };
+
   const renderTeacherCard = (t: any) => (
     <Card key={t.id} className="bg-white border-admin-border shadow-sm">
       <CardContent className="p-5">
