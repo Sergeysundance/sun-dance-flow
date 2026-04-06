@@ -223,6 +223,7 @@ serve(async (req) => {
           hours: plan.hours_count,
           bonus_points_used: validBonusPoints,
           teacher_discount: teacherDiscount,
+          carry_over_hours: true,
         },
       }),
     });
