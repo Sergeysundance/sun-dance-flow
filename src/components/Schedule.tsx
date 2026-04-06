@@ -67,7 +67,7 @@ const Schedule = () => {
       const sunday = new Date(monday);
       sunday.setDate(sunday.getDate() + 6);
 
-      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday)).eq("cancelled", false).order("date").order("start_time");
+      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmt(monday)).lte("date", fmt(sunday)).order("date").order("start_time");
       if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
 
       let dirsQuery = supabase.from("directions").select("*").eq("active", true);
@@ -181,29 +181,36 @@ const Schedule = () => {
                   return (
                     <div key={colIdx} className="border-r border-border last:border-r-0 p-2 min-h-[90px]">
                       <div
-                        className="rounded-lg p-2.5 h-full space-y-1"
+                        className={`rounded-lg p-2.5 h-full space-y-1 ${cls.cancelled ? 'opacity-50' : ''}`}
                         style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
                       >
-                        <div className="font-body text-xs font-semibold text-foreground">
+                        <div className={`font-body text-xs font-semibold text-foreground ${cls.cancelled ? 'line-through' : ''}`}>
                           {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
                         </div>
-                        <div className="font-body text-sm font-bold" style={{ color: dir?.color }}>
+                        <div className={`font-body text-sm font-bold ${cls.cancelled ? 'line-through' : ''}`} style={{ color: dir?.color }}>
                           {dir?.name}
                         </div>
-                        <div className="font-body text-xs text-muted-foreground">
-                          {teacher?.first_name} {teacher?.last_name?.[0]}.
-                        </div>
-                        <div className="font-body text-[11px] text-muted-foreground">
-                          {room?.name}
-                        </div>
-                        <Button
-                          variant="sun"
-                          size="sm"
-                          className="text-[10px] px-3 h-6 w-full mt-1"
-                          onClick={handleSignUp}
-                        >
-                          Записаться
-                        </Button>
+                        {cls.cancelled && (
+                          <div className="font-body text-xs font-semibold text-destructive">Отменено</div>
+                        )}
+                        {!cls.cancelled && (
+                          <>
+                            <div className="font-body text-xs text-muted-foreground">
+                              {teacher?.first_name} {teacher?.last_name?.[0]}.
+                            </div>
+                            <div className="font-body text-[11px] text-muted-foreground">
+                              {room?.name}
+                            </div>
+                            <Button
+                              variant="sun"
+                              size="sm"
+                              className="text-[10px] px-3 h-6 w-full mt-1"
+                              onClick={handleSignUp}
+                            >
+                              Записаться
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   );
@@ -245,23 +252,29 @@ const Schedule = () => {
                     return (
                       <div
                         key={cls.id}
-                        className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-border bg-card/50 px-3 py-2.5"
+                        className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-border bg-card/50 px-3 py-2.5 ${cls.cancelled ? 'opacity-50' : ''}`}
                       >
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className="font-body text-sm font-semibold text-foreground">
+                          <span className={`font-body text-sm font-semibold text-foreground ${cls.cancelled ? 'line-through' : ''}`}>
                             {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dir?.color }} />
-                            <span className="font-body text-sm font-semibold text-foreground">{dir?.name}</span>
+                            <span className={`font-body text-sm font-semibold text-foreground ${cls.cancelled ? 'line-through' : ''}`}>{dir?.name}</span>
                           </span>
-                          <span className="font-body text-xs text-muted-foreground">
-                            {teacher?.first_name} {teacher?.last_name?.[0]}.
-                          </span>
+                          {cls.cancelled ? (
+                            <span className="font-body text-xs font-semibold text-destructive">Отменено</span>
+                          ) : (
+                            <span className="font-body text-xs text-muted-foreground">
+                              {teacher?.first_name} {teacher?.last_name?.[0]}.
+                            </span>
+                          )}
                         </div>
-                        <Button variant="sun" size="sm" className="text-xs px-4" onClick={handleSignUp}>
-                          Записаться
-                        </Button>
+                        {!cls.cancelled && (
+                          <Button variant="sun" size="sm" className="text-xs px-4" onClick={handleSignUp}>
+                            Записаться
+                          </Button>
+                        )}
                       </div>
                     );
                   })}
