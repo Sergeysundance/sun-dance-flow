@@ -75,8 +75,7 @@ const Header = () => {
         {/* Logo + Branch */}
         <div className="flex items-center gap-3">
           <a href="#" className="font-display text-lg font-black tracking-tight text-foreground">
-            <span className="text-sun">SUN</span> DANCE SCHOOL
-            <span className="block text-[8px] font-body font-normal tracking-wide text-muted-foreground leading-none">Школа танцев Сан Дэнс</span>
+            <span className="text-sun">{nameFirst}</span> {nameRest}
           </a>
           {branches.length > 0 && (
             <DropdownMenu>
