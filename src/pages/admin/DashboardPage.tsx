@@ -142,7 +142,7 @@ export default function DashboardPage() {
 
   const stats = [
     { label: "Сегодня занятий", value: todayClasses.length, sub: `записано ${totalEnrolled} человек`, icon: CalendarDays, color: "text-blue-500" },
-    { label: "Новые регистрации", value: totalNew, sub: newSub || "все просмотрены", icon: UserPlus, color: "text-green-500", badge: totalNew > 0, onClick: () => navigate("/admin/clients") },
+    { label: "Новые регистрации", value: totalNew, sub: newSub || "все просмотрены", icon: UserPlus, color: "text-green-500", badge: totalNew > 0, onClick: () => navigate(newTeachersCount > 0 && newClientsCount === 0 ? "/admin/teachers" : "/admin/clients") },
     { label: "Новые заявки", value: newRequests.length, sub: "", icon: Mail, color: "text-yellow-500", badge: newRequests.length > 0 },
     { label: "Истекают скоро", value: expiringSoon.length, sub: "в ближайшие 7 дней", icon: AlertTriangle, color: "text-red-500", badge: expiringSoon.length > 0 },
   ];
