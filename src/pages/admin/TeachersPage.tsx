@@ -337,6 +337,9 @@ export default function TeachersPage() {
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => openEdit(t)}>Редактировать</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openDeductDialog(t)}>
+                <Minus className="h-4 w-4 mr-1" /> Списать часы
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDeactivateTeacher(t)}>
                 {t.active ? "Деактивировать" : "Активировать"}
               </DropdownMenuItem>
