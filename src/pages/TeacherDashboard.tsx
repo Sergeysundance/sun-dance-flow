@@ -80,12 +80,32 @@ function TeacherDashboardInner() {
   const [cancellingClassId, setCancellingClassId] = useState<string | null>(null);
   const [cancelDialogClassId, setCancelDialogClassId] = useState<string | null>(null);
 
+  // Browse schedule (all classes, for booking as student)
+  const [browseClasses, setBrowseClasses] = useState<any[]>([]);
+  const [browseTeachers, setBrowseTeachers] = useState<any[]>([]);
+  const [browseRooms, setBrowseRooms] = useState<any[]>([]);
+  const [browseBookings, setBrowseBookings] = useState<Set<string>>(new Set());
+  const [bookingLoading, setBookingLoading] = useState<string | null>(null);
+  const [confirmBookingClassId, setConfirmBookingClassId] = useState<string | null>(null);
+  const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [browseWeekOffset, setBrowseWeekOffset] = useState(0);
+  const [activeTab, setActiveTab] = useState("schedule");
+  const [allTeacherBookings, setAllTeacherBookings] = useState<any[]>([]);
+  const [allBookingsLoading, setAllBookingsLoading] = useState(false);
+
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
   }, [weekOffset]);
   const weekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday); d.setDate(d.getDate() + i); return fmtDate(d);
   }), [monday]);
+
+  const browseMonday = useMemo(() => {
+    const m = getMonday(new Date()); m.setDate(m.getDate() + browseWeekOffset * 7); return m;
+  }, [browseWeekOffset]);
+  const browseWeekDates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(browseMonday); d.setDate(d.getDate() + i); return fmtDate(d);
+  }), [browseMonday]);
 
   const enrichSubscriptions = async (subs: any[]) => {
     if (!subs || subs.length === 0) return [];
