@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
+import SupportChat from "@/components/SupportChat";
 import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
 
@@ -1175,6 +1176,7 @@ const StudentDashboardInner = () => {
                 )}
               </CardContent>
             </Card>
+            {userId && <SupportChat userId={userId} />}
           </TabsContent>
         </Tabs>
 

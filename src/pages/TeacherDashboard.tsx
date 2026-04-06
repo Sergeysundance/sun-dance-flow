@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
+import SupportChat from "@/components/SupportChat";
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -1337,6 +1338,7 @@ function TeacherDashboardInner() {
                 )}
               </CardContent>
             </Card>
+            {userId && <SupportChat userId={userId} />}
           </TabsContent>
         </Tabs>
 
