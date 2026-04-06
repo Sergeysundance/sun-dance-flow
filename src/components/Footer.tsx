@@ -49,10 +49,18 @@ const Footer = () => {
         </div>
       </div>
 
-      <div className="container mx-auto mt-10 border-t border-border px-4 pt-6">
+      <div className="container mx-auto mt-10 border-t border-border px-4 pt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <p className="font-body text-xs text-muted-foreground">
           © 2026 Sun Dance School. Все права защищены.
         </p>
+        <div className="flex gap-4">
+          <a href="/privacy" className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Политика конфиденциальности
+          </a>
+          <a href="/terms" className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Пользовательское соглашение
+          </a>
+        </div>
       </div>
     </footer>
   );
