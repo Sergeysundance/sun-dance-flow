@@ -14,7 +14,15 @@ interface StudioSettings {
   hours: { day: string; open: string; close: string }[];
 }
 
-const defaults: StudioSettings = {
+interface LegalSettings {
+  entity_name: string;
+  inn: string;
+  ogrn: string;
+  email: string;
+  work_hours: string;
+}
+
+const studioDefaults: StudioSettings = {
   name: "Sun Dance School",
   slogan: "Пространство осознанного движения",
   address: "пр. Ветеранов 147В, Санкт-Петербург",
@@ -27,35 +35,53 @@ const defaults: StudioSettings = {
   hours: [],
 };
 
-let cachedSettings: StudioSettings | null = null;
-let fetchPromise: Promise<StudioSettings> | null = null;
+const legalDefaults: LegalSettings = {
+  entity_name: "",
+  inn: "",
+  ogrn: "",
+  email: "",
+  work_hours: "Пн-Вс: 09:00–22:00",
+};
 
-function fetchSettings(): Promise<StudioSettings> {
-  if (cachedSettings) return Promise.resolve(cachedSettings);
+let cachedSettings: StudioSettings | null = null;
+let cachedLegal: LegalSettings | null = null;
+let fetchPromise: Promise<{ studio: StudioSettings; legal: LegalSettings }> | null = null;
+
+function fetchAllSettings(): Promise<{ studio: StudioSettings; legal: LegalSettings }> {
+  if (cachedSettings && cachedLegal) return Promise.resolve({ studio: cachedSettings, legal: cachedLegal });
   if (fetchPromise) return fetchPromise;
   fetchPromise = supabase
     .from("studio_settings")
     .select("key, value")
-    .eq("key", "studio")
-    .maybeSingle()
+    .in("key", ["studio", "legal"])
     .then(({ data }) => {
-      const s = data?.value ? (data.value as unknown as StudioSettings) : defaults;
-      cachedSettings = s;
-      return s;
-    }) as Promise<StudioSettings>;
+      let studio = studioDefaults;
+      let legal = legalDefaults;
+      if (data) {
+        for (const row of data) {
+          if (row.key === "studio") studio = row.value as unknown as StudioSettings;
+          if (row.key === "legal") legal = row.value as unknown as LegalSettings;
+        }
+      }
+      cachedSettings = studio;
+      cachedLegal = legal;
+      return { studio, legal };
+    }) as Promise<{ studio: StudioSettings; legal: LegalSettings }>;
   return fetchPromise;
 }
 
 export function useStudioSettings() {
-  const [settings, setSettings] = useState<StudioSettings>(cachedSettings || defaults);
+  const [settings, setSettings] = useState<StudioSettings>(cachedSettings || studioDefaults);
+  const [legal, setLegal] = useState<LegalSettings>(cachedLegal || legalDefaults);
   const [loading, setLoading] = useState(!cachedSettings);
 
   useEffect(() => {
-    fetchSettings().then((s) => {
-      setSettings(s);
+    fetchAllSettings().then(({ studio, legal: l }) => {
+      setSettings(studio);
+      setLegal(l);
       setLoading(false);
     });
   }, []);
 
-  return { settings, loading };
+  return { settings, legal, loading };
 }
