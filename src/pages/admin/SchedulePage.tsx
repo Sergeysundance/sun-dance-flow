@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Plus, Pencil, X, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
