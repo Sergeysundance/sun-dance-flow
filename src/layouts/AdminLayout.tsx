@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   LayoutDashboard, Users, GraduationCap, CalendarDays, CreditCard,
-  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin,
+  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin, BadgePercent,
 } from "lucide-react";
 import { BranchProvider } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
@@ -22,6 +22,7 @@ const navItems = [
   { title: "Заявки", path: "/admin/trial-requests", icon: Mail },
   { title: "Check-in", path: "/admin/check-in", icon: CheckSquare },
   { title: "Вопрос/Ответ", path: "/admin/faq", icon: HelpCircle },
+  { title: "Акции и скидки", path: "/admin/promotions", icon: BadgePercent },
   { title: "Филиалы", path: "/admin/branches", icon: MapPin },
   { title: "Настройки", path: "/admin/settings", icon: Settings },
 ];
