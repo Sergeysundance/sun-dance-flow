@@ -25,6 +25,7 @@ const navItems = [
   { title: "Акции и скидки", path: "/admin/promotions", icon: BadgePercent },
   { title: "Филиалы", path: "/admin/branches", icon: MapPin },
   { title: "Настройки", path: "/admin/settings", icon: Settings },
+  { title: "Поддержка", path: "/admin/support", icon: Bell },
 ];
 
 function getPageTitle(pathname: string): string {
