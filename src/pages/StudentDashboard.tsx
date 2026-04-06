@@ -763,16 +763,25 @@ const StudentDashboardInner = () => {
                       <p className="text-muted-foreground">У вас нет активных групповых абонементов.</p>
                     ) : (
                       <div className="space-y-3">
-                        {groupSubscriptions.map(sub => (
-                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                        {groupSubscriptions.map(sub => {
+                          const isFrozen = (sub as any).frozen === true;
+                          const frozenUntil = (sub as any).frozen_until ? new Date((sub as any).frozen_until) : null;
+                          return (
+                          <div key={sub.id} className={`rounded-lg border p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : 'border-border'}`}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <div>
                                 <div className="font-display text-base font-bold text-foreground">
                                   {sub.subscription_type?.name || "Абонемент"}
+                                  {isFrozen && <span className="ml-2 text-xs text-blue-600">❄️ Заморожен</span>}
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-0.5">
                                   Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
                                 </div>
+                                {isFrozen && frozenUntil && (
+                                  <div className="text-xs text-blue-600 mt-0.5">
+                                    Заморозка до {frozenUntil.toLocaleDateString("ru-RU")} · Срок действия продлён на 7 дней
+                                  </div>
+                                )}
                               </div>
                               <div className="text-right">
                                 <div className="font-display text-xl font-black text-foreground">
@@ -788,7 +797,8 @@ const StudentDashboardInner = () => {
                               />
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>
@@ -809,16 +819,25 @@ const StudentDashboardInner = () => {
                       <p className="text-muted-foreground">У вас нет активных индивидуальных абонементов.</p>
                     ) : (
                       <div className="space-y-3">
-                        {individualSubscriptions.map(sub => (
-                          <div key={sub.id} className="rounded-lg border border-border p-4">
+                        {individualSubscriptions.map(sub => {
+                          const isFrozen = (sub as any).frozen === true;
+                          const frozenUntil = (sub as any).frozen_until ? new Date((sub as any).frozen_until) : null;
+                          return (
+                          <div key={sub.id} className={`rounded-lg border p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : 'border-border'}`}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <div>
                                 <div className="font-display text-base font-bold text-foreground">
                                   {sub.subscription_type?.name || "Абонемент"}
+                                  {isFrozen && <span className="ml-2 text-xs text-blue-600">❄️ Заморожен</span>}
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-0.5">
                                   Куплен: {new Date(sub.purchased_at).toLocaleDateString("ru-RU")} · Действует до: {new Date(sub.expires_at).toLocaleDateString("ru-RU")}
                                 </div>
+                                {isFrozen && frozenUntil && (
+                                  <div className="text-xs text-blue-600 mt-0.5">
+                                    Заморозка до {frozenUntil.toLocaleDateString("ru-RU")} · Срок действия продлён на 7 дней
+                                  </div>
+                                )}
                               </div>
                               <div className="text-right">
                                 <div className="font-display text-xl font-black text-foreground">
@@ -834,7 +853,8 @@ const StudentDashboardInner = () => {
                               />
                             </div>
                           </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
                   </CardContent>

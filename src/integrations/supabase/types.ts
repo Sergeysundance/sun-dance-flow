@@ -561,9 +561,13 @@ export type Database = {
           active: boolean
           created_at: string
           expires_at: string
+          frozen: boolean
+          frozen_at: string | null
+          frozen_until: string | null
           hours_remaining: number
           hours_total: number
           id: string
+          original_expires_at: string | null
           purchased_at: string
           subscription_type_id: string
           user_id: string
@@ -572,9 +576,13 @@ export type Database = {
           active?: boolean
           created_at?: string
           expires_at: string
+          frozen?: boolean
+          frozen_at?: string | null
+          frozen_until?: string | null
           hours_remaining: number
           hours_total: number
           id?: string
+          original_expires_at?: string | null
           purchased_at?: string
           subscription_type_id: string
           user_id: string
@@ -583,9 +591,13 @@ export type Database = {
           active?: boolean
           created_at?: string
           expires_at?: string
+          frozen?: boolean
+          frozen_at?: string | null
+          frozen_until?: string | null
           hours_remaining?: number
           hours_total?: number
           id?: string
+          original_expires_at?: string | null
           purchased_at?: string
           subscription_type_id?: string
           user_id?: string
