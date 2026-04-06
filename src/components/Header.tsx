@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "./AuthDialog";
 import { useBranch } from "@/contexts/BranchContext";
+import { useStudioSettings } from "@/hooks/useStudioSettings";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,10 @@ const Header = () => {
   const [user, setUser] = useState<any>(null);
   const [isTeacher, setIsTeacher] = useState(false);
   const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
+  const { settings } = useStudioSettings();
+  const nameParts = settings.name.split(" ");
+  const nameFirst = nameParts[0]?.toUpperCase() || "";
+  const nameRest = nameParts.slice(1).join(" ").toUpperCase();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -70,8 +75,7 @@ const Header = () => {
         {/* Logo + Branch */}
         <div className="flex items-center gap-3">
           <a href="#" className="font-display text-lg font-black tracking-tight text-foreground">
-            <span className="text-sun">SUN</span> DANCE SCHOOL
-            <span className="block text-[8px] font-body font-normal tracking-wide text-muted-foreground leading-none">Школа танцев Сан Дэнс</span>
+            <span className="text-sun">{nameFirst}</span> {nameRest}
           </a>
           {branches.length > 0 && (
             <DropdownMenu>
