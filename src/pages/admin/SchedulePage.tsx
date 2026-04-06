@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { ChevronLeft, ChevronRight, Plus, Pencil, X, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, X, Copy, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -157,6 +157,15 @@ export default function SchedulePage() {
     const { error } = await supabase.from("schedule_classes").update({ cancelled: !selClass.cancelled }).eq("id", selClass.id);
     if (error) { toast.error("Ошибка"); return; }
     toast.success(selClass.cancelled ? "Занятие восстановлено" : "Занятие отменено");
+    setSelectedClass(null); fetchData();
+  };
+
+  const deleteClass = async () => {
+    if (!selClass) return;
+    if (!confirm("Вы уверены, что хотите полностью удалить это занятие? Это действие нельзя отменить.")) return;
+    const { error } = await supabase.from("schedule_classes").delete().eq("id", selClass.id);
+    if (error) { toast.error("Ошибка удаления"); return; }
+    toast.success("Занятие удалено");
     setSelectedClass(null); fetchData();
   };
 
@@ -320,10 +329,13 @@ export default function SchedulePage() {
                 <div><strong>Зал:</strong> {selRoom?.name}</div>
                 <div><strong>Макс. мест:</strong> {selClass.max_spots}</div>
               </div>
-              <DialogFooter className="gap-2 sm:gap-2 flex-shrink-0">
+              <DialogFooter className="gap-2 sm:gap-2 flex-shrink-0 flex-wrap">
+                <Button variant="outline" onClick={deleteClass} className="gap-1 border-red-300 text-red-600 hover:bg-red-50">
+                  <Trash2 className="h-4 w-4" /> Удалить
+                </Button>
                 <Button variant="destructive" onClick={cancelClass} className="gap-1">
                   <X className="h-4 w-4" />
-                  {selClass.cancelled ? "Восстановить" : "Отменить занятие"}
+                  {selClass.cancelled ? "Восстановить" : "Отменить"}
                 </Button>
                 <Button onClick={startEditing} className="bg-admin-accent text-black hover:bg-yellow-400 gap-1">
                   <Pencil className="h-4 w-4" /> Редактировать
