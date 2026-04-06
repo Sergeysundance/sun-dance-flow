@@ -156,7 +156,7 @@ export default function DashboardPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         {stats.map(s => (
-          <Card key={s.label} className="bg-white border-admin-border shadow-sm">
+          <Card key={s.label} className={`bg-white border-admin-border shadow-sm ${(s as any).onClick ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`} onClick={(s as any).onClick}>
             <CardContent className="flex items-center gap-4 p-4">
               <div className={`rounded-lg bg-gray-50 p-2.5 ${s.color}`}>
                 <s.icon className="h-5 w-5" />
