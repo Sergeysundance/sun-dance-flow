@@ -344,7 +344,9 @@ function TeacherDashboardInner() {
   }, [monday, teacher, selectedBranchId]);
 
   const getDir = (id: string) => directions.find(d => d.id === id);
+  const getBrowseTeacher = (id: string) => browseTeachers.find(t => t.id === id);
   const getRoom = (id: string) => rooms.find(r => r.id === id);
+  const getBrowseRoom = (id: string) => browseRooms.find(r => r.id === id);
   const todayStr = fmtDate(new Date());
 
   const formatHours = (n: number) => {
@@ -355,6 +357,7 @@ function TeacherDashboardInner() {
 
   const groupSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type || 'group') === 'group');
   const individualSubscriptions = userSubscriptions.filter(s => s.subscription_type?.type?.startsWith('individual'));
+  const activeSubscription = userSubscriptions.length > 0 ? userSubscriptions[0] : null;
 
   const classesByDate = useMemo(() => {
     const map: Record<string, any[]> = {};
@@ -364,6 +367,128 @@ function TeacherDashboardInner() {
     }
     return map;
   }, [classes, weekDates]);
+
+  const browseClassesByDate = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const date of browseWeekDates) map[date] = [];
+    for (const c of browseClasses) {
+      if (map[c.date]) map[c.date].push(c);
+    }
+    return map;
+  }, [browseClasses, browseWeekDates]);
+
+  const browseMaxClasses = useMemo(() => Math.max(1, ...Object.values(browseClassesByDate).map(arr => arr.length)), [browseClassesByDate]);
+
+  // Fetch browse schedule
+  useEffect(() => {
+    if (!userId) return;
+    const fetchBrowseSchedule = async () => {
+      const sunday = new Date(browseMonday); sunday.setDate(sunday.getDate() + 6);
+      let clsQuery = supabase.from("schedule_classes").select("*").gte("date", fmtDate(browseMonday)).lte("date", fmtDate(sunday)).eq("cancelled", false).order("date").order("start_time");
+      if (selectedBranchId) clsQuery = clsQuery.eq("branch_id", selectedBranchId);
+      const [clsRes, tchRes, rmRes] = await Promise.all([
+        clsQuery,
+        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("rooms").select("*").eq("active", true),
+      ]);
+      setBrowseClasses(clsRes.data || []);
+      setBrowseTeachers(tchRes.data || []);
+      setBrowseRooms(rmRes.data || []);
+
+      if (clsRes.data && clsRes.data.length > 0) {
+        const ids = clsRes.data.map((c: any) => c.id);
+        const { data: bookingsData } = await supabase
+          .from("bookings")
+          .select("class_id")
+          .eq("user_id", userId)
+          .in("class_id", ids);
+        setBrowseBookings(new Set((bookingsData || []).map((b: any) => b.class_id)));
+      } else {
+        setBrowseBookings(new Set());
+      }
+    };
+    fetchBrowseSchedule();
+  }, [browseMonday, userId, selectedBranchId]);
+
+  // Fetch all teacher bookings
+  const fetchAllTeacherBookings = async (uid: string) => {
+    setAllBookingsLoading(true);
+    const { data: bookingsData } = await supabase
+      .from("bookings")
+      .select("*")
+      .eq("user_id", uid)
+      .order("created_at", { ascending: false });
+    if (!bookingsData || bookingsData.length === 0) {
+      setAllTeacherBookings([]);
+      setAllBookingsLoading(false);
+      return;
+    }
+    const classIds = bookingsData.map(b => b.class_id);
+    const { data: classesData } = await supabase
+      .from("schedule_classes")
+      .select("*")
+      .in("id", classIds)
+      .order("date").order("start_time");
+    const classMap = new Map((classesData || []).map(c => [c.id, c]));
+    const enriched = bookingsData
+      .map(b => ({ ...b, class: classMap.get(b.class_id) }))
+      .filter(b => b.class)
+      .sort((a, b) => `${a.class.date}T${a.class.start_time}`.localeCompare(`${b.class.date}T${b.class.start_time}`));
+    setAllTeacherBookings(enriched);
+    setAllBookingsLoading(false);
+  };
+
+  const isWithin6Hours = (cls: any) => {
+    const classStart = new Date(`${cls.date}T${cls.start_time}`);
+    return classStart.getTime() - Date.now() < 6 * 60 * 60 * 1000;
+  };
+
+  const handleBooking = async (classId: string) => {
+    setBookingLoading(classId);
+    if (browseBookings.has(classId)) {
+      const cls = browseClasses.find((c: any) => c.id === classId);
+      if (cls && isWithin6Hours(cls)) {
+        toast.error("Отмена невозможна менее чем за 6 часов до начала занятия");
+        setBookingLoading(null);
+        return;
+      }
+      const { error } = await supabase.from("bookings").delete().eq("user_id", userId).eq("class_id", classId);
+      if (error) { toast.error("Ошибка отмены записи"); }
+      else {
+        setBrowseBookings(prev => { const n = new Set(prev); n.delete(classId); return n; });
+        toast.success("Запись отменена");
+      }
+    } else {
+      if (activeSubscription && (activeSubscription as any).frozen) {
+        toast.error("Ваш абонемент заморожен. Запись на занятия временно недоступна.");
+        setBookingLoading(null);
+        return;
+      }
+      if (!activeSubscription || activeSubscription.hours_remaining <= 0) {
+        setActiveTab("subscriptions");
+        setNoSubDialogOpen(true);
+        setBookingLoading(null);
+        return;
+      }
+      setConfirmBookingClassId(classId);
+      setBookingLoading(null);
+      return;
+    }
+    setBookingLoading(null);
+  };
+
+  const confirmBooking = async () => {
+    if (!confirmBookingClassId) return;
+    setBookingLoading(confirmBookingClassId);
+    setConfirmBookingClassId(null);
+    const { error } = await supabase.from("bookings").insert({ user_id: userId, class_id: confirmBookingClassId });
+    if (error) { toast.error("Ошибка записи на занятие"); }
+    else {
+      setBrowseBookings(prev => new Set(prev).add(confirmBookingClassId));
+      toast.success("Вы записаны на занятие!");
+    }
+    setBookingLoading(null);
+  };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
