@@ -107,7 +107,7 @@ export const directions: Direction[] = [
   { id: 'd2', name: 'Йога', description: 'Баланс тела и разума', color: '#8B5CF6', order: 2, active: true },
   { id: 'd3', name: 'Восточные танцы', description: 'Пластика, грация и женская энергия', color: '#F59E0B', order: 3, active: true },
   { id: 'd4', name: 'Латина', description: 'Страсть латиноамериканских ритмов', color: '#EC4899', order: 4, active: true },
-  { id: 'd5', name: 'Contemporary', description: 'Свобода самовыражения', color: '#06B6D4', order: 5, active: true },
+  { id: 'd5', name: 'Контемпорари', description: 'Свобода самовыражения', color: '#06B6D4', order: 5, active: true },
   { id: 'd6', name: 'Стретчинг', description: 'Гибкость и расслабление', color: '#10B981', order: 6, active: true },
 ];
 

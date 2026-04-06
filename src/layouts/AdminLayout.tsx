@@ -20,7 +20,7 @@ const navItems = [
   { title: "Залы", path: "/admin/rooms", icon: DoorOpen },
   { title: "Направления", path: "/admin/directions", icon: Sparkles },
   { title: "Заявки", path: "/admin/trial-requests", icon: Mail },
-  { title: "Check-in", path: "/admin/check-in", icon: CheckSquare },
+  { title: "Отметка посещений", path: "/admin/check-in", icon: CheckSquare },
   { title: "Вопрос/Ответ", path: "/admin/faq", icon: HelpCircle },
   { title: "Акции и скидки", path: "/admin/promotions", icon: BadgePercent },
   { title: "Филиалы", path: "/admin/branches", icon: MapPin },
@@ -41,7 +41,7 @@ function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
         <Sun className="h-6 w-6 text-admin-accent" />
         <div>
           <div className="text-sm font-semibold text-admin-foreground">SUN DANCE SCHOOL</div>
-          <div className="text-xs text-admin-muted">CRM</div>
+          <div className="text-xs text-admin-muted">Панель управления</div>
         </div>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
