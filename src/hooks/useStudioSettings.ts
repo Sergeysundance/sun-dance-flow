@@ -42,7 +42,7 @@ function fetchSettings(): Promise<StudioSettings> {
       const s = data?.value ? (data.value as unknown as StudioSettings) : defaults;
       cachedSettings = s;
       return s;
-    });
+    }) as Promise<StudioSettings>;
   return fetchPromise;
 }
 
