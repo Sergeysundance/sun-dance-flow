@@ -579,7 +579,7 @@ function TeacherDashboardInner() {
       <div className="container mx-auto px-4 py-8 max-w-5xl">
         <h1 className="font-display text-2xl font-bold mb-6">Кабинет преподавателя</h1>
 
-        <Tabs defaultValue="schedule" onValueChange={(v) => { if (v === "subscriptions") refreshTeacherData(); }}>
+        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v === "subscriptions") refreshTeacherData(); if (v === "bookings") fetchAllTeacherBookings(userId); }}>
           <TabsList className="mb-6">
             <TabsTrigger value="profile" className="gap-1">
               <User className="h-4 w-4" /> Профиль
@@ -587,8 +587,14 @@ function TeacherDashboardInner() {
             <TabsTrigger value="subscriptions" className="gap-1">
               <CreditCard className="h-4 w-4" /> Абонементы
             </TabsTrigger>
+            <TabsTrigger value="bookings" className="gap-1">
+              <BookOpen className="h-4 w-4" /> Мои записи
+            </TabsTrigger>
+            <TabsTrigger value="browse-schedule" className="gap-1">
+              <Calendar className="h-4 w-4" /> Расписание
+            </TabsTrigger>
             <TabsTrigger value="schedule" className="gap-1">
-              <Calendar className="h-4 w-4" /> Мои занятия
+              <Users className="h-4 w-4" /> Мои занятия
             </TabsTrigger>
           </TabsList>
 
