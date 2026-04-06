@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Edit, Plus, Minus, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit, Plus, Minus, Trash2, Snowflake } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -232,11 +232,43 @@ export default function ClientDetailPage() {
                 <tbody>
                   {subscriptions.map(s => {
                     const pct = s.hours_total > 0 ? ((s.hours_total - s.hours_remaining) / s.hours_total) * 100 : 0;
+                    const isFrozen = (s as any).frozen === true;
+                    const frozenUntil = (s as any).frozen_until ? new Date((s as any).frozen_until) : null;
+                    const frozenAt = (s as any).frozen_at ? new Date((s as any).frozen_at) : null;
+
+                    const handleFreeze = async () => {
+                      if (isFrozen) {
+                        toast.error("Абонемент уже заморожен");
+                        return;
+                      }
+                      const now = new Date();
+                      const freezeUntil = new Date(now);
+                      freezeUntil.setDate(freezeUntil.getDate() + 7);
+                      const newExpires = new Date(s.expires_at);
+                      newExpires.setDate(newExpires.getDate() + 7);
+
+                      const { error } = await supabase.from("user_subscriptions").update({
+                        frozen: true,
+                        frozen_at: now.toISOString(),
+                        frozen_until: freezeUntil.toISOString(),
+                        original_expires_at: s.expires_at,
+                        expires_at: newExpires.toISOString(),
+                      }).eq("id", s.id);
+                      if (error) { toast.error("Ошибка заморозки"); return; }
+                      toast.success("Абонемент заморожен на 7 дней, срок действия продлён");
+                      fetchData();
+                    };
+
                     return (
                       <tr key={s.id} className="border-b border-admin-border last:border-0">
                         <td className="px-4 py-3 font-medium text-admin-foreground">{s.type?.name || "—"}</td>
                         <td className="px-4 py-3 text-admin-muted">
                           {new Date(s.purchased_at).toLocaleDateString('ru-RU')} — {new Date(s.expires_at).toLocaleDateString('ru-RU')}
+                          {isFrozen && frozenAt && frozenUntil && (
+                            <div className="text-xs text-blue-600 mt-0.5">
+                              ❄️ Заморожен {frozenAt.toLocaleDateString('ru-RU')} — {frozenUntil.toLocaleDateString('ru-RU')}
+                            </div>
+                          )}
                         </td>
                         <td className="px-4 py-3 w-40">
                           <div className="flex items-center gap-2">
@@ -245,9 +277,21 @@ export default function ClientDetailPage() {
                           </div>
                         </td>
                         <td className="px-4 py-3">
-                          <Badge className={s.active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"}>
-                            {s.active ? "Активен" : "Неактивен"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge className={s.active ? (isFrozen ? "bg-blue-100 text-blue-800" : "bg-green-100 text-green-800") : "bg-gray-100 text-gray-800"}>
+                              {isFrozen ? "Заморожен" : s.active ? "Активен" : "Неактивен"}
+                            </Badge>
+                            {s.active && !isFrozen && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-7 text-xs border-blue-300 text-blue-600 hover:bg-blue-50 gap-1"
+                                onClick={handleFreeze}
+                              >
+                                <Snowflake className="h-3 w-3" /> Заморозить
+                              </Button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
