@@ -86,6 +86,7 @@ const StudentDashboardInner = () => {
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [buyDialogType, setBuyDialogType] = useState<string>("group");
   const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [insufficientHoursInfo, setInsufficientHoursInfo] = useState<{ needed: number; remaining: number } | null>(null);
   const [confirmBookingClassId, setConfirmBookingClassId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [subTab, setSubTab] = useState("group");
