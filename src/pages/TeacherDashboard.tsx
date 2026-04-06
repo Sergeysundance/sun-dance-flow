@@ -369,16 +369,6 @@ function TeacherDashboardInner() {
     return map;
   }, [classes, weekDates]);
 
-  const browseClassesByDate = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    for (const date of browseWeekDates) map[date] = [];
-    for (const c of browseClasses) {
-      if (map[c.date]) map[c.date].push(c);
-    }
-    return map;
-  }, [browseClasses, browseWeekDates]);
-
-  const browseMaxClasses = useMemo(() => Math.max(1, ...Object.values(browseClassesByDate).map(arr => arr.length)), [browseClassesByDate]);
 
   // Fetch browse schedule
   useEffect(() => {
