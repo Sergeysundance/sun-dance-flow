@@ -437,6 +437,60 @@ export default function ClientDetailPage() {
         </TabsContent>
       </Tabs>
 
+      {/* Manual deduction dialog */}
+      <Dialog open={deductOpen} onOpenChange={setDeductOpen}>
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-admin-foreground">Списать часы с абонемента</DialogTitle>
+          </DialogHeader>
+          {deductSub && (
+            <div className="space-y-3">
+              <p className="text-sm text-admin-muted">
+                Абонемент: <span className="font-medium text-admin-foreground">{deductSub.type?.name}</span>
+              </p>
+              <p className="text-sm text-admin-muted">
+                Остаток: <span className="font-medium text-admin-foreground">{deductSub.hours_remaining}/{deductSub.hours_total} ч</span>
+              </p>
+              <div>
+                <Label>Количество часов для списания</Label>
+                <Input
+                  type="number"
+                  min={0.5}
+                  max={Number(deductSub.hours_remaining)}
+                  step={0.5}
+                  className="bg-white border-admin-border mt-1"
+                  value={deductHours}
+                  onChange={e => setDeductHours(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeductOpen(false)} className="border-admin-border">Отмена</Button>
+            <Button
+              className="bg-orange-500 text-white hover:bg-orange-600"
+              onClick={async () => {
+                if (!deductSub) return;
+                const hrs = parseFloat(deductHours);
+                if (!hrs || hrs <= 0) { toast.error("Введите количество часов"); return; }
+                if (hrs > Number(deductSub.hours_remaining)) { toast.error("Недостаточно часов на абонементе"); return; }
+                const newRemaining = Number(deductSub.hours_remaining) - hrs;
+                const { error } = await supabase.from("user_subscriptions").update({
+                  hours_remaining: newRemaining,
+                  active: newRemaining > 0,
+                }).eq("id", deductSub.id);
+                if (error) { toast.error("Ошибка списания"); return; }
+                toast.success(`Списано ${hrs} ч с абонемента`);
+                setDeductOpen(false);
+                fetchData();
+              }}
+            >
+              Списать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Edit dialog */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
         <DialogContent className="bg-white text-admin-foreground sm:max-w-md">
