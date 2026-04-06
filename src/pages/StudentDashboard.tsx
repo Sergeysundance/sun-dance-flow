@@ -86,6 +86,7 @@ const StudentDashboardInner = () => {
   const [buyDialogOpen, setBuyDialogOpen] = useState(false);
   const [buyDialogType, setBuyDialogType] = useState<string>("group");
   const [noSubDialogOpen, setNoSubDialogOpen] = useState(false);
+  const [insufficientHoursInfo, setInsufficientHoursInfo] = useState<{ needed: number; remaining: number } | null>(null);
   const [confirmBookingClassId, setConfirmBookingClassId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("profile");
   const [subTab, setSubTab] = useState("group");
@@ -307,6 +308,18 @@ const StudentDashboardInner = () => {
         setNoSubDialogOpen(true);
         setBookingLoading(null);
         return;
+      }
+      // Check if enough hours for this class duration
+      const cls = scheduleData.find((c: any) => c.id === classId);
+      if (cls) {
+        const startParts = cls.start_time.split(':').map(Number);
+        const endParts = cls.end_time.split(':').map(Number);
+        const classDurationHours = (endParts[0] * 60 + endParts[1] - startParts[0] * 60 - startParts[1]) / 60;
+        if (activeSubscription.hours_remaining < classDurationHours) {
+          setInsufficientHoursInfo({ needed: classDurationHours, remaining: activeSubscription.hours_remaining });
+          setBookingLoading(null);
+          return;
+        }
       }
       // Show confirmation dialog with cancellation warning
       setConfirmBookingClassId(classId);
@@ -952,6 +965,34 @@ const StudentDashboardInner = () => {
                   className="w-full mt-2"
                   onClick={() => {
                     setNoSubDialogOpen(false);
+                    setActiveTab("subscriptions");
+                    setSubTab("group");
+                    setBuyDialogType("group");
+                    setBuyDialogOpen(true);
+                  }}
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  Купить абонемент
+                </Button>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={!!insufficientHoursInfo} onOpenChange={(open) => { if (!open) setInsufficientHoursInfo(null); }}>
+              <DialogContent className="sm:max-w-sm">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2 text-lg">
+                    <AlertTriangle className="h-5 w-5 text-sun" />
+                    Недостаточно часов
+                  </DialogTitle>
+                  <DialogDescription>
+                    Для этого занятия требуется {insufficientHoursInfo?.needed} ч, а у вас осталось {insufficientHoursInfo?.remaining} ч. Приобретите новый абонемент — остаток часов будет перенесён.
+                  </DialogDescription>
+                </DialogHeader>
+                <Button
+                  variant="sun"
+                  className="w-full mt-2"
+                  onClick={() => {
+                    setInsufficientHoursInfo(null);
                     setActiveTab("subscriptions");
                     setSubTab("group");
                     setBuyDialogType("group");

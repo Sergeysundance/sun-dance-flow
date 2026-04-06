@@ -142,11 +142,29 @@ serve(async (req) => {
       const expiresAt = new Date();
       expiresAt.setDate(expiresAt.getDate() + (plan.duration_days || 30));
 
+      // Carry over remaining hours from old active subscriptions
+      let carryOverHours = 0;
+      const { data: oldSubs } = await adminClient
+        .from("user_subscriptions")
+        .select("id, hours_remaining")
+        .eq("user_id", user.id)
+        .eq("active", true)
+        .gt("hours_remaining", 0);
+      
+      if (oldSubs && oldSubs.length > 0) {
+        for (const old of oldSubs) {
+          carryOverHours += Number(old.hours_remaining);
+          await adminClient.from("user_subscriptions").update({ active: false }).eq("id", old.id);
+        }
+      }
+
+      const totalHours = (plan.hours_count || 0) + carryOverHours;
+
       await adminClient.from("user_subscriptions").insert({
         user_id: user.id,
         subscription_type_id: plan.id,
-        hours_remaining: plan.hours_count || 0,
-        hours_total: plan.hours_count || 0,
+        hours_remaining: totalHours,
+        hours_total: totalHours,
         expires_at: expiresAt.toISOString(),
       });
 
@@ -205,6 +223,7 @@ serve(async (req) => {
           hours: plan.hours_count,
           bonus_points_used: validBonusPoints,
           teacher_discount: teacherDiscount,
+          carry_over_hours: true,
         },
       }),
     });
