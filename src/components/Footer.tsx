@@ -8,6 +8,7 @@ const Footer = () => {
         <div>
           <p className="mb-4 font-display text-lg font-black tracking-tight text-foreground">
             <span className="text-sun">SUN</span> DANCE SCHOOL
+            <span className="block font-body text-xs font-normal tracking-wide text-muted-foreground">Школа танцев Сан Дэнс</span>
           </p>
           <p className="font-body text-sm text-muted-foreground">пр. Ветеранов 147В, Санкт-Петербург</p>
           <p className="font-body text-sm text-muted-foreground">Красносельский район</p>
