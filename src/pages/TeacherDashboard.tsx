@@ -18,7 +18,12 @@ function getMonday(d: Date): Date {
   const diff = d.getDate() - day + (day === 0 ? -6 : 1);
   return new Date(d.getFullYear(), d.getMonth(), diff);
 }
-function fmtDate(d: Date) { return d.toISOString().split("T")[0]; }
+function fmtDate(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
 
