@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "./AuthDialog";
 import { useBranch } from "@/contexts/BranchContext";
+import { useStudioSettings } from "@/hooks/useStudioSettings";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,6 +32,10 @@ const Header = () => {
   const [user, setUser] = useState<any>(null);
   const [isTeacher, setIsTeacher] = useState(false);
   const { branches, selectedBranchId, setSelectedBranchId } = useBranch();
+  const { settings } = useStudioSettings();
+  const nameParts = settings.name.split(" ");
+  const nameFirst = nameParts[0]?.toUpperCase() || "";
+  const nameRest = nameParts.slice(1).join(" ").toUpperCase();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
