@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "./AuthDialog";
+import WeeklyTimeGrid from "./WeeklyTimeGrid";
 import { useBranch } from "@/contexts/BranchContext";
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
@@ -92,20 +93,6 @@ const Schedule = () => {
     fetchData();
   }, [monday, selectedBranchId]);
 
-  const getDir = (id: string) => directions.find((d: any) => d.id === id);
-  const getTeacher = (id: string) => teachers.find((t: any) => t.id === id);
-  const getRoom = (id: string) => rooms.find((r: any) => r.id === id);
-
-  const classesByDate = useMemo(() => {
-    const map: Record<string, any[]> = {};
-    for (const date of weekDates) map[date] = [];
-    for (const c of scheduleData) {
-      if (map[c.date]) map[c.date].push(c);
-    }
-    return map;
-  }, [scheduleData, weekDates]);
-
-  const maxClasses = useMemo(() => Math.max(1, ...Object.values(classesByDate).map(arr => arr.length)), [classesByDate]);
   const today = fmt(new Date());
 
   const handleSignUp = () => {
@@ -149,142 +136,30 @@ const Schedule = () => {
           <p className="text-center text-muted-foreground">Загрузка...</p>
         )}
 
-        {/* Desktop table */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="mx-auto max-w-6xl hidden md:block"
+          className="mx-auto max-w-6xl"
         >
-          <div className="rounded-xl border border-border overflow-hidden">
-            <div className="grid grid-cols-7 bg-card/80">
-              {DAYS_SHORT.map((day, i) => {
-                const date = weekDates[i];
-                const isToday = date === today;
-                const dateObj = new Date(date + 'T00:00');
-                return (
-                  <div key={i} className={`border-r border-border last:border-r-0 px-2 py-3 text-center ${isToday ? 'bg-sun/10' : ''}`}>
-                    <div className={`font-display text-xs uppercase ${isToday ? 'text-sun' : 'text-muted-foreground'}`}>{day}</div>
-                    <div className={`font-display text-lg font-bold ${isToday ? 'text-sun' : 'text-foreground'}`}>{dateObj.getDate()}</div>
-                  </div>
-                );
-              })}
-            </div>
-            {Array.from({ length: maxClasses }).map((_, rowIdx) => (
-              <div key={rowIdx} className="grid grid-cols-7 border-t border-border">
-                {weekDates.map((date, colIdx) => {
-                  const cls = classesByDate[date]?.[rowIdx];
-                  if (!cls) return <div key={colIdx} className="border-r border-border last:border-r-0 min-h-[90px]" />;
-                  const dir = getDir(cls.direction_id);
-                  const teacher = getTeacher(cls.teacher_id);
-                  const room = getRoom(cls.room_id);
-                  return (
-                    <div key={colIdx} className="border-r border-border last:border-r-0 p-2 min-h-[90px]">
-                      <div
-                        className={`rounded-lg p-2.5 h-full space-y-1 ${cls.cancelled ? 'opacity-50' : ''}`}
-                        style={{ backgroundColor: (dir?.color || '#3B82F6') + '15', borderLeft: `3px solid ${dir?.color || '#3B82F6'}` }}
-                      >
-                        <div className={`font-body text-xs font-semibold text-foreground ${cls.cancelled ? 'line-through' : ''}`}>
-                          {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
-                        </div>
-                        <div className={`font-body text-sm font-bold ${cls.cancelled ? 'line-through' : ''}`} style={{ color: dir?.color }}>
-                          {dir?.name}
-                        </div>
-                        {cls.cancelled && (
-                          <div className="font-body text-xs font-semibold text-destructive">Отменено</div>
-                        )}
-                        {!cls.cancelled && (
-                          <>
-                            <div className="font-body text-xs text-muted-foreground">
-                              {teacher?.first_name} {teacher?.last_name?.[0]}.
-                            </div>
-                            <div className="font-body text-[11px] text-muted-foreground">
-                              {room?.name}
-                            </div>
-                            <Button
-                              variant="sun"
-                              size="sm"
-                              className="text-[10px] px-3 h-6 w-full mt-1"
-                              onClick={handleSignUp}
-                            >
-                              Записаться
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ))}
-            {!loading && scheduleData.length === 0 && (
-              <div className="p-8 text-center text-muted-foreground">Нет занятий на этой неделе</div>
+          <WeeklyTimeGrid
+            weekDates={weekDates}
+            classes={scheduleData}
+            directions={directions}
+            teachers={teachers}
+            rooms={rooms}
+            today={today}
+            renderClassAction={(cls) => (
+              <Button
+                variant="sun"
+                size="sm"
+                className="text-[10px] px-3 h-6 w-full"
+                onClick={handleSignUp}
+              >
+                Записаться
+              </Button>
             )}
-          </div>
-        </motion.div>
-
-        {/* Mobile: stacked days */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="mx-auto max-w-lg md:hidden space-y-4"
-        >
-          {weekDates.map((date, i) => {
-            const dayClasses = classesByDate[date];
-            if (!dayClasses || dayClasses.length === 0) return null;
-            const dateObj = new Date(date + 'T00:00');
-            const isToday = date === today;
-            return (
-              <div key={date}>
-                <div className="mb-2 flex items-center gap-2">
-                  <span className={`flex h-9 w-9 items-center justify-center rounded-full font-display text-sm font-bold ${isToday ? 'bg-sun text-black' : 'bg-muted text-foreground'}`}>
-                    {dateObj.getDate()}
-                  </span>
-                  <span className={`font-display text-sm font-bold uppercase ${isToday ? 'text-sun' : 'text-foreground'}`}>
-                    {DAYS_SHORT[i]}
-                  </span>
-                </div>
-                <div className="space-y-2 pl-11">
-                  {dayClasses.map(cls => {
-                    const dir = getDir(cls.direction_id);
-                    const teacher = getTeacher(cls.teacher_id);
-                    return (
-                      <div
-                        key={cls.id}
-                        className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-lg border border-border bg-card/50 px-3 py-2.5 ${cls.cancelled ? 'opacity-50' : ''}`}
-                      >
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                          <span className={`font-body text-sm font-semibold text-foreground ${cls.cancelled ? 'line-through' : ''}`}>
-                            {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <span className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: dir?.color }} />
-                            <span className={`font-body text-sm font-semibold text-foreground ${cls.cancelled ? 'line-through' : ''}`}>{dir?.name}</span>
-                          </span>
-                          {cls.cancelled ? (
-                            <span className="font-body text-xs font-semibold text-destructive">Отменено</span>
-                          ) : (
-                            <span className="font-body text-xs text-muted-foreground">
-                              {teacher?.first_name} {teacher?.last_name?.[0]}.
-                            </span>
-                          )}
-                        </div>
-                        {!cls.cancelled && (
-                          <Button variant="sun" size="sm" className="text-xs px-4" onClick={handleSignUp}>
-                            Записаться
-                          </Button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-          {!loading && scheduleData.length === 0 && (
-            <p className="text-center text-muted-foreground">Нет занятий на этой неделе</p>
-          )}
+          />
         </motion.div>
       </div>
 
