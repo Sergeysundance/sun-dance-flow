@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, MoreHorizontal, Trash2, Upload, X, Clock, DollarSign, ChevronDown, ChevronRight, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,13 @@ export default function TeachersPage() {
   const [teacherStats, setTeacherStats] = useState<Record<string, { month: string; hours: number; salary: number; days: { date: string; hours: number; salary: number; classes: { time: string; direction: string; students: number; salary: number }[] }[] }[]>>({});
   const [expandedMonths, setExpandedMonths] = useState<Record<string, boolean>>({});
   const [expandedDays, setExpandedDays] = useState<Record<string, boolean>>({});
+
+  // Manual deduction
+  const [deductTeacher, setDeductTeacher] = useState<any | null>(null);
+  const [deductSubs, setDeductSubs] = useState<any[]>([]);
+  const [deductSubId, setDeductSubId] = useState("");
+  const [deductHours, setDeductHours] = useState("1");
+  const [deductOpen, setDeductOpen] = useState(false);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
@@ -289,6 +296,25 @@ export default function TeachersPage() {
     setSelectedDirections(prev => prev.includes(dirId) ? prev.filter(id => id !== dirId) : [...prev, dirId]);
   };
 
+  const openDeductDialog = async (t: any) => {
+    if (!t.user_id) { toast.error("У преподавателя нет привязанного аккаунта"); return; }
+    const { data } = await supabase
+      .from("user_subscriptions")
+      .select("*, subscription_types(*)")
+      .eq("user_id", t.user_id)
+      .eq("active", true)
+      .gt("hours_remaining", 0);
+    const individual = (data || [])
+      .map((s: any) => ({ ...s, type: s.subscription_types }))
+      .filter((s: any) => s.type?.type && s.type.type !== 'group');
+    if (individual.length === 0) { toast.error("Нет активных индивидуальных абонементов"); return; }
+    setDeductTeacher(t);
+    setDeductSubs(individual);
+    setDeductSubId(individual[0].id);
+    setDeductHours("1");
+    setDeductOpen(true);
+  };
+
   const renderTeacherCard = (t: any) => (
     <Card key={t.id} className="bg-white border-admin-border shadow-sm">
       <CardContent className="p-5">
@@ -311,6 +337,9 @@ export default function TeachersPage() {
             <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="text-admin-muted"><MoreHorizontal className="h-4 w-4" /></Button></DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => openEdit(t)}>Редактировать</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openDeductDialog(t)}>
+                <Minus className="h-4 w-4 mr-1" /> Списать часы
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setDeactivateTeacher(t)}>
                 {t.active ? "Деактивировать" : "Активировать"}
               </DropdownMenuItem>
@@ -432,6 +461,78 @@ export default function TeachersPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Manual deduction dialog */}
+      <Dialog open={deductOpen} onOpenChange={setDeductOpen}>
+        <DialogContent className="bg-white text-admin-foreground sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-admin-foreground">Списать часы с абонемента</DialogTitle>
+          </DialogHeader>
+          {deductTeacher && deductSubs.length > 0 && (
+            <div className="space-y-3">
+              <p className="text-sm text-admin-muted">
+                Преподаватель: <span className="font-medium text-admin-foreground">{deductTeacher.first_name} {deductTeacher.last_name}</span>
+              </p>
+              {deductSubs.length > 1 && (
+                <div>
+                  <Label>Абонемент</Label>
+                  <select
+                    className="w-full mt-1 rounded-md border border-admin-border bg-white px-3 py-2 text-sm"
+                    value={deductSubId}
+                    onChange={e => setDeductSubId(e.target.value)}
+                  >
+                    {deductSubs.map((s: any) => (
+                      <option key={s.id} value={s.id}>{s.type?.name} ({s.hours_remaining}/{s.hours_total} ч)</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {(() => {
+                const sel = deductSubs.find((s: any) => s.id === deductSubId);
+                return sel ? (
+                  <p className="text-sm text-admin-muted">
+                    Остаток: <span className="font-medium text-admin-foreground">{sel.hours_remaining}/{sel.hours_total} ч</span>
+                  </p>
+                ) : null;
+              })()}
+              <div>
+                <Label>Количество часов для списания</Label>
+                <Input
+                  type="number"
+                  min={0.5}
+                  step={0.5}
+                  className="bg-white border-admin-border mt-1"
+                  value={deductHours}
+                  onChange={e => setDeductHours(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeductOpen(false)} className="border-admin-border">Отмена</Button>
+            <Button
+              className="bg-orange-500 text-white hover:bg-orange-600"
+              onClick={async () => {
+                const sel = deductSubs.find((s: any) => s.id === deductSubId);
+                if (!sel) return;
+                const hrs = parseFloat(deductHours);
+                if (!hrs || hrs <= 0) { toast.error("Введите количество часов"); return; }
+                if (hrs > Number(sel.hours_remaining)) { toast.error("Недостаточно часов на абонементе"); return; }
+                const newRemaining = Number(sel.hours_remaining) - hrs;
+                const { error } = await supabase.from("user_subscriptions").update({
+                  hours_remaining: newRemaining,
+                  active: newRemaining > 0,
+                }).eq("id", sel.id);
+                if (error) { toast.error("Ошибка списания"); return; }
+                toast.success(`Списано ${hrs} ч с абонемента`);
+                setDeductOpen(false);
+              }}
+            >
+              Списать
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Edit/Create Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
