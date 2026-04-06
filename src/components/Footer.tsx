@@ -53,13 +53,14 @@ const Footer = () => {
         <p className="font-body text-xs text-muted-foreground">
           © 2026 Sun Dance School. Все права защищены.
         </p>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4">
           <a href="/privacy" className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors">
             Политика конфиденциальности
           </a>
           <a href="/terms" className="font-body text-xs text-muted-foreground hover:text-foreground transition-colors">
             Пользовательское соглашение
           </a>
+          <span className="font-body text-xs font-bold text-muted-foreground border border-border rounded px-1.5 py-0.5">0+</span>
         </div>
       </div>
     </footer>
