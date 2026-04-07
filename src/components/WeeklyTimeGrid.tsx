@@ -1,7 +1,7 @@
 import { useMemo, ReactNode } from "react";
 
 const DAYS_SHORT = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-const HOUR_HEIGHT = 60; // px per hour
+const HOUR_HEIGHT = 80; // px per hour — taller to fit buttons
 
 interface ScheduleClass {
   id: string;
