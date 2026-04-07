@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import {
   LayoutDashboard, Users, GraduationCap, CalendarDays, CreditCard,
-  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Bell, Sun, HelpCircle, MapPin, BadgePercent, MessageCircle,
+  Ticket, DoorOpen, Sparkles, Mail, CheckSquare, Settings, Menu, Sun, HelpCircle, MapPin, BadgePercent, MessageCircle,
 } from "lucide-react";
 import { BranchProvider } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
+import AdminAuthGuard from "@/components/AdminAuthGuard";
+import AdminNotificationBell from "@/components/AdminNotificationBell";
 
 const navItems = [
   { title: "Обзор", path: "/admin", icon: LayoutDashboard },
@@ -69,6 +71,7 @@ export default function AdminLayout() {
   const pageTitle = getPageTitle(location.pathname);
 
   return (
+    <AdminAuthGuard>
     <BranchProvider>
       <div className="admin-theme flex h-screen bg-admin-bg">
         {/* Desktop sidebar */}
@@ -94,9 +97,7 @@ export default function AdminLayout() {
               <BranchSelector variant="admin" />
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon" className="text-admin-muted">
-                <Bell className="h-5 w-5" />
-              </Button>
+              <AdminNotificationBell />
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-admin-accent text-sm font-semibold text-black">
                 А
               </div>
@@ -110,5 +111,6 @@ export default function AdminLayout() {
         </div>
       </div>
     </BranchProvider>
+    </AdminAuthGuard>
   );
 }

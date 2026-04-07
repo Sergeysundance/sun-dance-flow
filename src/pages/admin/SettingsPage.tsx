@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { Eye, EyeOff } from "lucide-react";
 
 interface HourEntry { day: string; open: string; close: string }
 
@@ -52,6 +53,14 @@ export default function SettingsPage() {
   });
   const [loading, setLoading] = useState(true);
 
+  // Security: password change
+  const [currentPwd, setCurrentPwd] = useState("");
+  const [newPwd, setNewPwd] = useState("");
+  const [confirmPwd, setConfirmPwd] = useState("");
+  const [showCurrentPwd, setShowCurrentPwd] = useState(false);
+  const [showNewPwd, setShowNewPwd] = useState(false);
+  const [pwdSaving, setPwdSaving] = useState(false);
+
   useEffect(() => {
     supabase
       .from("studio_settings")
@@ -96,11 +105,12 @@ export default function SettingsPage() {
 
   return (
     <Tabs defaultValue="studio">
-      <TabsList className="bg-gray-100">
+      <TabsList className="bg-gray-100 flex flex-wrap h-auto gap-1">
         <TabsTrigger value="studio">Студия</TabsTrigger>
-        <TabsTrigger value="legal">Юридические данные</TabsTrigger>
+        <TabsTrigger value="legal">Юрид. данные</TabsTrigger>
         <TabsTrigger value="telegram">Telegram</TabsTrigger>
         <TabsTrigger value="rules">Правила</TabsTrigger>
+        <TabsTrigger value="security">Безопасность</TabsTrigger>
       </TabsList>
 
       <TabsContent value="studio" className="mt-4">
@@ -223,6 +233,88 @@ export default function SettingsPage() {
             <div><Label>Платная заморозка 14 дней — цена (₽)</Label><Input type="number" value={rules.paid_freeze_14_price} onChange={e => setRules(prev => ({ ...prev, paid_freeze_14_price: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
             <div><Label>Платная заморозка 30 дней — цена (₽)</Label><Input type="number" value={rules.paid_freeze_30_price} onChange={e => setRules(prev => ({ ...prev, paid_freeze_30_price: Number(e.target.value) }))} className="bg-white border-admin-border w-32" /></div>
             <Button className="bg-admin-accent text-black hover:bg-yellow-400" onClick={() => save('rules', rules)}>Сохранить</Button>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="security" className="mt-4">
+        <Card className="bg-white border-admin-border shadow-sm">
+          <CardContent className="p-6 space-y-4">
+            <h3 className="text-base font-semibold text-admin-foreground">Смена пароля администратора</h3>
+            <div className="space-y-2 max-w-sm">
+              <Label>Текущий пароль</Label>
+              <div className="relative">
+                <Input
+                  type={showCurrentPwd ? "text" : "password"}
+                  value={currentPwd}
+                  onChange={e => setCurrentPwd(e.target.value)}
+                  className="bg-white border-admin-border pr-10"
+                />
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowCurrentPwd(!showCurrentPwd)}>
+                  {showCurrentPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2 max-w-sm">
+              <Label>Новый пароль</Label>
+              <div className="relative">
+                <Input
+                  type={showNewPwd ? "text" : "password"}
+                  value={newPwd}
+                  onChange={e => setNewPwd(e.target.value)}
+                  className="bg-white border-admin-border pr-10"
+                />
+                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400" onClick={() => setShowNewPwd(!showNewPwd)}>
+                  {showNewPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2 max-w-sm">
+              <Label>Подтвердите новый пароль</Label>
+              <Input
+                type="password"
+                value={confirmPwd}
+                onChange={e => setConfirmPwd(e.target.value)}
+                className="bg-white border-admin-border"
+              />
+            </div>
+            <Button
+              className="bg-admin-accent text-black hover:bg-yellow-400"
+              disabled={pwdSaving}
+              onClick={async () => {
+                if (newPwd.length < 4) { toast.error("Пароль должен быть не менее 4 символов"); return; }
+                if (newPwd !== confirmPwd) { toast.error("Пароли не совпадают"); return; }
+                setPwdSaving(true);
+                // Verify current password
+                const encoder = new TextEncoder();
+                const hashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(currentPwd + "sundance_admin_salt"));
+                const currentHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+                const { data: stored } = await supabase.from("studio_settings").select("value").eq("key", "admin_password").maybeSingle();
+                if (!stored || (stored.value as any).hash !== currentHash) {
+                  toast.error("Текущий пароль неверен");
+                  setPwdSaving(false);
+                  return;
+                }
+                const newHashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(newPwd + "sundance_admin_salt"));
+                const newHash = Array.from(new Uint8Array(newHashBuf)).map(b => b.toString(16).padStart(2, "0")).join("");
+                await supabase.from("studio_settings").update({ value: { hash: newHash } }).eq("key", "admin_password");
+                toast.success("Пароль изменён");
+                setCurrentPwd(""); setNewPwd(""); setConfirmPwd("");
+                setPwdSaving(false);
+              }}
+            >
+              {pwdSaving ? "Сохранение..." : "Сменить пароль"}
+            </Button>
+            <Button
+              variant="outline"
+              className="border-admin-border text-admin-muted ml-2"
+              onClick={() => {
+                sessionStorage.removeItem("admin_authenticated");
+                window.location.reload();
+              }}
+            >
+              Выйти из панели
+            </Button>
           </CardContent>
         </Card>
       </TabsContent>

@@ -432,21 +432,21 @@ const StudentDashboardInner = () => {
         <h1 className="font-display text-2xl font-bold mb-6">Личный кабинет</h1>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="profile" className="gap-1">
-              <User className="h-4 w-4" /> Профиль
+          <TabsList className="mb-6 flex flex-wrap gap-1 h-auto">
+            <TabsTrigger value="profile" className="gap-1 text-xs sm:text-sm">
+              <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Профиль</span><span className="sm:hidden">Профиль</span>
             </TabsTrigger>
-            <TabsTrigger value="subscriptions" className="gap-1">
-              <CreditCard className="h-4 w-4" /> Абонементы
+            <TabsTrigger value="subscriptions" className="gap-1 text-xs sm:text-sm">
+              <CreditCard className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Абонементы</span><span className="sm:hidden">Абон.</span>
             </TabsTrigger>
-            <TabsTrigger value="bookings" className="gap-1">
-              <BookOpen className="h-4 w-4" /> Мои записи
+            <TabsTrigger value="bookings" className="gap-1 text-xs sm:text-sm">
+              <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Мои записи</span><span className="sm:hidden">Записи</span>
             </TabsTrigger>
-            <TabsTrigger value="schedule" className="gap-1">
-              <Calendar className="h-4 w-4" /> Расписание
+            <TabsTrigger value="schedule" className="gap-1 text-xs sm:text-sm">
+              <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Расписание</span><span className="sm:hidden">Распис.</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="gap-1 relative">
-              <Bell className="h-4 w-4" /> Уведомления
+            <TabsTrigger value="notifications" className="gap-1 relative text-xs sm:text-sm">
+              <Bell className="h-3.5 w-3.5 sm:h-4 sm:w-4" /> <span className="hidden sm:inline">Уведомления</span><span className="sm:hidden">Увед.</span>
               {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] font-bold text-destructive-foreground">
                   {unreadCount}
