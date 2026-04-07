@@ -263,7 +263,7 @@ export default function WeeklyTimeGrid({
                         style={{ top, height: Math.max(height, 28) }}
                       >
                         <div
-                          className={`rounded-md p-1.5 h-full flex flex-col text-[10px] leading-tight cursor-pointer transition-opacity hover:opacity-80 ${cls.cancelled ? "opacity-50" : ""}`}
+                          className={`rounded-md p-1 h-full flex flex-col text-[9px] leading-tight cursor-pointer transition-opacity hover:opacity-80 ${cls.cancelled ? "opacity-50" : ""}`}
                           style={{
                             backgroundColor: (dir?.color || "#3B82F6") + "18",
                             borderLeft: `3px solid ${dir?.color || "#3B82F6"}`,
@@ -273,15 +273,15 @@ export default function WeeklyTimeGrid({
                           <div className={`font-semibold ${fgText} ${cls.cancelled ? "line-through" : ""}`}>
                             {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
                           </div>
-                          <div className={`font-bold ${cls.cancelled ? "line-through" : ""}`} style={{ color: dir?.color }}>
+                          <div className={`font-bold truncate ${cls.cancelled ? "line-through" : ""}`} style={{ color: dir?.color }}>
                             {dir?.name}
                           </div>
                           {cls.cancelled && <div className="font-semibold text-destructive">Отменено</div>}
                           {!cls.cancelled && (
                             <>
-                              <div className={mutedText}>{teacher?.first_name} {teacher?.last_name?.[0]}.</div>
-                              {height > 55 && <div className={mutedText}>{room?.name}</div>}
-                              {renderClassAction && height > 70 && (
+                              {height > 45 && <div className={`${mutedText} truncate`}>{teacher?.first_name} {teacher?.last_name?.[0]}.</div>}
+                              {height > 55 && <div className={`${mutedText} truncate`}>{room?.name}</div>}
+                              {renderClassAction && (
                                 <div className="mt-auto pt-0.5" onClick={e => e.stopPropagation()}>
                                   {renderClassAction(cls, dir)}
                                 </div>
