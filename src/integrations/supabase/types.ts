@@ -348,6 +348,7 @@ export type Database = {
           room_id: string
           start_time: string
           teacher_id: string
+          teacher2_id: string | null
         }
         Insert: {
           branch_id?: string | null
@@ -361,6 +362,7 @@ export type Database = {
           room_id: string
           start_time: string
           teacher_id: string
+          teacher2_id?: string | null
         }
         Update: {
           branch_id?: string | null
@@ -374,6 +376,7 @@ export type Database = {
           room_id?: string
           start_time?: string
           teacher_id?: string
+          teacher2_id?: string | null
         }
         Relationships: [
           {
