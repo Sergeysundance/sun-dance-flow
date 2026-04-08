@@ -39,7 +39,7 @@ type Direction = { id: string; name: string; color: string };
 type Teacher = { id: string; first_name: string; last_name: string };
 type Room = { id: string; name: string };
 type ScheduleClass = {
-  id: string; direction_id: string; teacher_id: string; room_id: string;
+  id: string; direction_id: string; teacher_id: string; teacher2_id?: string | null; room_id: string;
   date: string; start_time: string; end_time: string; max_spots: number; cancelled: boolean;
   branch_id: string | null;
 };
@@ -58,6 +58,7 @@ export default function SchedulePage() {
 
   const [editDirection, setEditDirection] = useState("");
   const [editTeacher, setEditTeacher] = useState("");
+  const [editTeacher2, setEditTeacher2] = useState("");
   const [editRoom, setEditRoom] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editStart, setEditStart] = useState("");
@@ -66,6 +67,7 @@ export default function SchedulePage() {
 
   const [newDirection, setNewDirection] = useState("");
   const [newTeacher, setNewTeacher] = useState("");
+  const [newTeacher2, setNewTeacher2] = useState("");
   const [newRoom, setNewRoom] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newStart, setNewStart] = useState("");
