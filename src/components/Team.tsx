@@ -9,7 +9,7 @@ const Team = () => {
   useEffect(() => {
     const fetch = async () => {
       const [tRes, dRes] = await Promise.all([
-        supabase.from("teachers").select("*").eq("active", true),
+        supabase.from("teachers").select("*").eq("active", true).eq("seen_by_admin", true),
         supabase.from("directions").select("id, name").eq("active", true),
       ]);
       if (tRes.data) setTeachers(tRes.data);

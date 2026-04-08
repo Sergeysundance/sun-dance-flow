@@ -385,6 +385,17 @@ export default function SchedulePage() {
                 <SelectContent position="popper" className="max-h-60 overflow-y-auto">{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {isPairedDirection(newDirection) && (
+              <div>
+                <Label>2-й преподаватель</Label>
+                <Select value={newTeacher2} onValueChange={setNewTeacher2}>
+                  <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Не выбран" /></SelectTrigger>
+                  <SelectContent position="popper" className="max-h-60 overflow-y-auto">
+                    {teachers.filter(t => t.id !== newTeacher).map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Зал</Label>
               <Select value={newRoom} onValueChange={setNewRoom}>
