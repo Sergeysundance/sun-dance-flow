@@ -126,7 +126,6 @@ export default function SchedulePage() {
     const name = dir.name.toLowerCase();
     return name.includes('парн');
   };
-  const selRoom = selClass ? rooms.find(r => r.id === selClass.room_id) : null;
 
   const startEditing = () => {
     if (!selClass) return;
