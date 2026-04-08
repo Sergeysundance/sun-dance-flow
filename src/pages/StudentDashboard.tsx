@@ -791,7 +791,7 @@ const StudentDashboardInner = () => {
                           const frozenUntil = (sub as any).frozen_until ? new Date((sub as any).frozen_until) : null;
                           const frozenAt = (sub as any).frozen_at ? new Date((sub as any).frozen_at) : null;
                           return (
-                          <div key={sub.id} className={`rounded-lg border p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : 'border-border'}`}>
+                          <div key={sub.id} className={`rounded-lg p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : ''} ${getSubBorderClass(sub)}`}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <div>
                                 <div className="font-display text-base font-bold text-foreground">
@@ -854,7 +854,7 @@ const StudentDashboardInner = () => {
                           const frozenUntil = (sub as any).frozen_until ? new Date((sub as any).frozen_until) : null;
                           const frozenAt = (sub as any).frozen_at ? new Date((sub as any).frozen_at) : null;
                           return (
-                          <div key={sub.id} className={`rounded-lg border p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : 'border-border'}`}>
+                          <div key={sub.id} className={`rounded-lg p-4 ${isFrozen ? 'border-blue-300 bg-blue-50/30' : ''} ${getSubBorderClass(sub)}`}>
                             <div className="flex items-center justify-between flex-wrap gap-2">
                               <div>
                                 <div className="font-display text-base font-bold text-foreground">
