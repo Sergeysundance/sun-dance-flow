@@ -397,6 +397,19 @@ const StudentDashboardInner = () => {
     return `${n} часов`;
   };
 
+  // Subscription border color based on status
+  const getSubBorderClass = (sub: UserSubscription) => {
+    const now = new Date();
+    const expires = new Date(sub.expires_at);
+    const daysLeft = Math.ceil((expires.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const isFrozen = (sub as any).frozen === true;
+    
+    if (!sub.active || expires < now || sub.hours_remaining <= 0) return "border-2 border-destructive";
+    if (isFrozen) return "border-2 border-blue-400";
+    if (daysLeft <= 7 || sub.hours_remaining <= 2) return "border-2 border-yellow-400";
+    return "border-2 border-green-500";
+  };
+
   // Active subscription summary for profile tab
   const activeSubscription = userSubscriptions.length > 0 ? userSubscriptions[0] : null;
   const groupSubscriptions = userSubscriptions.filter(s => (s.subscription_type?.type || 'group') === 'group');
@@ -464,7 +477,7 @@ const StudentDashboardInner = () => {
                 const groupSub = groupSubscriptions[0];
                 if (groupSub) {
                   return (
-                    <Card className="border-sun/30">
+                    <Card className={getSubBorderClass(groupSub)}>
                       <CardContent className="py-4">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
@@ -528,7 +541,7 @@ const StudentDashboardInner = () => {
                 const indSub = individualSubscriptions[0];
                 if (indSub) {
                   return (
-                    <Card className="border-sun/30">
+                    <Card className={getSubBorderClass(indSub)}>
                       <CardContent className="py-4">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="flex h-10 w-10 items-center justify-center rounded-full bg-sun/20">
