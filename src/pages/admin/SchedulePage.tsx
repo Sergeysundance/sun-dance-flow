@@ -294,6 +294,7 @@ export default function SchedulePage() {
                 <div><strong>Дата:</strong> {new Date(selClass.date + 'T00:00').toLocaleDateString('ru-RU')}</div>
                 <div><strong>Время:</strong> {selClass.start_time.slice(0,5)}–{selClass.end_time.slice(0,5)}</div>
                 <div><strong>Преподаватель:</strong> {selTeacher?.first_name} {selTeacher?.last_name}</div>
+                {selTeacher2 && <div><strong>2-й преподаватель:</strong> {selTeacher2.first_name} {selTeacher2.last_name}</div>}
                 <div><strong>Зал:</strong> {selRoom?.name}</div>
                 <div><strong>Макс. мест:</strong> {selClass.max_spots}</div>
               </div>
