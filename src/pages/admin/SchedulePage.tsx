@@ -217,6 +217,7 @@ export default function SchedulePage() {
         inserts.push({
           direction_id: cls.direction_id,
           teacher_id: cls.teacher_id,
+          teacher2_id: cls.teacher2_id || null,
           room_id: cls.room_id,
           date: fmt(origDate),
           start_time: cls.start_time,
