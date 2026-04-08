@@ -117,12 +117,22 @@ export default function SchedulePage() {
   const selClass = selectedClass ? classes.find(c => c.id === selectedClass) : null;
   const selDir = selClass ? directions.find(d => d.id === selClass.direction_id) : null;
   const selTeacher = selClass ? teachers.find(t => t.id === selClass.teacher_id) : null;
+  const selTeacher2 = selClass?.teacher2_id ? teachers.find(t => t.id === selClass.teacher2_id) : null;
+  const selRoom = selClass ? rooms.find(r => r.id === selClass.room_id) : null;
+
+  const isPairedDirection = (dirId: string) => {
+    const dir = directions.find(d => d.id === dirId);
+    if (!dir) return false;
+    const name = dir.name.toLowerCase();
+    return name.includes('парн');
+  };
   const selRoom = selClass ? rooms.find(r => r.id === selClass.room_id) : null;
 
   const startEditing = () => {
     if (!selClass) return;
     setEditDirection(selClass.direction_id);
     setEditTeacher(selClass.teacher_id);
+    setEditTeacher2(selClass.teacher2_id || "");
     setEditRoom(selClass.room_id);
     setEditDate(selClass.date);
     setEditStart(selClass.start_time);
@@ -134,7 +144,9 @@ export default function SchedulePage() {
   const saveEdit = async () => {
     if (!selClass) return;
     const { error } = await supabase.from("schedule_classes").update({
-      direction_id: editDirection, teacher_id: editTeacher, room_id: editRoom,
+      direction_id: editDirection, teacher_id: editTeacher, 
+      teacher2_id: editTeacher2 || null,
+      room_id: editRoom,
       date: editDate, start_time: editStart, end_time: editEnd, max_spots: editMaxSpots,
     }).eq("id", selClass.id);
     if (error) { toast.error("Ошибка сохранения"); return; }
@@ -164,14 +176,16 @@ export default function SchedulePage() {
       toast.error("Заполните все поля"); return;
     }
     const { error } = await supabase.from("schedule_classes").insert({
-      direction_id: newDirection, teacher_id: newTeacher, room_id: newRoom,
+      direction_id: newDirection, teacher_id: newTeacher, 
+      teacher2_id: newTeacher2 || null,
+      room_id: newRoom,
       date: newDate, start_time: newStart, end_time: newEnd, max_spots: newMaxSpots,
       branch_id: selectedBranchId,
     });
     if (error) { toast.error("Ошибка создания"); return; }
     toast.success("Занятие создано");
     setNewClassOpen(false);
-    setNewDirection(""); setNewTeacher(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
+    setNewDirection(""); setNewTeacher(""); setNewTeacher2(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
     fetchData();
   };
 
