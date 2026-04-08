@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ type Mode = "login" | "register";
 type Role = "student" | "teacher";
 
 const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<Mode>("login");
   const [loading, setLoading] = useState(false);
   const [role, setRole] = useState<Role>("student");
@@ -77,7 +79,7 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
     if (error) {
       toast.error(error.message);
@@ -85,6 +87,15 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       toast.success("Вы вошли в систему!");
       resetForm();
       onOpenChange(false);
+      // Redirect based on role
+      if (data.user) {
+        const { data: teacherData } = await supabase.from("teachers").select("id").eq("user_id", data.user.id).maybeSingle();
+        if (teacherData) {
+          navigate("/teacher-dashboard");
+        } else {
+          navigate("/dashboard");
+        }
+      }
     }
   };
 
@@ -157,6 +168,12 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     toast.success("Регистрация прошла успешно!");
     resetForm();
     onOpenChange(false);
+    // Redirect to dashboard
+    if (role === "teacher") {
+      navigate("/teacher-dashboard");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   return (

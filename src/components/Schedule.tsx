@@ -153,7 +153,7 @@ const Schedule = () => {
               <Button
                 variant="sun"
                 size="sm"
-                className="text-[10px] px-3 h-6 w-full"
+                className="text-[8px] px-2 h-5 w-full"
                 onClick={handleSignUp}
               >
                 Записаться

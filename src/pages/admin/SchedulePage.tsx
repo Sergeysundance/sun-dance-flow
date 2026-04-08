@@ -39,7 +39,7 @@ type Direction = { id: string; name: string; color: string };
 type Teacher = { id: string; first_name: string; last_name: string };
 type Room = { id: string; name: string };
 type ScheduleClass = {
-  id: string; direction_id: string; teacher_id: string; room_id: string;
+  id: string; direction_id: string; teacher_id: string; teacher2_id?: string | null; room_id: string;
   date: string; start_time: string; end_time: string; max_spots: number; cancelled: boolean;
   branch_id: string | null;
 };
@@ -58,6 +58,7 @@ export default function SchedulePage() {
 
   const [editDirection, setEditDirection] = useState("");
   const [editTeacher, setEditTeacher] = useState("");
+  const [editTeacher2, setEditTeacher2] = useState("");
   const [editRoom, setEditRoom] = useState("");
   const [editDate, setEditDate] = useState("");
   const [editStart, setEditStart] = useState("");
@@ -66,6 +67,7 @@ export default function SchedulePage() {
 
   const [newDirection, setNewDirection] = useState("");
   const [newTeacher, setNewTeacher] = useState("");
+  const [newTeacher2, setNewTeacher2] = useState("");
   const [newRoom, setNewRoom] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newStart, setNewStart] = useState("");
@@ -115,12 +117,21 @@ export default function SchedulePage() {
   const selClass = selectedClass ? classes.find(c => c.id === selectedClass) : null;
   const selDir = selClass ? directions.find(d => d.id === selClass.direction_id) : null;
   const selTeacher = selClass ? teachers.find(t => t.id === selClass.teacher_id) : null;
+  const selTeacher2 = selClass?.teacher2_id ? teachers.find(t => t.id === selClass.teacher2_id) : null;
   const selRoom = selClass ? rooms.find(r => r.id === selClass.room_id) : null;
+
+  const isPairedDirection = (dirId: string) => {
+    const dir = directions.find(d => d.id === dirId);
+    if (!dir) return false;
+    const name = dir.name.toLowerCase();
+    return name.includes('парн');
+  };
 
   const startEditing = () => {
     if (!selClass) return;
     setEditDirection(selClass.direction_id);
     setEditTeacher(selClass.teacher_id);
+    setEditTeacher2(selClass.teacher2_id || "");
     setEditRoom(selClass.room_id);
     setEditDate(selClass.date);
     setEditStart(selClass.start_time);
@@ -132,7 +143,9 @@ export default function SchedulePage() {
   const saveEdit = async () => {
     if (!selClass) return;
     const { error } = await supabase.from("schedule_classes").update({
-      direction_id: editDirection, teacher_id: editTeacher, room_id: editRoom,
+      direction_id: editDirection, teacher_id: editTeacher, 
+      teacher2_id: editTeacher2 || null,
+      room_id: editRoom,
       date: editDate, start_time: editStart, end_time: editEnd, max_spots: editMaxSpots,
     }).eq("id", selClass.id);
     if (error) { toast.error("Ошибка сохранения"); return; }
@@ -162,14 +175,16 @@ export default function SchedulePage() {
       toast.error("Заполните все поля"); return;
     }
     const { error } = await supabase.from("schedule_classes").insert({
-      direction_id: newDirection, teacher_id: newTeacher, room_id: newRoom,
+      direction_id: newDirection, teacher_id: newTeacher, 
+      teacher2_id: newTeacher2 || null,
+      room_id: newRoom,
       date: newDate, start_time: newStart, end_time: newEnd, max_spots: newMaxSpots,
       branch_id: selectedBranchId,
     });
     if (error) { toast.error("Ошибка создания"); return; }
     toast.success("Занятие создано");
     setNewClassOpen(false);
-    setNewDirection(""); setNewTeacher(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
+    setNewDirection(""); setNewTeacher(""); setNewTeacher2(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
     fetchData();
   };
 
@@ -202,6 +217,7 @@ export default function SchedulePage() {
         inserts.push({
           direction_id: cls.direction_id,
           teacher_id: cls.teacher_id,
+          teacher2_id: cls.teacher2_id || null,
           room_id: cls.room_id,
           date: fmt(origDate),
           start_time: cls.start_time,
@@ -279,6 +295,7 @@ export default function SchedulePage() {
                 <div><strong>Дата:</strong> {new Date(selClass.date + 'T00:00').toLocaleDateString('ru-RU')}</div>
                 <div><strong>Время:</strong> {selClass.start_time.slice(0,5)}–{selClass.end_time.slice(0,5)}</div>
                 <div><strong>Преподаватель:</strong> {selTeacher?.first_name} {selTeacher?.last_name}</div>
+                {selTeacher2 && <div><strong>2-й преподаватель:</strong> {selTeacher2.first_name} {selTeacher2.last_name}</div>}
                 <div><strong>Зал:</strong> {selRoom?.name}</div>
                 <div><strong>Макс. мест:</strong> {selClass.max_spots}</div>
               </div>
@@ -316,6 +333,17 @@ export default function SchedulePage() {
                     <SelectContent position="popper" className="max-h-60 overflow-y-auto">{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
                   </Select>
                 </div>
+                {isPairedDirection(editDirection) && (
+                  <div>
+                    <Label>2-й преподаватель</Label>
+                    <Select value={editTeacher2} onValueChange={setEditTeacher2}>
+                      <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Не выбран" /></SelectTrigger>
+                      <SelectContent position="popper" className="max-h-60 overflow-y-auto">
+                        {teachers.filter(t => t.id !== editTeacher).map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
                 <div>
                   <Label>Зал</Label>
                   <Select value={editRoom} onValueChange={setEditRoom}>
@@ -358,6 +386,17 @@ export default function SchedulePage() {
                 <SelectContent position="popper" className="max-h-60 overflow-y-auto">{teachers.map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
+            {isPairedDirection(newDirection) && (
+              <div>
+                <Label>2-й преподаватель</Label>
+                <Select value={newTeacher2} onValueChange={setNewTeacher2}>
+                  <SelectTrigger className="bg-white border-admin-border"><SelectValue placeholder="Не выбран" /></SelectTrigger>
+                  <SelectContent position="popper" className="max-h-60 overflow-y-auto">
+                    {teachers.filter(t => t.id !== newTeacher).map(t => <SelectItem key={t.id} value={t.id}>{t.first_name} {t.last_name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div>
               <Label>Зал</Label>
               <Select value={newRoom} onValueChange={setNewRoom}>

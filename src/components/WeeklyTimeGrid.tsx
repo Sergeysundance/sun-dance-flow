@@ -270,11 +270,11 @@ export default function WeeklyTimeGrid({
                           }}
                           onClick={() => onClassClick?.(cls)}
                         >
-                          <div className={`font-semibold ${fgText} ${cls.cancelled ? "line-through" : ""}`}>
-                            {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
-                          </div>
-                          <div className={`font-bold truncate ${cls.cancelled ? "line-through" : ""}`} style={{ color: dir?.color }}>
+                          <div className={`font-bold truncate text-[10px] ${cls.cancelled ? "line-through" : ""}`} style={{ color: dir?.color }}>
                             {dir?.name}
+                          </div>
+                          <div className={`font-semibold ${fgText} text-[10px] ${cls.cancelled ? "line-through" : ""}`}>
+                            {cls.start_time?.slice(0, 5)}–{cls.end_time?.slice(0, 5)}
                           </div>
                           {cls.cancelled && <div className="font-semibold text-destructive">Отменено</div>}
                           {!cls.cancelled && (
