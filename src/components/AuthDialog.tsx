@@ -168,6 +168,12 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     toast.success("Регистрация прошла успешно!");
     resetForm();
     onOpenChange(false);
+    // Redirect to dashboard
+    if (role === "teacher") {
+      navigate("/teacher-dashboard");
+    } else {
+      navigate("/dashboard");
+    }
   };
 
   return (
