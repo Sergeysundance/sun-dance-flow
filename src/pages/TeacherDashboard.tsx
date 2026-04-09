@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign, Check, X, AlertTriangle, BookOpen, Bell } from "lucide-react";
+import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign, Check, X, AlertTriangle, BookOpen, Bell, Key, Camera } from "lucide-react";
 import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,9 @@ import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 import SupportChat from "@/components/SupportChat";
+import NotificationBell from "@/components/NotificationBell";
+import PasswordChangeDialog from "@/components/PasswordChangeDialog";
+import DirectionChat from "@/components/DirectionChat";
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
