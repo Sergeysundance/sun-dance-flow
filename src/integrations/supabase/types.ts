@@ -70,6 +70,67 @@ export type Database = {
         }
         Relationships: []
       }
+      chat_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          room_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message?: string
+          room_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          room_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_messages_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "chat_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_rooms: {
+        Row: {
+          created_at: string
+          direction_id: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string
+          direction_id?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string
+          direction_id?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_rooms_direction_id_fkey"
+            columns: ["direction_id"]
+            isOneToOne: false
+            referencedRelation: "directions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       directions: {
         Row: {
           active: boolean
@@ -209,6 +270,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           birth_date: string | null
           bonus_points: number
           created_at: string
@@ -225,6 +287,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          avatar_url?: string | null
           birth_date?: string | null
           bonus_points?: number
           created_at?: string
@@ -241,6 +304,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          avatar_url?: string | null
           birth_date?: string | null
           bonus_points?: number
           created_at?: string
