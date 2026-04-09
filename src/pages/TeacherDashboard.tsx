@@ -1434,6 +1434,8 @@ function TeacherDashboardInner() {
         bonusPoints={bonusPoints}
         discountPercent={hasSchedule ? (teacher?.discount_percent ?? 20) : 0}
       />
+      <PasswordChangeDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
+      {userId && <DirectionChat userId={userId} />}
     </div>
   );
 }
