@@ -99,6 +99,7 @@ function TeacherDashboardInner() {
   const [allBookingsLoading, setAllBookingsLoading] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -576,10 +577,25 @@ function TeacherDashboardInner() {
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
           <BranchSelector variant="dashboard" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkRead={async (id) => {
+                await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+              }}
+              onMarkAllRead={async () => {
+                const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+                for (const id of unreadIds) await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setUnreadCount(0);
+              }}
+            />
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Выйти
+              <LogOut className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Выйти</span>
             </Button>
           </div>
         </div>
