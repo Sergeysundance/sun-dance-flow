@@ -683,19 +683,52 @@ const StudentDashboardInner = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Мои данные</CardTitle>
-                {!editing ? (
-                  <Button variant="outline" size="sm" onClick={() => { setEditData(profile); setEditing(true); }}>
-                    <Edit2 className="h-4 w-4 mr-1" /> Редактировать
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
-                    <Button variant="sun" size="sm" onClick={handleSave}>
-                      <Save className="h-4 w-4 mr-1" /> Сохранить
-                    </Button>
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <div className="relative group">
+                    <div className="h-14 w-14 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Аватар" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <label className="absolute inset-0 rounded-full cursor-pointer flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="h-4 w-4 text-white" />
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !userId) return;
+                        const ext = file.name.split('.').pop();
+                        const path = `${userId}/avatar.${ext}`;
+                        const { error } = await supabase.storage.from('profile-photos').upload(path, file, { upsert: true });
+                        if (error) { toast.error("Ошибка загрузки фото"); return; }
+                        const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(path);
+                        const url = `${publicUrl}?t=${Date.now()}`;
+                        await supabase.from("profiles").update({ avatar_url: url } as any).eq("user_id", userId);
+                        setAvatarUrl(url);
+                        toast.success("Фото обновлено");
+                      }} />
+                    </label>
                   </div>
-                )}
+                  <CardTitle>Мои данные</CardTitle>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPwdDialogOpen(true)}>
+                    <Key className="h-4 w-4 mr-1" /> Пароль
+                  </Button>
+                  {!editing ? (
+                    <Button variant="outline" size="sm" onClick={() => { setEditData(profile); setEditing(true); }}>
+                      <Edit2 className="h-4 w-4 mr-1" /> Редактировать
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
+                      <Button variant="sun" size="sm" onClick={handleSave}>
+                        <Save className="h-4 w-4 mr-1" /> Сохранить
+                      </Button>
+                    </>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
