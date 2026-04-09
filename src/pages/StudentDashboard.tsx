@@ -101,6 +101,8 @@ const StudentDashboardInner = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [allBookingsLoading, setAllBookingsLoading] = useState(false);
+  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
