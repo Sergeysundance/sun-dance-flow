@@ -219,7 +219,7 @@ const StudentDashboardInner = () => {
         supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
         supabase.from("directions").select("*").eq("active", true),
       ]);
-      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); setDiscountPercent((profileRes.data as any).discount_percent ?? 0); }
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); setDiscountPercent((profileRes.data as any).discount_percent ?? 0); setAvatarUrl((profileRes.data as any).avatar_url || ""); }
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       await fetchMonthlyHours(session.user.id);
@@ -437,10 +437,25 @@ const StudentDashboardInner = () => {
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
           <BranchSelector variant="dashboard" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkRead={async (id) => {
+                await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+              }}
+              onMarkAllRead={async () => {
+                const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+                for (const id of unreadIds) await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setUnreadCount(0);
+              }}
+            />
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Выйти
+              <LogOut className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Выйти</span>
             </Button>
           </div>
         </div>
