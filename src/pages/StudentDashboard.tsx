@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen, Key, Camera } from "lucide-react";
 import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,9 @@ import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 import SupportChat from "@/components/SupportChat";
 import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
+import NotificationBell from "@/components/NotificationBell";
+import PasswordChangeDialog from "@/components/PasswordChangeDialog";
+import DirectionChat from "@/components/DirectionChat";
 
 interface Profile {
   first_name: string;
