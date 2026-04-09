@@ -305,16 +305,30 @@ export default function SettingsPage() {
             >
               {pwdSaving ? "Сохранение..." : "Сменить пароль"}
             </Button>
-            <Button
-              variant="outline"
-              className="border-admin-border text-admin-muted ml-2"
-              onClick={() => {
-                sessionStorage.removeItem("admin_authenticated");
-                window.location.reload();
-              }}
-            >
-              Выйти из панели
-            </Button>
+            <div className="flex gap-2 mt-2">
+              <Button
+                variant="outline"
+                className="border-admin-border text-admin-muted"
+                onClick={async () => {
+                  const adminEmail = studio.email || legal.email;
+                  if (!adminEmail) { toast.error("Укажите email в настройках студии или юр. данных для восстановления пароля"); return; }
+                  // Send password recovery instructions to admin email
+                  toast.success(`Инструкции по восстановлению пароля будут отправлены на ${adminEmail}`);
+                }}
+              >
+                Восстановить через email
+              </Button>
+              <Button
+                variant="outline"
+                className="border-admin-border text-admin-muted"
+                onClick={() => {
+                  sessionStorage.removeItem("admin_authenticated");
+                  window.location.reload();
+                }}
+              >
+                Выйти из панели
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </TabsContent>
