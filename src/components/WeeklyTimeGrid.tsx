@@ -152,7 +152,10 @@ export default function WeeklyTimeGrid({
                         {cls.cancelled && <div className="text-xs font-semibold text-destructive">Отменено</div>}
                         {!cls.cancelled && (
                           <>
-                            <div className={`text-xs ${mutedText}`}>{teacher?.first_name} {teacher?.last_name?.[0]}.</div>
+                            <div className={`text-xs ${mutedText}`}>
+                              {teacher?.first_name} {teacher?.last_name?.[0]}.
+                              {cls.teacher2_id && (() => { const t2 = getTeacher(cls.teacher2_id); return t2 ? ` & ${t2.first_name} ${t2.last_name?.[0]}.` : ''; })()}
+                            </div>
                             <div className={`text-xs ${mutedText}`}>{room?.name}</div>
                           </>
                         )}
@@ -279,7 +282,10 @@ export default function WeeklyTimeGrid({
                           {cls.cancelled && <div className="font-semibold text-destructive">Отменено</div>}
                           {!cls.cancelled && (
                             <>
-                              {height > 45 && <div className={`${mutedText} truncate`}>{teacher?.first_name} {teacher?.last_name?.[0]}.</div>}
+                          {height > 45 && <div className={`${mutedText} truncate`}>
+                            {teacher?.first_name} {teacher?.last_name?.[0]}.
+                            {cls.teacher2_id && (() => { const t2 = getTeacher(cls.teacher2_id); return t2 ? ` & ${t2.first_name} ${t2.last_name?.[0]}.` : ''; })()}
+                          </div>}
                               {height > 55 && <div className={`${mutedText} truncate`}>{room?.name}</div>}
                               {renderClassAction && (
                                 <div className="mt-auto pt-0.5" onClick={e => e.stopPropagation()}>

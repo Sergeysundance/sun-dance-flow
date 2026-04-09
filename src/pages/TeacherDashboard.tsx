@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign, Check, X, AlertTriangle, BookOpen, Bell } from "lucide-react";
+import { User, Calendar, LogOut, ChevronLeft, ChevronRight, Users, Trash2, XCircle, CreditCard, Clock, DollarSign, Check, X, AlertTriangle, BookOpen, Bell, Key, Camera } from "lucide-react";
 import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,9 @@ import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
 import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 import SupportChat from "@/components/SupportChat";
+import NotificationBell from "@/components/NotificationBell";
+import PasswordChangeDialog from "@/components/PasswordChangeDialog";
+import DirectionChat from "@/components/DirectionChat";
 
 function getMonday(d: Date): Date {
   const day = d.getDay();
@@ -96,6 +99,7 @@ function TeacherDashboardInner() {
   const [allBookingsLoading, setAllBookingsLoading] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -573,10 +577,25 @@ function TeacherDashboardInner() {
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
           <BranchSelector variant="dashboard" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkRead={async (id) => {
+                await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+              }}
+              onMarkAllRead={async () => {
+                const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+                for (const id of unreadIds) await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setUnreadCount(0);
+              }}
+            />
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Выйти
+              <LogOut className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Выйти</span>
             </Button>
           </div>
         </div>
@@ -746,8 +765,11 @@ function TeacherDashboardInner() {
             </div>
 
             <Card>
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle>Мои данные</CardTitle>
+                <Button variant="outline" size="sm" onClick={() => setPwdDialogOpen(true)}>
+                  <Key className="h-4 w-4 mr-1" /> Пароль
+                </Button>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1412,6 +1434,8 @@ function TeacherDashboardInner() {
         bonusPoints={bonusPoints}
         discountPercent={hasSchedule ? (teacher?.discount_percent ?? 20) : 0}
       />
+      <PasswordChangeDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
+      {userId && <DirectionChat userId={userId} />}
     </div>
   );
 }

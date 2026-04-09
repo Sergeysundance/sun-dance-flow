@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen } from "lucide-react";
+import { User, Calendar, CreditCard, LogOut, Edit2, Save, ChevronLeft, ChevronRight, Check, X, Clock, AlertTriangle, Trash2, Bell, BookOpen, Key, Camera } from "lucide-react";
 import WeeklyTimeGrid from "@/components/WeeklyTimeGrid";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,9 @@ import BuySubscriptionDialog from "@/components/BuySubscriptionDialog";
 import SupportChat from "@/components/SupportChat";
 import { BranchProvider, useBranch } from "@/contexts/BranchContext";
 import BranchSelector from "@/components/BranchSelector";
+import NotificationBell from "@/components/NotificationBell";
+import PasswordChangeDialog from "@/components/PasswordChangeDialog";
+import DirectionChat from "@/components/DirectionChat";
 
 interface Profile {
   first_name: string;
@@ -98,6 +101,8 @@ const StudentDashboardInner = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [allBookingsLoading, setAllBookingsLoading] = useState(false);
+  const [pwdDialogOpen, setPwdDialogOpen] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const monday = useMemo(() => {
     const m = getMonday(new Date()); m.setDate(m.getDate() + weekOffset * 7); return m;
@@ -214,7 +219,7 @@ const StudentDashboardInner = () => {
         supabase.from("profiles").select("*").eq("user_id", session.user.id).single(),
         supabase.from("directions").select("*").eq("active", true),
       ]);
-      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); setDiscountPercent((profileRes.data as any).discount_percent ?? 0); }
+      if (profileRes.data) { setProfile(profileRes.data); setEditData(profileRes.data); setBonusPoints((profileRes.data as any).bonus_points ?? 0); setDiscountPercent((profileRes.data as any).discount_percent ?? 0); setAvatarUrl((profileRes.data as any).avatar_url || ""); }
       if (dirsRes.data) setDirections(dirsRes.data);
       await fetchSubscriptions(session.user.id);
       await fetchMonthlyHours(session.user.id);
@@ -432,10 +437,25 @@ const StudentDashboardInner = () => {
             <span className="text-sun">SUN</span> DANCE SCHOOL
           </a>
           <BranchSelector variant="dashboard" />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <NotificationBell
+              notifications={notifications}
+              unreadCount={unreadCount}
+              onMarkRead={async (id) => {
+                await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+                setUnreadCount(prev => Math.max(0, prev - 1));
+              }}
+              onMarkAllRead={async () => {
+                const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
+                for (const id of unreadIds) await supabase.from("notifications").update({ read: true }).eq("id", id);
+                setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+                setUnreadCount(0);
+              }}
+            />
             <span className="text-sm text-muted-foreground hidden sm:block">{userEmail}</span>
             <Button variant="outline" size="sm" onClick={handleLogout}>
-              <LogOut className="h-4 w-4 mr-1" /> Выйти
+              <LogOut className="h-4 w-4 mr-1" /> <span className="hidden sm:inline">Выйти</span>
             </Button>
           </div>
         </div>
@@ -663,19 +683,52 @@ const StudentDashboardInner = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Мои данные</CardTitle>
-                {!editing ? (
-                  <Button variant="outline" size="sm" onClick={() => { setEditData(profile); setEditing(true); }}>
-                    <Edit2 className="h-4 w-4 mr-1" /> Редактировать
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
-                    <Button variant="sun" size="sm" onClick={handleSave}>
-                      <Save className="h-4 w-4 mr-1" /> Сохранить
-                    </Button>
+                <div className="flex items-center gap-3">
+                  {/* Avatar */}
+                  <div className="relative group">
+                    <div className="h-14 w-14 rounded-full bg-muted overflow-hidden flex items-center justify-center">
+                      {avatarUrl ? (
+                        <img src={avatarUrl} alt="Аватар" className="h-full w-full object-cover" />
+                      ) : (
+                        <User className="h-6 w-6 text-muted-foreground" />
+                      )}
+                    </div>
+                    <label className="absolute inset-0 rounded-full cursor-pointer flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Camera className="h-4 w-4 text-white" />
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file || !userId) return;
+                        const ext = file.name.split('.').pop();
+                        const path = `${userId}/avatar.${ext}`;
+                        const { error } = await supabase.storage.from('profile-photos').upload(path, file, { upsert: true });
+                        if (error) { toast.error("Ошибка загрузки фото"); return; }
+                        const { data: { publicUrl } } = supabase.storage.from('profile-photos').getPublicUrl(path);
+                        const url = `${publicUrl}?t=${Date.now()}`;
+                        await supabase.from("profiles").update({ avatar_url: url } as any).eq("user_id", userId);
+                        setAvatarUrl(url);
+                        toast.success("Фото обновлено");
+                      }} />
+                    </label>
                   </div>
-                )}
+                  <CardTitle>Мои данные</CardTitle>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setPwdDialogOpen(true)}>
+                    <Key className="h-4 w-4 mr-1" /> Пароль
+                  </Button>
+                  {!editing ? (
+                    <Button variant="outline" size="sm" onClick={() => { setEditData(profile); setEditing(true); }}>
+                      <Edit2 className="h-4 w-4 mr-1" /> Редактировать
+                    </Button>
+                  ) : (
+                    <>
+                      <Button variant="outline" size="sm" onClick={() => setEditing(false)}>Отмена</Button>
+                      <Button variant="sun" size="sm" onClick={handleSave}>
+                        <Save className="h-4 w-4 mr-1" /> Сохранить
+                      </Button>
+                    </>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1293,6 +1346,8 @@ const StudentDashboardInner = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <PasswordChangeDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
+        {userId && <DirectionChat userId={userId} />}
       </div>
     </div>
   );
