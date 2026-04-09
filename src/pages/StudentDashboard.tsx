@@ -1346,6 +1346,8 @@ const StudentDashboardInner = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <PasswordChangeDialog open={pwdDialogOpen} onOpenChange={setPwdDialogOpen} />
+        {userId && <DirectionChat userId={userId} />}
       </div>
     </div>
   );
