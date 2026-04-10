@@ -117,6 +117,7 @@ export default function TeachersPage() {
           <thead>
             <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
               <th className="px-4 py-3">Преподаватель</th>
+              <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Телефон</th>
               <th className="px-4 py-3">Направления</th>
               <th className="px-4 py-3">Скидка</th>
@@ -145,6 +146,7 @@ export default function TeachersPage() {
                     </div>
                   </div>
                 </td>
+                <td className="px-4 py-3 text-admin-muted text-xs">{t.email || "—"}</td>
                 <td className="px-4 py-3">
                   <a href={`tel:${t.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{t.phone}</a>
                 </td>

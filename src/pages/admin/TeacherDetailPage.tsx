@@ -308,6 +308,20 @@ export default function TeacherDetailPage() {
             )}
 
             <div className="flex flex-wrap gap-2 pt-2 border-t border-admin-border">
+              <div className="flex items-center gap-2 w-full mb-2">
+                <label className="text-xs text-admin-muted">Показывать на сайте</label>
+                <button
+                  className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${teacher.seen_by_admin ? 'bg-green-500' : 'bg-gray-300'}`}
+                  onClick={async () => {
+                    const newVal = !teacher.seen_by_admin;
+                    await supabase.from("teachers").update({ seen_by_admin: newVal }).eq("id", teacher.id);
+                    setTeacher((prev: any) => ({ ...prev, seen_by_admin: newVal }));
+                    toast.success(newVal ? "Преподаватель отображается на сайте" : "Преподаватель скрыт с сайта");
+                  }}
+                >
+                  <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${teacher.seen_by_admin ? 'translate-x-4' : 'translate-x-0.5'}`} />
+                </button>
+              </div>
               <Button size="sm" className="bg-admin-accent text-black hover:bg-yellow-400" onClick={openEdit}>Редактировать</Button>
               <Button size="sm" variant="outline" className="border-admin-border" onClick={openDeduct}><Minus className="h-3.5 w-3.5 mr-1" /> Списать часы</Button>
               <Button size="sm" variant="destructive" onClick={() => setDeleteOpen(true)}><Trash2 className="h-3.5 w-3.5 mr-1" /> Удалить</Button>

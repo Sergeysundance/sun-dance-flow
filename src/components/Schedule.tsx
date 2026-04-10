@@ -2,6 +2,7 @@ import { useMemo, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import AuthDialog from "./AuthDialog";
 import WeeklyTimeGrid from "./WeeklyTimeGrid";
@@ -39,6 +40,7 @@ const Schedule = () => {
   const [weekOffset, setWeekOffset] = useState(0);
   const [authOpen, setAuthOpen] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [detailClass, setDetailClass] = useState<any>(null);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -103,6 +105,11 @@ const Schedule = () => {
     document.getElementById("cta")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const detailDir = detailClass ? directions.find((d: any) => d.id === detailClass.direction_id) : null;
+  const detailTeacher = detailClass ? teachers.find((t: any) => t.id === detailClass.teacher_id) : null;
+  const detailTeacher2 = detailClass?.teacher2_id ? teachers.find((t: any) => t.id === detailClass.teacher2_id) : null;
+  const detailRoom = detailClass ? rooms.find((r: any) => r.id === detailClass.room_id) : null;
+
   return (
     <section id="schedule" className="bg-background py-20">
       <div className="container mx-auto px-4">
@@ -149,12 +156,13 @@ const Schedule = () => {
             teachers={teachers}
             rooms={rooms}
             today={today}
+            onClassClick={(cls) => setDetailClass(cls)}
             renderClassAction={(cls) => (
               <Button
                 variant="sun"
                 size="sm"
                 className="text-[8px] px-2 h-5 w-full"
-                onClick={handleSignUp}
+                onClick={(e) => { e.stopPropagation(); handleSignUp(); }}
               >
                 Записаться
               </Button>
@@ -162,6 +170,34 @@ const Schedule = () => {
           />
         </motion.div>
       </div>
+
+      {/* Class detail dialog */}
+      <Dialog open={!!detailClass} onOpenChange={() => setDetailClass(null)}>
+        <DialogContent className="sm:max-w-md">
+          {detailClass && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: detailDir?.color }} />
+                  {detailDir?.name}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-3 text-sm">
+                <div><strong>Дата:</strong> {new Date(detailClass.date + 'T00:00').toLocaleDateString('ru-RU', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                <div><strong>Время:</strong> {detailClass.start_time?.slice(0, 5)}–{detailClass.end_time?.slice(0, 5)}</div>
+                <div><strong>Преподаватель:</strong> {detailTeacher?.first_name} {detailTeacher?.last_name}</div>
+                {detailTeacher2 && <div><strong>2-й преподаватель:</strong> {detailTeacher2.first_name} {detailTeacher2.last_name}</div>}
+                <div><strong>Зал:</strong> {detailRoom?.name}</div>
+                {detailDir?.description && <div><strong>Описание:</strong> {detailDir.description}</div>}
+                {detailClass.description && <div className="text-muted-foreground text-xs mt-2">{detailClass.description}</div>}
+                <Button variant="sun" className="w-full mt-2" onClick={() => { setDetailClass(null); handleSignUp(); }}>
+                  Записаться
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <AuthDialog open={authOpen} onOpenChange={setAuthOpen} />
     </section>

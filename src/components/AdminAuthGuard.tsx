@@ -229,6 +229,27 @@ export default function AdminAuthGuard({ children }: { children: React.ReactNode
           >
             {checking ? "Проверка..." : "Войти"}
           </Button>
+          <button
+            type="button"
+            className="w-full text-center text-xs text-gray-400 hover:text-gray-600 underline"
+            onClick={async () => {
+              const { data } = await supabase.from("studio_settings").select("value").eq("key", "studio").maybeSingle();
+              const { data: legalData } = await supabase.from("studio_settings").select("value").eq("key", "legal").maybeSingle();
+              const adminEmail = (data?.value as any)?.email || (legalData?.value as any)?.email;
+              if (!adminEmail) {
+                toast.error("Email для восстановления не настроен в контактных данных студии");
+                return;
+              }
+              // Generate reset code
+              const code = Math.random().toString(36).slice(2, 8).toUpperCase();
+              const codeHash = await hashPassword(code);
+              await supabase.from("studio_settings").upsert({ key: "admin_reset_code", value: { hash: codeHash, expires: Date.now() + 600000 } } as any);
+              toast.success(`Код восстановления создан. Обратитесь к владельцу email ${adminEmail} для получения кода.`);
+              toast.info(`Код: ${code} (действует 10 минут)`, { duration: 30000 });
+            }}
+          >
+            Забыли пароль?
+          </button>
         </CardContent>
       </Card>
     </div>

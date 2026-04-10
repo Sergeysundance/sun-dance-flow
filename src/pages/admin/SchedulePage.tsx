@@ -41,7 +41,7 @@ type Room = { id: string; name: string };
 type ScheduleClass = {
   id: string; direction_id: string; teacher_id: string; teacher2_id?: string | null; room_id: string;
   date: string; start_time: string; end_time: string; max_spots: number; cancelled: boolean;
-  branch_id: string | null;
+  branch_id: string | null; description?: string;
 };
 
 export default function SchedulePage() {
@@ -64,6 +64,7 @@ export default function SchedulePage() {
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
   const [editMaxSpots, setEditMaxSpots] = useState(20);
+  const [editDescription, setEditDescription] = useState("");
 
   const [newDirection, setNewDirection] = useState("");
   const [newTeacher, setNewTeacher] = useState("");
@@ -73,6 +74,7 @@ export default function SchedulePage() {
   const [newStart, setNewStart] = useState("");
   const [newEnd, setNewEnd] = useState("");
   const [newMaxSpots, setNewMaxSpots] = useState(20);
+  const [newDescription, setNewDescription] = useState("");
 
   const monday = useMemo(() => {
     const m = getMonday(new Date());
@@ -137,6 +139,7 @@ export default function SchedulePage() {
     setEditStart(selClass.start_time);
     setEditEnd(selClass.end_time);
     setEditMaxSpots(selClass.max_spots);
+    setEditDescription(selClass.description || "");
     setEditing(true);
   };
 
@@ -147,6 +150,7 @@ export default function SchedulePage() {
       teacher2_id: editTeacher2 || null,
       room_id: editRoom,
       date: editDate, start_time: editStart, end_time: editEnd, max_spots: editMaxSpots,
+      description: editDescription,
     }).eq("id", selClass.id);
     if (error) { toast.error("Ошибка сохранения"); return; }
     toast.success("Занятие обновлено");
@@ -180,11 +184,12 @@ export default function SchedulePage() {
       room_id: newRoom,
       date: newDate, start_time: newStart, end_time: newEnd, max_spots: newMaxSpots,
       branch_id: selectedBranchId,
+      description: newDescription,
     });
     if (error) { toast.error("Ошибка создания"); return; }
     toast.success("Занятие создано");
     setNewClassOpen(false);
-    setNewDirection(""); setNewTeacher(""); setNewTeacher2(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
+    setNewDirection(""); setNewTeacher(""); setNewTeacher2(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20); setNewDescription("");
     fetchData();
   };
 
@@ -357,6 +362,7 @@ export default function SchedulePage() {
                   <div><Label>Конец</Label><Input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="bg-white border-admin-border" /></div>
                 </div>
                 <div><Label>Макс. мест</Label><Input type="number" value={editMaxSpots} onChange={e => setEditMaxSpots(Number(e.target.value))} className="bg-white border-admin-border" /></div>
+                <div><Label>Описание занятия</Label><Input value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Заметки к занятию" className="bg-white border-admin-border" /></div>
               </div>
               <DialogFooter className="gap-2 sm:gap-2 flex-shrink-0">
                 <Button variant="outline" onClick={() => setEditing(false)} className="border-admin-border">Отмена</Button>
@@ -410,6 +416,7 @@ export default function SchedulePage() {
               <div><Label>Конец</Label><Input type="time" value={newEnd} onChange={e => setNewEnd(e.target.value)} className="bg-white border-admin-border" /></div>
             </div>
             <div><Label>Макс. мест</Label><Input type="number" value={newMaxSpots} onChange={e => setNewMaxSpots(Number(e.target.value))} className="bg-white border-admin-border" /></div>
+            <div><Label>Описание занятия</Label><Input value={newDescription} onChange={e => setNewDescription(e.target.value)} placeholder="Заметки к занятию" className="bg-white border-admin-border" /></div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setNewClassOpen(false)} className="border-admin-border">Отмена</Button>
