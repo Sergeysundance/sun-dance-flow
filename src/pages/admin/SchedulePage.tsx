@@ -139,6 +139,7 @@ export default function SchedulePage() {
     setEditStart(selClass.start_time);
     setEditEnd(selClass.end_time);
     setEditMaxSpots(selClass.max_spots);
+    setEditDescription(selClass.description || "");
     setEditing(true);
   };
 
@@ -149,6 +150,7 @@ export default function SchedulePage() {
       teacher2_id: editTeacher2 || null,
       room_id: editRoom,
       date: editDate, start_time: editStart, end_time: editEnd, max_spots: editMaxSpots,
+      description: editDescription,
     }).eq("id", selClass.id);
     if (error) { toast.error("Ошибка сохранения"); return; }
     toast.success("Занятие обновлено");
@@ -182,11 +184,12 @@ export default function SchedulePage() {
       room_id: newRoom,
       date: newDate, start_time: newStart, end_time: newEnd, max_spots: newMaxSpots,
       branch_id: selectedBranchId,
+      description: newDescription,
     });
     if (error) { toast.error("Ошибка создания"); return; }
     toast.success("Занятие создано");
     setNewClassOpen(false);
-    setNewDirection(""); setNewTeacher(""); setNewTeacher2(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20);
+    setNewDirection(""); setNewTeacher(""); setNewTeacher2(""); setNewRoom(""); setNewDate(""); setNewStart(""); setNewEnd(""); setNewMaxSpots(20); setNewDescription("");
     fetchData();
   };
 
