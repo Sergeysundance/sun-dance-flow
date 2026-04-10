@@ -23,11 +23,13 @@ import BranchesPage from "./pages/admin/BranchesPage.tsx";
 import SettingsPage from "./pages/admin/SettingsPage.tsx";
 import PromotionsPage from "./pages/admin/PromotionsPage.tsx";
 import SupportMessagesPage from "./pages/admin/SupportMessagesPage.tsx";
+import PhotosPage from "./pages/admin/PhotosPage.tsx";
 import StudentDashboard from "./pages/StudentDashboard.tsx";
 import TeacherDashboard from "./pages/TeacherDashboard.tsx";
 import PrivacyPolicy from "./pages/PrivacyPolicy.tsx";
 import TermsOfService from "./pages/TermsOfService.tsx";
 import PublicOffer from "./pages/PublicOffer.tsx";
+import ResetPassword from "./pages/ResetPassword.tsx";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +44,7 @@ const App = () => (
           <Route path="/privacy" element={<PrivacyPolicy />} />
           <Route path="/terms" element={<TermsOfService />} />
           <Route path="/offer" element={<PublicOffer />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/dashboard" element={<StudentDashboard />} />
           <Route path="/teacher-dashboard" element={<TeacherDashboard />} />
           <Route path="/admin" element={<AdminLayout />}>
@@ -61,6 +64,7 @@ const App = () => (
             <Route path="promotions" element={<PromotionsPage />} />
             <Route path="branches" element={<BranchesPage />} />
             <Route path="settings" element={<SettingsPage />} />
+            <Route path="photos" element={<PhotosPage />} />
             <Route path="support" element={<SupportMessagesPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
