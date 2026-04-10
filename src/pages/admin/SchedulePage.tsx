@@ -41,7 +41,7 @@ type Room = { id: string; name: string };
 type ScheduleClass = {
   id: string; direction_id: string; teacher_id: string; teacher2_id?: string | null; room_id: string;
   date: string; start_time: string; end_time: string; max_spots: number; cancelled: boolean;
-  branch_id: string | null;
+  branch_id: string | null; description?: string;
 };
 
 export default function SchedulePage() {
@@ -64,6 +64,7 @@ export default function SchedulePage() {
   const [editStart, setEditStart] = useState("");
   const [editEnd, setEditEnd] = useState("");
   const [editMaxSpots, setEditMaxSpots] = useState(20);
+  const [editDescription, setEditDescription] = useState("");
 
   const [newDirection, setNewDirection] = useState("");
   const [newTeacher, setNewTeacher] = useState("");
@@ -73,6 +74,7 @@ export default function SchedulePage() {
   const [newStart, setNewStart] = useState("");
   const [newEnd, setNewEnd] = useState("");
   const [newMaxSpots, setNewMaxSpots] = useState(20);
+  const [newDescription, setNewDescription] = useState("");
 
   const monday = useMemo(() => {
     const m = getMonday(new Date());
