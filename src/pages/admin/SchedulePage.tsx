@@ -362,6 +362,7 @@ export default function SchedulePage() {
                   <div><Label>Конец</Label><Input type="time" value={editEnd} onChange={e => setEditEnd(e.target.value)} className="bg-white border-admin-border" /></div>
                 </div>
                 <div><Label>Макс. мест</Label><Input type="number" value={editMaxSpots} onChange={e => setEditMaxSpots(Number(e.target.value))} className="bg-white border-admin-border" /></div>
+                <div><Label>Описание занятия</Label><Input value={editDescription} onChange={e => setEditDescription(e.target.value)} placeholder="Заметки к занятию" className="bg-white border-admin-border" /></div>
               </div>
               <DialogFooter className="gap-2 sm:gap-2 flex-shrink-0">
                 <Button variant="outline" onClick={() => setEditing(false)} className="border-admin-border">Отмена</Button>
