@@ -275,6 +275,7 @@ export type Database = {
           bonus_points: number
           created_at: string
           discount_percent: number
+          email: string
           first_name: string
           id: string
           last_name: string
@@ -292,6 +293,7 @@ export type Database = {
           bonus_points?: number
           created_at?: string
           discount_percent?: number
+          email?: string
           first_name?: string
           id?: string
           last_name?: string
@@ -309,6 +311,7 @@ export type Database = {
           bonus_points?: number
           created_at?: string
           discount_percent?: number
+          email?: string
           first_name?: string
           id?: string
           last_name?: string
@@ -405,6 +408,7 @@ export type Database = {
           cancelled: boolean
           created_at: string
           date: string
+          description: string
           direction_id: string
           end_time: string
           id: string
@@ -419,6 +423,7 @@ export type Database = {
           cancelled?: boolean
           created_at?: string
           date: string
+          description?: string
           direction_id: string
           end_time: string
           id?: string
@@ -433,6 +438,7 @@ export type Database = {
           cancelled?: boolean
           created_at?: string
           date?: string
+          description?: string
           direction_id?: string
           end_time?: string
           id?: string
