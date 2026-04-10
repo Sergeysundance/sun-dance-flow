@@ -209,7 +209,8 @@ export default function ClientsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-admin-border bg-gray-50 text-left text-xs font-medium text-admin-muted">
-              <th className="px-4 py-3">Имя</th>
+             <th className="px-4 py-3">Имя</th>
+              <th className="px-4 py-3">Email</th>
               <th className="px-4 py-3">Телефон</th>
               <th className="px-4 py-3">Скидка</th>
               <th className="px-4 py-3">Бонусы</th>
@@ -239,6 +240,9 @@ export default function ClientsPage() {
                   <td className="px-4 py-3 font-medium text-admin-foreground">
                     {!(p as any).seen_by_admin && <Badge className="bg-green-500 text-white text-[10px] mr-2">Новый</Badge>}
                     {p.last_name} {p.first_name} {p.middle_name}
+                  </td>
+                  <td className="px-4 py-3 text-admin-muted text-xs">
+                    {(p as any).email || "—"}
                   </td>
                   <td className="px-4 py-3">
                     <a href={`tel:${p.phone.replace(/[^\d+]/g, '')}`} className="text-blue-600 hover:underline" onClick={e => e.stopPropagation()}>{p.phone}</a>
