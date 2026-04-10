@@ -14,7 +14,7 @@ interface AuthDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type Mode = "login" | "register";
+type Mode = "login" | "register" | "forgot";
 type Role = "student" | "teacher";
 
 const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
@@ -87,7 +87,6 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       toast.success("Вы вошли в систему!");
       resetForm();
       onOpenChange(false);
-      // Redirect based on role
       if (data.user) {
         const { data: teacherData } = await supabase.from("teachers").select("id").eq("user_id", data.user.id).maybeSingle();
         if (teacherData) {
@@ -138,7 +137,6 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     }
 
     if (data.user) {
-      // If teacher, save pending registration data (will be processed by DB trigger)
       if (role === "teacher") {
         await supabase.from("pending_teacher_registrations").insert({
           user_id: data.user.id,
@@ -152,7 +150,6 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
         });
       }
 
-      // Send welcome email (non-blocking)
       supabase.functions.invoke("send-welcome-email", {
         body: {
           email,
@@ -168,11 +165,28 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
     toast.success("Регистрация прошла успешно!");
     resetForm();
     onOpenChange(false);
-    // Redirect to dashboard
     if (role === "teacher") {
       navigate("/teacher-dashboard");
     } else {
       navigate("/dashboard");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      toast.error("Введите email для восстановления пароля");
+      return;
+    }
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Ссылка для восстановления пароля отправлена на " + email);
+      setMode("login");
     }
   };
 
@@ -181,194 +195,146 @@ const AuthDialog = ({ open, onOpenChange }: AuthDialogProps) => {
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
-            {mode === "login" ? "Вход" : "Регистрация"}
+            {mode === "login" ? "Вход" : mode === "register" ? "Регистрация" : "Восстановление пароля"}
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex gap-2 mb-4">
-          <Button
-            variant={mode === "login" ? "sun" : "outline"}
-            size="sm"
-            onClick={() => setMode("login")}
-            className="flex-1"
-          >
-            Вход
-          </Button>
-          <Button
-            variant={mode === "register" ? "sun" : "outline"}
-            size="sm"
-            onClick={() => setMode("register")}
-            className="flex-1"
-          >
-            Регистрация
-          </Button>
-        </div>
-
-        <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
-          {mode === "register" && (
-            <>
-              {/* Role selector */}
-              <div>
-                <Label>Я регистрируюсь как</Label>
-                <div className="flex gap-2 mt-1.5">
-                  <Button
-                    type="button"
-                    variant={role === "student" ? "sun" : "outline"}
-                    size="sm"
-                    onClick={() => setRole("student")}
-                    className="flex-1"
-                  >
-                    Ученик
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={role === "teacher" ? "sun" : "outline"}
-                    size="sm"
-                    onClick={() => setRole("teacher")}
-                    className="flex-1"
-                  >
-                    Преподаватель
-                  </Button>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Фамилия *</Label>
-                  <Input value={lastName} onChange={e => setLastName(e.target.value)} />
-                </div>
-                <div>
-                  <Label>Имя *</Label>
-                  <Input value={firstName} onChange={e => setFirstName(e.target.value)} />
-                </div>
-              </div>
-              <div>
-                <Label>Отчество *</Label>
-                <Input value={middleName} onChange={e => setMiddleName(e.target.value)} />
-              </div>
-              <div>
-                <Label>Телефон *</Label>
-                <Input placeholder="+7 (___) ___-__-__" value={phone} onChange={e => setPhone(e.target.value)} />
-              </div>
-            </>
-          )}
-
-          <div>
-            <Label>Email *</Label>
-            <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+        {mode !== "forgot" && (
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant={mode === "login" ? "sun" : "outline"}
+              size="sm"
+              onClick={() => setMode("login")}
+              className="flex-1"
+            >
+              Вход
+            </Button>
+            <Button
+              variant={mode === "register" ? "sun" : "outline"}
+              size="sm"
+              onClick={() => setMode("register")}
+              className="flex-1"
+            >
+              Регистрация
+            </Button>
           </div>
-          <div>
-            <Label>Пароль *</Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                className="pr-10"
-              />
-              <button
-                type="button"
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                onClick={() => setShowPassword(!showPassword)}
-                tabIndex={-1}
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-          </div>
+        )}
 
-          {mode === "register" && (
+        {mode === "forgot" && (
+          <div className="space-y-3">
+            <p className="text-sm text-muted-foreground">Введите email, указанный при регистрации. Мы отправим ссылку для сброса пароля.</p>
             <div>
-              <Label>Повторите пароль *</Label>
-              <div className="relative">
-                <Input
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={confirmPassword}
-                  onChange={e => setConfirmPassword(e.target.value)}
-                  className={`pr-10 ${
-                    confirmPassword
-                      ? password === confirmPassword
-                        ? "border-primary focus-visible:ring-primary"
-                        : "border-destructive focus-visible:ring-destructive"
-                      : ""
-                  }`}
-                />
-                <button
-                  type="button"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  tabIndex={-1}
-                >
-                  {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
+              <Label>Email *</Label>
+              <Input type="email" value={email} onChange={e => setEmail(e.target.value)} />
+            </div>
+            <Button variant="sun" className="w-full" onClick={handleForgotPassword} disabled={loading}>
+              {loading ? "Отправка..." : "Отправить ссылку"}
+            </Button>
+            <Button variant="ghost" size="sm" className="w-full text-muted-foreground" onClick={() => setMode("login")}>
+              Вернуться ко входу
+            </Button>
+          </div>
+        )}
+
+        {mode !== "forgot" && (
+          <>
+            <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
+              {mode === "register" && (
+                <>
+                  <div>
+                    <Label>Я регистрируюсь как</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <Button type="button" variant={role === "student" ? "sun" : "outline"} size="sm" onClick={() => setRole("student")} className="flex-1">Ученик</Button>
+                      <Button type="button" variant={role === "teacher" ? "sun" : "outline"} size="sm" onClick={() => setRole("teacher")} className="flex-1">Преподаватель</Button>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Фамилия *</Label><Input value={lastName} onChange={e => setLastName(e.target.value)} /></div>
+                    <div><Label>Имя *</Label><Input value={firstName} onChange={e => setFirstName(e.target.value)} /></div>
+                  </div>
+                  <div><Label>Отчество *</Label><Input value={middleName} onChange={e => setMiddleName(e.target.value)} /></div>
+                  <div><Label>Телефон *</Label><Input placeholder="+7 (___) ___-__-__" value={phone} onChange={e => setPhone(e.target.value)} /></div>
+                </>
+              )}
+
+              <div><Label>Email *</Label><Input type="email" value={email} onChange={e => setEmail(e.target.value)} /></div>
+              <div>
+                <Label>Пароль *</Label>
+                <div className="relative">
+                  <Input type={showPassword ? "text" : "password"} value={password} onChange={e => setPassword(e.target.value)} className="pr-10" />
+                  <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowPassword(!showPassword)} tabIndex={-1}>
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
-              {confirmPassword && password !== confirmPassword && (
-                <p className="text-xs text-destructive mt-1">Пароли не совпадают</p>
+
+              {mode === "register" && (
+                <div>
+                  <Label>Повторите пароль *</Label>
+                  <div className="relative">
+                    <Input
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      className={`pr-10 ${confirmPassword ? password === confirmPassword ? "border-primary focus-visible:ring-primary" : "border-destructive focus-visible:ring-destructive" : ""}`}
+                    />
+                    <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowConfirmPassword(!showConfirmPassword)} tabIndex={-1}>
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                  {confirmPassword && password !== confirmPassword && <p className="text-xs text-destructive mt-1">Пароли не совпадают</p>}
+                </div>
+              )}
+
+              {mode === "login" && (
+                <button type="button" className="text-xs text-muted-foreground hover:text-foreground underline" onClick={() => setMode("forgot")}>
+                  Забыли пароль?
+                </button>
+              )}
+
+              {mode === "register" && (
+                <>
+                  <div><Label>Дата рождения</Label><Input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} /></div>
+                  {role === "teacher" && (
+                    <div><Label>О себе (био)</Label><Input value={bio} onChange={e => setBio(e.target.value)} placeholder="Расскажите о своём опыте" /></div>
+                  )}
+                  <div className="rounded-md border border-border p-3 space-y-2">
+                    <label className="flex items-start gap-2 cursor-pointer text-sm">
+                      <Checkbox checked={consentGiven} onCheckedChange={(v) => setConsentGiven(!!v)} className="mt-0.5" />
+                      <span className="text-muted-foreground leading-tight">
+                        Я даю согласие на обработку персональных данных в соответствии с{" "}
+                        <a href="/privacy" target="_blank" className="text-sun underline hover:no-underline">Политикой конфиденциальности</a>{" "}
+                        и принимаю условия{" "}
+                        <a href="/terms" target="_blank" className="text-sun underline hover:no-underline">Пользовательского соглашения</a>
+                      </span>
+                    </label>
+                  </div>
+                  <div>
+                    <Label>{role === "teacher" ? "Направления преподавания" : "Предпочтительные направления"}</Label>
+                    <div className="mt-1.5 space-y-1.5 rounded-md border border-border p-3">
+                      {directions.filter(d => d.active).map(d => (
+                        <label key={d.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                          <Checkbox checked={selectedDirections.includes(d.id)} onCheckedChange={() => toggleDirection(d.id)} />
+                          <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
+                          {d.name}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
-          )}
 
-          {mode === "register" && (
-            <>
-              <div>
-                <Label>Дата рождения</Label>
-                <Input type="date" value={birthDate} onChange={e => setBirthDate(e.target.value)} />
-              </div>
-
-              {role === "teacher" && (
-                <div>
-                  <Label>О себе (био)</Label>
-                  <Input value={bio} onChange={e => setBio(e.target.value)} placeholder="Расскажите о своём опыте" />
-                </div>
-              )}
-
-              <div className="rounded-md border border-border p-3 space-y-2">
-                <label className="flex items-start gap-2 cursor-pointer text-sm">
-                  <Checkbox
-                    checked={consentGiven}
-                    onCheckedChange={(v) => setConsentGiven(!!v)}
-                    className="mt-0.5"
-                  />
-                  <span className="text-muted-foreground leading-tight">
-                    Я даю согласие на обработку персональных данных в соответствии с{" "}
-                    <a href="/privacy" target="_blank" className="text-sun underline hover:no-underline">
-                      Политикой конфиденциальности
-                    </a>{" "}
-                    и принимаю условия{" "}
-                    <a href="/terms" target="_blank" className="text-sun underline hover:no-underline">
-                      Пользовательского соглашения
-                    </a>
-                  </span>
-                </label>
-              </div>
-
-              <div>
-                <Label>{role === "teacher" ? "Направления преподавания" : "Предпочтительные направления"}</Label>
-                <div className="mt-1.5 space-y-1.5 rounded-md border border-border p-3">
-                  {directions.filter(d => d.active).map(d => (
-                    <label key={d.id} className="flex items-center gap-2 cursor-pointer text-sm">
-                      <Checkbox
-                        checked={selectedDirections.includes(d.id)}
-                        onCheckedChange={() => toggleDirection(d.id)}
-                      />
-                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: d.color }} />
-                      {d.name}
-                    </label>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-
-        <Button
-          variant="sun"
-          className="w-full mt-2"
-          onClick={mode === "login" ? handleLogin : handleRegister}
-          disabled={loading}
-        >
-          {loading ? "Загрузка..." : mode === "login" ? "Войти" : "Зарегистрироваться"}
-        </Button>
+            <Button
+              variant="sun"
+              className="w-full mt-2"
+              onClick={mode === "login" ? handleLogin : handleRegister}
+              disabled={loading}
+            >
+              {loading ? "Загрузка..." : mode === "login" ? "Войти" : "Зарегистрироваться"}
+            </Button>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   );
